@@ -46,9 +46,7 @@
         auto r = new Node();
         r->left = r->right = nullptr;
         r->hash = hash;
-        r->dirty = false;
         r->update_sizes();
-        assert(r->invariant());
         return r;
       }
 
@@ -61,55 +59,25 @@
         auto r = new Node();
         r->left = left;
         r->right = right;
-        r->dirty = true;
         r->update_sizes();
-        assert(r->invariant());
-        return r;
-      }
-
-      /// @brief Checks invariant of a tree node
-      /// @note This indicates whether some basic properties of the tree
-      /// construction are violated.
-      bool invariant()
-      {
-        bool c1 = (left && right) || (!left && !right);
-        bool c2 = !left || !right || (size == left->size + right->size + 1);
-        bool cl = !left || left->invariant();
-        bool cr = !right || right->invariant();
-        bool ch = height <= sizeof(size) * 8;
-        bool r = c1 && c2 && cl && cr && ch;
         return r;
       }
 
       ~Node()
       {
-        assert(invariant());
-        // Potential future improvement: remove recursion and keep nodes for
-        // future insertions
         delete (left);
         delete (right);
       }
-
-      /// @brief Indicates whether a subtree is full
-      /// @note A subtree is full if the number of nodes under a tree is
-      /// 2**height-1.
-      bool is_full() const
-      {
-        size_t max_size = (1 << height) - 1;
-        assert(size <= max_size);
-        return size == max_size;
-      }
-
-      /// @brief Updates the tree size and height of the subtree under a node
+    
+          /// @brief Updates the tree size and height of the subtree under a node
       void update_sizes()
       {
         if (left && right)
         {
-          size = left->size + right->size + 1;
-          height = std::max(left->height, right->height) + 1;
+          depth = std::max(left->depth, right->depth) + 1;
         }
         else
-          size = height = 1;
+          depth = 1;
       }
 
       /// @brief The Hash of the node
@@ -121,16 +89,8 @@
       /// @brief The right child of the node
       Node* right;
 
-      /// @brief The size of the subtree
-      size_t size;
-
-      /// @brief The height of the subtree
-      uint8_t height;
-
-      /// @brief Dirty flag for the hash
-      /// @note The @p hash is only correct if this flag is false, otherwise
-      /// it needs to be computed by calling hash() on the node.
-      bool dirty;
+      /// @brief The depth of the subtree
+      uint8_t depth;
     };
 
   public:
@@ -165,12 +125,6 @@
       delete (_root);
       for (auto n : uninserted_leaf_nodes)
         delete (n);
-    }
-
-    /// @brief Invariant of the tree
-    bool invariant()
-    {
-      return _root ? _root->invariant() : true;
     }
 
     /// @brief Inserts a hash into the tree
@@ -281,17 +235,6 @@
 
       return std::make_shared<Path>(
         leaf_node(index)->hash, index, std::move(elements), max_index());
-    }
-
-    /// @brief Computes the size of the tree
-    /// @note This is the number of nodes in the tree, including leaves and
-    /// internal nodes.
-    /// @return The size of the tree
-    size_t size()
-    {
-      if (!uninserted_leaf_nodes.empty())
-        insert_leaves();
-      return _root ? _root->size : 0;
     }
 
   protected:
