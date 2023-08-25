@@ -1,6 +1,18 @@
 // Cryptographic Tree Implementation
 // Based on Microsoft's Merkle Tree
 
+// Finished Tasks:
+// 1. Have basic tree structures and hashes ready
+// 2. Finished writing get_path()
+// 3. Finished writing insert()
+// - Ruida
+
+// TODO:
+// 1. Double check insertion/getting path correctness
+// 2. Add UpdateTree functionality (need to be multiparty)
+// 3. Elements need to be encrypted (using AES or similar)
+// - Ruida
+
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -48,52 +60,6 @@
         r->dirty = true;
         r->update_sizes();
         assert(r->invariant());
-        return r;
-      }
-
-      /// @brief Copies a tree node
-      /// @param from Node to copy
-      /// @param leaf_nodes Current leaf nodes of the tree
-      /// @param num_flushed Number of flushed nodes of the tree
-      /// @param min_index Minimum leaf index of the tree
-      /// @param max_index Maximum leaf index of the tree
-      /// @param indent Indentation of trace output
-      static Node* copy_node(
-        const Node* from,
-        std::vector<Node*>* leaf_nodes = nullptr,
-        size_t* num_flushed = nullptr,
-        size_t min_index = 0,
-        size_t max_index = SIZE_MAX,
-        size_t indent = 0)
-      {
-        if (from == nullptr)
-          return nullptr;
-
-        Node* r = make(from->hash);
-        r->size = from->size;
-        r->height = from->height;
-        r->dirty = from->dirty;
-        r->left = copy_node(
-          from->left,
-          leaf_nodes,
-          num_flushed,
-          min_index,
-          max_index,
-          indent + 1);
-        r->right = copy_node(
-          from->right,
-          leaf_nodes,
-          num_flushed,
-          min_index,
-          max_index,
-          indent + 1);
-        if (leaf_nodes && r->size == 1 && !r->left && !r->right)
-        {
-          if (*num_flushed == 0)
-            leaf_nodes->push_back(r);
-          else
-            *num_flushed = *num_flushed - 1;
-        }
         return r;
       }
 
@@ -399,27 +365,6 @@
       return _root->hash;
     }
 
-    /// @brief Extracts a past root hash
-    /// @param index The last leaf index to consider
-    /// @return The root hash
-    /// @note This extracts the root hash of the tree at a past state, when
-    /// @p index was the last, right-most leaf index in the tree. It is
-    /// equivalent to retracting the tree to @p index and then extracting the
-    /// root.
-    std::shared_ptr<Hash> past_root(size_t index)
-    {
-      statistics.num_past_root++;
-
-      auto p = path(index);
-      auto result = std::make_shared<Hash>(p->leaf());
-
-      for (auto e : *p)
-        if (e.direction == Path::Direction::PATH_LEFT)
-          HASH_FUNCTION(e.hash, *result, *result);
-
-      return result;
-    }
-
     /// @brief Walks along the path from the root of a tree to a leaf
     /// @param index The leaf index to walk to
     /// @param update Flag to enable re-computation of node fields (like
@@ -487,139 +432,6 @@
 
       return std::make_shared<Path>(
         leaf_node(index)->hash, index, std::move(elements), max_index());
-    }
-
-    /// @brief Extracts a past path from a leaf index to the root of the tree
-    /// @param index The leaf index of the path to extract
-    /// @param as_of The maximum leaf index to consider
-    /// @return The past path
-    /// @note This extracts a path at a past state, when @p as_of was the last,
-    /// right-most leaf index in the tree. It is equivalent to retracting the
-    /// tree to @p as_of and then extracting the path of @p index.
-    std::shared_ptr<Path> past_path(size_t index, size_t as_of)
-    {
-      statistics.num_past_paths++;
-
-      if (
-        (index < min_index() || max_index() < index) ||
-        (as_of < min_index() || max_index() < as_of) || index > as_of)
-        throw std::runtime_error("invalid leaf indices");
-
-      compute_root();
-
-      assert(index < _root->size && as_of < _root->size);
-
-      // Walk down the tree toward `index` and `as_of` from the root. First to
-      // the node at which they fork (recorded in `root_to_fork`), then
-      // separately to `index` and `as_of`, recording their paths
-      // in `fork_to_index` and `fork_to_as_of`.
-      std::list<typename Path::Element> root_to_fork, fork_to_index,
-        fork_to_as_of;
-      Node* fork_node = nullptr;
-
-      Node *cur_i = _root, *cur_a = _root;
-      size_t it_i = 0, it_a = 0;
-      if (_root->height > 1)
-      {
-        it_i = index << (sizeof(index) * 8 - _root->height + 1);
-        it_a = as_of << (sizeof(index) * 8 - _root->height + 1);
-      }
-
-      for (uint8_t height = _root->height; height > 1;)
-      {
-        assert(cur_i->invariant() && cur_a->invariant());
-        bool go_right_i = (it_i >> (8 * sizeof(it_i) - 1)) & 0x01;
-        bool go_right_a = (it_a >> (8 * sizeof(it_a) - 1)) & 0x01;
-
-        if (!fork_node && go_right_i != go_right_a)
-        {
-          assert(cur_i == cur_a);
-          assert(!go_right_i && go_right_a);
-          fork_node = cur_i;
-        }
-
-        if (!fork_node)
-        {
-          // Still on the path to the fork
-          assert(cur_i == cur_a);
-          if (cur_i->height == height)
-          {
-            if (go_right_i)
-            {
-              typename Path::Element e;
-              e.hash = go_right_i ? cur_i->left->hash : cur_i->right->hash;
-              e.direction = go_right_i ? Path::PATH_LEFT : Path::PATH_RIGHT;
-              root_to_fork.push_back(std::move(e));
-            }
-            cur_i = cur_a = (go_right_i ? cur_i->right : cur_i->left);
-          }
-        }
-        else
-        {
-          // After the fork, record paths to `index` and `as_of`.
-          if (cur_i->height == height)
-          {
-            typename Path::Element e;
-            e.hash = go_right_i ? cur_i->left->hash : cur_i->right->hash;
-            e.direction = go_right_i ? Path::PATH_LEFT : Path::PATH_RIGHT;
-            fork_to_index.push_back(std::move(e));
-            cur_i = (go_right_i ? cur_i->right : cur_i->left);
-          }
-          if (cur_a->height == height)
-          {
-            // The right path does not take into account anything to the right
-            // of `as_of`, as those nodes were inserted into the tree after
-            // `as_of`.
-            if (go_right_a)
-            {
-              typename Path::Element e;
-              e.hash = go_right_a ? cur_a->left->hash : cur_a->right->hash;
-              e.direction = go_right_a ? Path::PATH_LEFT : Path::PATH_RIGHT;
-              fork_to_as_of.push_back(std::move(e));
-            }
-            cur_a = (go_right_a ? cur_a->right : cur_a->left);
-          }
-        }
-
-        it_i <<= 1;
-        it_a <<= 1;
-        height--;
-      }
-
-
-      // Reconstruct the past path from the three path segments recorded.
-      std::list<typename Path::Element> path;
-
-      // The hashes along the path from the fork to `index` remain unchanged.
-      if (!fork_to_index.empty())
-        fork_to_index.pop_front();
-      for (auto it = fork_to_index.rbegin(); it != fork_to_index.rend(); it++)
-        path.push_back(std::move(*it));
-
-      if (fork_node)
-      {
-        // The final hash of the path from the fork to `as_of` needs to be
-        // computed because that path skipped past tree nodes younger than
-        // `as_of`.
-        Hash as_of_hash = cur_a->hash;
-        if (!fork_to_as_of.empty())
-          fork_to_as_of.pop_front();
-        for (auto it = fork_to_as_of.rbegin(); it != fork_to_as_of.rend(); it++)
-          HASH_FUNCTION(it->hash, as_of_hash, as_of_hash);
-
-        typename Path::Element e;
-        e.hash = as_of_hash;
-        e.direction = Path::PATH_RIGHT;
-        path.push_back(std::move(e));
-      }
-
-      // The hashes along the path from the fork (now with new fork hash) to the
-      // (past) root remains unchanged.
-      for (auto it = root_to_fork.rbegin(); it != root_to_fork.rend(); it++)
-        path.push_back(std::move(*it));
-
-      return std::make_shared<Path>(
-        leaf_node(index)->hash, index, std::move(path), as_of);
     }
 
     /// @brief Serialises the tree
@@ -840,43 +652,6 @@
       if (!uninserted_leaf_nodes.empty())
         insert_leaves();
       return _root ? _root->size : 0;
-    }
-
-    /// @brief Computes the minumal number of bytes required to serialise the
-    /// tree
-    /// @return The number of bytes required to serialise the tree
-    size_t serialised_size()
-    {
-      size_t num_extras = 0;
-
-      if (!empty())
-      {
-        walk_to(min_index(), false, [&num_extras](Node*&, bool go_right) {
-          if (go_right)
-            num_extras++;
-          return true;
-        });
-      }
-
-      return sizeof(leaf_nodes.size()) + sizeof(num_flushed) +
-        leaf_nodes.size() * sizeof(Hash) + num_extras * sizeof(Hash);
-    }
-
-    /// @brief The number of bytes required to serialise a segment of the tree
-    /// @param from The smallest leaf index to include
-    /// @param to The greatest leaf index to include
-    /// @return The number of bytes required to serialise the tree segment
-    size_t serialised_size(size_t from, size_t to)
-    {
-      size_t num_extras = 0;
-      walk_to(from, false, [&num_extras](Node*&, bool go_right) {
-        if (go_right)
-          num_extras++;
-        return true;
-      });
-
-      return sizeof(leaf_nodes.size()) + sizeof(num_flushed) +
-        (to - from + 1) * sizeof(Hash) + num_extras * sizeof(Hash);
     }
 
     /// @brief Structure to hold statistical information
@@ -1259,12 +1034,6 @@
     void zero()
     {
       std::fill(bytes, bytes + SIZE, 0);
-    }
-
-    /// @brief The size of the serialisation of the hash (in number of bytes)
-    size_t serialised_size() const
-    {
-      return SIZE;
     }
 
     /// @brief Convert a hash to a hex-encoded string
