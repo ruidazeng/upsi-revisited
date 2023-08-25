@@ -1,4 +1,5 @@
 // Cryptographic Tree Implementation
+// Based on Microsoft's Merkle Tree
 
 #include <array>
 #include <cassert>
@@ -240,9 +241,6 @@
     /// @param hash Hash to insert
     void insert(const Hash& hash)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> insert "
-                                     << hash.to_string(TRACE_HASH_SIZE)
-                                     << std::endl;);
       uninserted_leaf_nodes.push_back(Node::make(hash));
       statistics.num_insert++;
     }
@@ -1036,10 +1034,6 @@
     /// hashes, if required.
     void hash(Node* n, size_t indent = 2) const
     {
-#ifndef MERKLECPP_WITH_TRACE
-      (void)indent;
-#endif
-
       assert(hashing_stack.empty());
       hashing_stack.reserve(n->height);
       hashing_stack.push_back(n);
