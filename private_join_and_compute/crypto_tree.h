@@ -14,7 +14,8 @@
 #include <vector>
 
 
-// Tree class
+// Cryptographic Tree Structures
+
  class TreeT
   {
   protected:
@@ -268,7 +269,6 @@
     /// no paths from them to the root can be extracted anymore.
     void flush_to(size_t index)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> flush_to " << index << std::endl;);
       statistics.num_flush++;
 
       if (index <= min_index())
@@ -277,10 +277,6 @@
       walk_to(index, false, [this](Node*& n, bool go_right) {
         if (go_right && n->left)
         {
-          MERKLECPP_TRACE(MERKLECPP_TOUT
-                            << " - conflate "
-                            << n->left->hash.to_string(TRACE_HASH_SIZE)
-                            << std::endl;);
           if (n->left && n->left->dirty)
             hash(n->left);
           delete (n->left->left);
@@ -303,7 +299,6 @@
     /// no paths from them to the root can be extracted anymore.
     void retract_to(size_t index)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> retract_to " << index << std::endl;);
       statistics.num_retract++;
 
       if (max_index() < index)
@@ -329,10 +324,6 @@
           n->dirty = true;
           if (go_left && n->right)
           {
-            MERKLECPP_TRACE(MERKLECPP_TOUT
-                              << " - eliminate "
-                              << n->right->hash.to_string(TRACE_HASH_SIZE)
-                              << std::endl;);
             bool is_root = n == _root;
 
             Node* old_left = n->left;
@@ -350,18 +341,10 @@
 
             if (is_root)
             {
-              MERKLECPP_TRACE(MERKLECPP_TOUT
-                                << " - new root: "
-                                << n->hash.to_string(TRACE_HASH_SIZE)
-                                << std::endl;);
               assert(_root == n);
             }
 
             assert(n->invariant());
-
-            MERKLECPP_TRACE(MERKLECPP_TOUT
-                              << " - after elimination: " << std::endl
-                              << to_string(TRACE_HASH_SIZE) << std::endl;);
             return false;
           }
           else
@@ -412,13 +395,9 @@
     /// @return The root hash
     const Hash& root()
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> root" << std::endl;);
       statistics.num_root++;
       compute_root();
       assert(_root && !_root->dirty);
-      MERKLECPP_TRACE(MERKLECPP_TOUT
-                        << " - root: " << _root->hash.to_string(TRACE_HASH_SIZE)
-                        << std::endl;);
       return _root->hash;
     }
 
@@ -431,16 +410,10 @@
     /// root.
     std::shared_ptr<Hash> past_root(size_t index)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> past_root " << index << std::endl;);
       statistics.num_past_root++;
 
       auto p = path(index);
       auto result = std::make_shared<Hash>(p->leaf());
-
-      MERKLECPP_TRACE(
-        MERKLECPP_TOUT << " - " << p->to_string(TRACE_HASH_SIZE) << std::endl;
-        MERKLECPP_TOUT << " - " << result->to_string(TRACE_HASH_SIZE)
-                       << std::endl;);
 
       for (auto e : *p)
         if (e.direction == Path::Direction::PATH_LEFT)
@@ -478,12 +451,6 @@
         bool go_right = (it >> (8 * sizeof(it) - 1)) & 0x01;
         if (update)
           walk_stack.push_back(cur);
-        MERKLECPP_TRACE(MERKLECPP_TOUT
-                          << " - at " << cur->hash.to_string(TRACE_HASH_SIZE)
-                          << " (" << cur->size << "/" << (unsigned)cur->height
-                          << ")"
-                          << " (" << (go_right ? "R" : "L") << ")"
-                          << std::endl;);
         if (cur->height == height)
         {
           if (!f(cur, go_right))
@@ -509,7 +476,6 @@
     /// @return The path
     std::shared_ptr<Path> path(size_t index)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> path from " << index << std::endl;);
       statistics.num_paths++;
       std::list<typename Path::Element> elements;
 
@@ -534,8 +500,6 @@
     /// tree to @p as_of and then extracting the path of @p index.
     std::shared_ptr<Path> past_path(size_t index, size_t as_of)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> past_path from " << index
-                                     << " as of " << as_of << std::endl;);
       statistics.num_past_paths++;
 
       if (
@@ -569,24 +533,10 @@
         bool go_right_i = (it_i >> (8 * sizeof(it_i) - 1)) & 0x01;
         bool go_right_a = (it_a >> (8 * sizeof(it_a) - 1)) & 0x01;
 
-        MERKLECPP_TRACE(MERKLECPP_TOUT
-                          << " - at " << (unsigned)height << ": "
-                          << cur_i->hash.to_string(TRACE_HASH_SIZE) << " ("
-                          << cur_i->size << "/" << (unsigned)cur_i->height
-                          << "/" << (go_right_i ? "R" : "L") << ")"
-                          << " / " << cur_a->hash.to_string(TRACE_HASH_SIZE)
-                          << " (" << cur_a->size << "/"
-                          << (unsigned)cur_a->height << "/"
-                          << (go_right_a ? "R" : "L") << ")" << std::endl;);
-
         if (!fork_node && go_right_i != go_right_a)
         {
           assert(cur_i == cur_a);
           assert(!go_right_i && go_right_a);
-          MERKLECPP_TRACE(MERKLECPP_TOUT
-                            << " - split at "
-                            << cur_i->hash.to_string(TRACE_HASH_SIZE)
-                            << std::endl;);
           fork_node = cur_i;
         }
 
@@ -638,23 +588,6 @@
         height--;
       }
 
-      MERKLECPP_TRACE({
-        MERKLECPP_TOUT << " - root to split:";
-        for (auto e : root_to_fork)
-          MERKLECPP_TOUT << " " << e.hash.to_string(TRACE_HASH_SIZE) << "("
-                         << e.direction << ")";
-        MERKLECPP_TOUT << std::endl;
-        MERKLECPP_TOUT << " - split to index:";
-        for (auto e : fork_to_index)
-          MERKLECPP_TOUT << " " << e.hash.to_string(TRACE_HASH_SIZE) << "("
-                         << e.direction << ")";
-        MERKLECPP_TOUT << std::endl;
-        MERKLECPP_TOUT << " - split to as_of:";
-        for (auto e : fork_to_as_of)
-          MERKLECPP_TOUT << " " << e.hash.to_string(TRACE_HASH_SIZE) << "("
-                         << e.direction << ")";
-        MERKLECPP_TOUT << std::endl;
-      });
 
       // Reconstruct the past path from the three path segments recorded.
       std::list<typename Path::Element> path;
@@ -676,11 +609,6 @@
         for (auto it = fork_to_as_of.rbegin(); it != fork_to_as_of.rend(); it++)
           HASH_FUNCTION(it->hash, as_of_hash, as_of_hash);
 
-        MERKLECPP_TRACE({
-          MERKLECPP_TOUT << " - as_of hash: "
-                         << as_of_hash.to_string(TRACE_HASH_SIZE) << std::endl;
-        });
-
         typename Path::Element e;
         e.hash = as_of_hash;
         e.direction = Path::PATH_RIGHT;
@@ -700,7 +628,6 @@
     /// @param bytes The vector of bytes to serialise to
     void serialise(std::vector<uint8_t>& bytes)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> serialise " << std::endl;);
 
       serialise_uint64_t(
         leaf_nodes.size() + uninserted_leaf_nodes.size(), bytes);
@@ -715,10 +642,6 @@
         // Find conflated/flushed nodes along the left edge of the tree.
 
         compute_root();
-
-        MERKLECPP_TRACE(MERKLECPP_TOUT << to_string(TRACE_HASH_SIZE)
-                                       << std::endl;);
-
         std::vector<Node*> extras;
         walk_to(min_index(), false, [&extras](Node*& n, bool go_right) {
           if (go_right)
@@ -737,8 +660,6 @@
     /// @param bytes The vector of bytes to serialise to
     void serialise(size_t from, size_t to, std::vector<uint8_t>& bytes)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> serialise from " << from << " to "
-                                     << to << std::endl;);
 
       if (
         (from < min_index() || max_index() < from) ||
@@ -756,8 +677,6 @@
 
         compute_root();
 
-        MERKLECPP_TRACE(MERKLECPP_TOUT << to_string(TRACE_HASH_SIZE)
-                                       << std::endl;);
 
         std::vector<Node*> extras;
         walk_to(from, false, [&extras](Node*& n, bool go_right) {
@@ -784,7 +703,6 @@
     /// @param position Position of the first byte in @p bytes
     void deserialise(const std::vector<uint8_t>& bytes, size_t& position)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> deserialise " << std::endl;);
 
       delete (_root);
       leaf_nodes.clear();
@@ -816,7 +734,6 @@
         if (it & 0x01)
         {
           Hash h(bytes, position);
-          MERKLECPP_TRACE(MERKLECPP_TOUT << "+";);
           auto n = Node::make(h);
           n->height = level_no + 1;
           n->size = (1 << n->height) - 1;
@@ -824,10 +741,6 @@
           level.insert(level.begin(), n);
         }
 
-        MERKLECPP_TRACE(for (auto& n
-                             : level) MERKLECPP_TOUT
-                          << " " << n->hash.to_string(TRACE_HASH_SIZE);
-                        MERKLECPP_TOUT << std::endl;);
 
         // Rebuild the level
         for (size_t i = 0; i < level.size(); i += 2)
@@ -875,7 +788,6 @@
     /// @return The leaf hash
     const Hash& leaf(size_t index) const
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> leaf " << index << std::endl;);
       if (index >= num_leaves())
         throw std::runtime_error("leaf index out of bounds");
       if (index - num_flushed >= leaf_nodes.size())
@@ -1108,7 +1020,6 @@
     /// @param index The leaf node index
     const Node* leaf_node(size_t index) const
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> leaf_node " << index << std::endl;);
       if (index >= num_leaves())
         throw std::runtime_error("leaf index out of bounds");
       if (index - num_flushed >= leaf_nodes.size())
@@ -1147,13 +1058,6 @@
           assert(n->left && n->right);
           HASH_FUNCTION(n->left->hash, n->right->hash, n->hash);
           statistics.num_hash++;
-          MERKLECPP_TRACE(
-            MERKLECPP_TOUT << std::string(indent, ' ') << "+ h("
-                           << n->left->hash.to_string(TRACE_HASH_SIZE) << ", "
-                           << n->right->hash.to_string(TRACE_HASH_SIZE)
-                           << ") == " << n->hash.to_string(TRACE_HASH_SIZE)
-                           << " (" << n->size << "/" << (unsigned)n->height
-                           << ")" << std::endl);
           n->dirty = false;
           hashing_stack.pop_back();
         }
@@ -1184,9 +1088,6 @@
     {
       while (true)
       {
-        MERKLECPP_TRACE(MERKLECPP_TOUT << "  @ "
-                                       << n->hash.to_string(TRACE_HASH_SIZE)
-                                       << std::endl;);
         assert(n->invariant());
 
         if (n->is_full())
@@ -1222,14 +1123,6 @@
     /// should be processed
     Node* process_insertion_stack(bool complete = true)
     {
-      MERKLECPP_TRACE({
-        std::string nodes;
-        for (size_t i = 0; i < insertion_stack.size(); i++)
-          nodes +=
-            " " + insertion_stack.at(i).n->hash.to_string(TRACE_HASH_SIZE);
-        MERKLECPP_TOUT << "  X " << (complete ? "complete" : "continue") << ":"
-                       << nodes << std::endl;
-      });
 
       Node* result = insertion_stack.back().n;
       insertion_stack.pop_back();
@@ -1255,10 +1148,6 @@
 
         if (!complete && !result->is_full())
         {
-          MERKLECPP_TRACE(MERKLECPP_TOUT
-                            << "  X save "
-                            << result->hash.to_string(TRACE_HASH_SIZE)
-                            << std::endl;);
           return result;
         }
       }
@@ -1273,9 +1162,6 @@
     /// @param n New leaf node to insert
     void insert_leaf(Node*& root, Node* n)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << " - insert_leaf "
-                                     << n->hash.to_string(TRACE_HASH_SIZE)
-                                     << std::endl;);
       leaf_nodes.push_back(n);
       if (insertion_stack.empty() && !root)
         root = n;
@@ -1293,9 +1179,6 @@
     {
       if (!uninserted_leaf_nodes.empty())
       {
-        MERKLECPP_TRACE(MERKLECPP_TOUT
-                          << "* insert_leaves " << leaf_nodes.size() << " +"
-                          << uninserted_leaf_nodes.size() << std::endl;);
         // Potential future improvement: make this go fast when there are many
         // leaves to insert.
         for (auto& n : uninserted_leaf_nodes)
@@ -1429,7 +1312,6 @@
     /// @param buffer Buffer to serialise to
     void serialise(std::vector<uint8_t>& buffer) const
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> HashT::serialise " << std::endl);
       for (auto& b : bytes)
         buffer.push_back(b);
     }
@@ -1439,7 +1321,6 @@
     /// @param position Position of the first byte in @p bytes
     void deserialise(const std::vector<uint8_t>& buffer, size_t& position)
     {
-      MERKLECPP_TRACE(MERKLECPP_TOUT << "> HashT::deserialise " << std::endl);
       if (buffer.size() - position < SIZE)
         throw std::runtime_error("not enough bytes");
       for (size_t i = 0; i < sizeof(bytes); i++)
