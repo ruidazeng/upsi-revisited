@@ -5,14 +5,13 @@
 // 1. Node structures (TODO - structures of the elements/contents)
 // 2. Tree structures
 // 3. Hash structures
-// 4. Finished writing get_path()
-// 5. Finished writing insert()
 // - Ruida
 
 // TODO:
-// 1. Double check insertion/getting path correctness
-// 2. Add UpdateTree functionality (need to be multiparty)
-// 3. Elements need to be encrypted (using AES or similar)
+// 1. Finish writing get_path()
+// 2. Finishwriting insert()
+// 3. Add UpdateTree functionality (need to be multiparty)
+// 4. Elements need to be encrypted (using AES or similar)
 // - Ruida
 
 // Questions:
@@ -94,6 +93,9 @@
     /// @brief Current root node of the tree
     Node* _root = nullptr;
 
+    /// @brief Current stash node of the tree
+    Node* _stash = nullptr;
+
     /// @brief The node size of the tree
     uint8_t node_size;
 
@@ -101,14 +103,6 @@
     uint8_t max_stash;
 
   public:
-    /// @brief The type of hashes in the tree
-    typedef HashT<HASH_SIZE> Hash;
-
-    /// @brief The type of paths in the tree
-    typedef PathT<HASH_SIZE, HASH_FUNCTION> Path;
-
-    /// @brief The type of the tree
-    typedef TreeT<HASH_SIZE, HASH_FUNCTION> Tree;
 
     /// @brief Constructs an empty tree
     TreeT() {}
@@ -119,19 +113,24 @@
       *this = other;
     }
 
-    /// @brief Constructs a tree containing one root hash
-    /// @param root Root hash of the tree
-    TreeT(const Hash& root)
+    /// @brief Constructs a tree containing one root
+    /// @param node_size the node size of the tree
+    TreeT(const uint8_t node_size)
     {
-      insert(root);
+        this->node_size = node_size;
+        this->max_stash = 0;
+        Node* root = make();
+        Node* stash = make();
+        // TODO: Do I need to call insert()?
+        this->_root = root;
+        this->_stash = stash;
     }
 
     /// @brief Deconstructor
     ~TreeT()
     {
       delete (_root);
-      for (auto n : uninserted_leaf_nodes)
-        delete (n);
+      // TODO: Iterative deletion
     }
 
     /// @brief Inserts a hash into the tree
@@ -147,32 +146,6 @@
     {
       uninserted_leaf_nodes.push_back(Node::make(hash));
       statistics.num_insert++;
-    }
-
-    /// @brief Inserts multiple hashes into the tree
-    /// @param hashes Vector of hashes to insert
-    void insert(const std::vector<Hash>& hashes)
-    {
-      for (auto hash : hashes)
-        insert(hash);
-    }
-
-    /// @brief Inserts multiple hashes into the tree
-    /// @param hashes List of hashes to insert
-    void insert(const std::list<Hash>& hashes)
-    {
-      for (auto hash : hashes)
-        insert(hash);
-    }
-
-    /// @brief Extracts the root hash of the tree
-    /// @return The root hash
-    const Hash& root()
-    {
-      statistics.num_root++;
-      compute_root();
-      assert(_root && !_root->dirty);
-      return _root->hash;
     }
 
     /// @brief Walks along the path from the root of a tree to a leaf
