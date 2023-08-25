@@ -2,9 +2,11 @@
 // Based on Microsoft's Merkle Tree
 
 // Finished Tasks:
-// 1. Have basic tree structures and hashes ready
-// 2. Finished writing get_path()
-// 3. Finished writing insert()
+// 1. Node structures (TODO - structures of the elements/contents)
+// 2. Tree structures
+// 3. Hash structures
+// 4. Finished writing get_path()
+// 5. Finished writing insert()
 // - Ruida
 
 // TODO:
@@ -40,12 +42,10 @@
     struct Node
     {
       /// @brief Constructs a new tree node
-      /// @param hash The hash of the node
-      static Node* make(const HashT<HASH_SIZE>& hash)
+      static Node* make()
       {
         auto r = new Node();
         r->left = r->right = nullptr;
-        r->hash = hash;
         r->update_sizes();
         return r;
       }
@@ -80,9 +80,6 @@
           depth = 1;
       }
 
-      /// @brief The Hash of the node
-      HashT<HASH_SIZE> hash;
-
       /// @brief The left child of the node
       Node* left;
 
@@ -92,6 +89,16 @@
       /// @brief The depth of the subtree
       uint8_t depth;
     };
+
+    // Tree
+    /// @brief Current root node of the tree
+    Node* _root = nullptr;
+
+    /// @brief The node size of the tree
+    uint8_t node_size;
+
+    /// @brief The max stash of the subtree
+    uint8_t max_stash;
 
   public:
     /// @brief The type of hashes in the tree
@@ -236,13 +243,6 @@
       return std::make_shared<Path>(
         leaf_node(index)->hash, index, std::move(elements), max_index());
     }
-
-  protected:
-    /// @brief Vector of leaf nodes current in the tree
-    std::vector<Node*> leaf_nodes;
-
-    /// @brief Current root node of the tree
-    Node* _root = nullptr;
 
   };
 
