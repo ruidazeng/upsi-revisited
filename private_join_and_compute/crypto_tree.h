@@ -3,7 +3,7 @@
 
 // Finished Tasks:
 // 1. Node structures (TODO - structures of the elements/contents)
-// 2. Tree structures
+// 2. Tree structures (TODO - encryption of nodes)
 // 3. Hash structures (Figure out if this is acceptable? If not replace)
 // - Ruida
 
