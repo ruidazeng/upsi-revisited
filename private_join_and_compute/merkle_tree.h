@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
+// NOTE by Ruida: Reference file for our own tree construction. 
+
 #pragma once
 
 #include <array>
