@@ -3,8 +3,18 @@
 
 // Finished Tasks:
 // 1. Node structures (TODO - structures of the elements/contents)
+// encryption under el gamal or paillier (ecc points)
+// additon - element/payload (element under private key, payload under paillier)
+// cost of loading bytes into elliptical curve
 // 2. Tree structures (TODO - encryption of nodes)
+// Look at representation, bit operation, identify nodes in the path
+// Array/List representation of the tree (binary)
+// Efficiency
 // 3. Hash structures (Figure out if this is acceptable? If not replace)
+// Add OpenSSL AES (agree on randomly generated key)
+// Use another key to generate random path: random location to allocate, random path different key (private
+// Shared key - Private key
+// Path - seed needs to be randomly sampled everytime
 // - Ruida
 
 // TODO:
@@ -13,10 +23,14 @@
 // 3. Add UpdateTree functionality (need to be multiparty)
 // 4. Elements need to be encrypted (using AES or similar)
 // - Ruida
+// Addition only - all functionalities
+// Addition/Deletion - Sum
 
 // Questions:
 // 1. How to achieve multiparty?
-// 2. Serialization/Deserialization of the tree and hashes for MPC
+// 2. Seralization/Deserialization of the tree
+// take all points, into new seralize path, send off
+// receive seraizlie path, put into tree
 
 #include <array>
 #include <cassert>
