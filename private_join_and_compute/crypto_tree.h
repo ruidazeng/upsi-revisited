@@ -4,7 +4,7 @@
 // Finished Tasks:
 // 1. Node structures (TODO - structures of the elements/contents)
 // 2. Tree structures
-// 3. Hash structures
+// 3. Hash structures (Figure out if this is acceptable? If not replace)
 // - Ruida
 
 // TODO:
@@ -133,19 +133,24 @@
       // TODO: Iterative deletion
     }
 
-    /// @brief Inserts a hash into the tree
-    /// @param hash Hash to insert
-    void insert(const uint8_t* hash)
+    /// @brief Inserts an element into the tree
+    /// @param element element to be inserted
+    void insert(const auto element)
     {
-      insert(Hash(hash));
+        // TODO: auto insertion
     }
 
-    /// @brief Inserts a hash into the tree
-    /// @param hash Hash to insert
-    void insert(const Hash& hash)
+    /// @brief Sender adds input element to encrypted tree with stash held
+    /// by receiver. Sender has secret key and both parties have the public key
+    /// @param x input element
+    /// @param p optional payload
+    /// @param sk secret key
+    /// @param D encrypted tree
+    /// @param S stash
+    /// @param pk public key
+    void updateTree()
     {
-      uninserted_leaf_nodes.push_back(Node::make(hash));
-      statistics.num_insert++;
+        // TODO
     }
 
     /// @brief Walks along the path from the root of a tree to a leaf
