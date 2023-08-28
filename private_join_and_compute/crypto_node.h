@@ -17,24 +17,23 @@
 class TreeNode
 {
     private:
-        std::string textContent;
-        std::string tagName;
+        int nodeNumber;
+        int parentNodeNumber;
+        int leftChildNodeNumber;
+        int rightChildNodeNumber;
 
-        TreeNode *parent;
-
-        std::vector<TreeNode *> children;
-
-        int countNodesRec(TreeNode *root, int& count);
-
+        // decide format of content/payload
+        // encryption under el gamal or paillier (ecc points)
+        // additon - element/payload (element under private key, payload under paillier)
+        std::vector<unsigned char*> content;
+        std::vector<unsigned char*> payload;
+        
     public:
         TreeNode();
-        TreeNode(std::string iTextContent, std::string iTagName);
-
-        void appendChild(TreeNode *child);
-        void setParent(TreeNode *parent);
-
-        void popBackChild();
-        void removeChild(int pos);
+        TreeNode(int nodeNumber);
+        TreeNode(int nodeNumber, std::vector<unsigned char> &content);
+        TreeNode(int nodeNumber, std::vector<unsigned char> &payload);
+        TreeNode(int nodeNumber, std::vector<unsigned char> &content, std::vector<unsigned char> &payload);
 
         bool hasChildren();
         bool hasParent();
@@ -42,11 +41,15 @@ class TreeNode
         TreeNode* getParent();
         TreeNode* getChild(int pos);
 
-        int childrenNumber();
-        int grandChildrenNum();
+        int getNodeNumber();
+        int getParentNodeNumber();
+        int getLeftChildNodeNumber();
+        int getRightChildNodeNumberr();
 
-        std::string getTextContent();
-        std::string getTagName();
-};
+        int getContent();
+        int getPayload();
+
+        int setContent();
+        int setPayload();
 
 #endif
