@@ -16,7 +16,7 @@
 
 class TreeNode
 {
-    private:
+    protected:
         std::string textContent;
         std::string tagName;
 
