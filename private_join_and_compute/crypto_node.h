@@ -1,5 +1,5 @@
-#ifndef CryptoTree_H
-#define CryptoTree_H
+#ifndef CryptoNode_H
+#define CryptoNode_H
 
 #include <array>
 #include <cassert>
@@ -50,4 +50,3 @@ class TreeNode
 };
 
 #endif
-
