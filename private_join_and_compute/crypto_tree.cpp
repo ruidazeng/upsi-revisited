@@ -13,6 +13,8 @@
 #include <stack>
 #include <vector>
 
+#define TREE_SIZE 100000
+
 CryptoTree::CryptoTree() {};
 
 CryptoTree::CryptoTree(int nodeNumber) {
