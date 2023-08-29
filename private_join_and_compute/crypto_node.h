@@ -14,9 +14,12 @@
 #include <stack>
 #include <vector>
 
-class TreeNode
+class CryptoNode
 {
     private:
+        bool isRoot;
+        bool isLeaf;
+
         int nodeNumber;
         int parentNodeNumber;
         int leftChildNodeNumber;
@@ -28,28 +31,31 @@ class TreeNode
         std::vector<unsigned char*> content;
         std::vector<unsigned char*> payload;
         
+        void makeRoot();
+        void makeNotRoot();
+        
     public:
-        TreeNode();
-        TreeNode(int nodeNumber);
-        TreeNode(int nodeNumber, std::vector<unsigned char> &content);
-        TreeNode(int nodeNumber, std::vector<unsigned char> &payload);
-        TreeNode(int nodeNumber, std::vector<unsigned char> &content, std::vector<unsigned char> &payload);
+        CryptoNode();
+        CryptoNode(int nodeNumber);
+        CryptoNode(int nodeNumber, std::vector<unsigned char> &content);
+        CryptoNode(int nodeNumber, std::vector<unsigned char> &payload);
+        CryptoNode(int nodeNumber, std::vector<unsigned char> &content, std::vector<unsigned char> &payload);
 
-        bool hasChildren();
-        bool hasParent();
+        bool isRoot();
+        bool isLeaf();
 
-        TreeNode* getParent();
-        TreeNode* getChild(int pos);
+        void makeLeaf();
+        void makeNotLeaf();
 
         int getNodeNumber();
         int getParentNodeNumber();
         int getLeftChildNodeNumber();
         int getRightChildNodeNumberr();
 
-        int getContent();
-        int getPayload();
+        std::vector<unsigned char*> getContent();
+        std::vector<unsigned char*> getPayload();
 
-        int setContent();
-        int setPayload();
+        std::vector<unsigned char*> setContent(std::vector<unsigned char> &content);
+        std::vector<unsigned char*> setPayload(std::vector<unsigned char> &payload);
 
 #endif

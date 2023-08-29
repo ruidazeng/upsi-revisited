@@ -13,113 +13,86 @@
 #include <stack>
 #include <vector>
 
-TreeNode::TreeNode() {};
+CryptoNode::CryptoNode() {};
 
-TreeNode::TreeNode(std::string iTextContent, std::string iTagName) :
-    textContent(iTextContent),
-    tagName(iTagName),
-    parent(NULL)
-{}
-
-int TreeNode::countNodesRec(TreeNode *root, int& count)
-{   
-    TreeNode *parent = root;
-    TreeNode *child = NULL;
-
-    for(int it = 0; it < parent->childrenNumber(); it++)
-    {   
-        child = parent->getChild(it);
-        count++;
-        //std::cout<<child->getTextContent()<<" Number : "<<count<<std::endl;
-        if(child->childrenNumber() > 0)
-        {   
-            countNodesRec(child, count);
-        } 
-    }
-
-    return count;
+CryptoNode::CryptoNode(int nodeNumber) {
+    nodeNumber(nodeNumber);
+    // if (nodeNumber == 0): this->makeRoot();
 }
 
-void TreeNode::appendChild(TreeNode *child)
-{       
-    child->setParent(this);
-    children.push_back(child);
+CryptoNode::CryptoNode(int nodeNumber, std::vector<unsigned char> &content) {
+    nodeNumber(nodeNumber);
+    content(content);
+    // if (nodeNumber == 0): this->makeRoot();
 }
 
-void TreeNode::setParent(TreeNode *theParent)
-{
-    parent = theParent;
+CryptoNode::CryptoNode(int nodeNumber, std::vector<unsigned char> &payload) {
+    nodeNumber(nodeNumber);
+    payload(payload);
+    // if (nodeNumber == 0): this->makeRoot();
 }
 
-void TreeNode::popBackChild()
-{
-    children.pop_back();
+CryptoNode::CryptoNode(int nodeNumber, std::vector<unsigned char> &content, std::vector<unsigned char> &payload) {
+    nodeNumber(nodeNumber);
+    content(content);
+    payload(payload);
+    // if (nodeNumber == 0): this->makeRoot();
 }
 
-void TreeNode::removeChild(int pos)
-{   
-    if(children.size() > 0) {
-        children.erase(children.begin()+ pos);
-    }
-    else {
-        children.pop_back();
-    }
+bool CryptoNode::isRoot() {
+    return this->isRoot;
 }
 
-bool TreeNode::hasChildren()
-{
-    if(children.size() > 0)
-        return true;
-    else
-        return false;
+bool CryptoNode::isLeaf() {
+    return this->isLeaf;
 }
 
-bool TreeNode::hasParent()
-{
-    if(parent != NULL)
-        return true;
-    else 
-        return false;
+void CryptoNode::makeRoot() {
+    this->isRoot = true;
 }
 
-TreeNode * TreeNode::getParent()
-{
-    return parent;
+void CryptoNode::makeNotRoot() {
+    this->isRoot = false;
 }
 
-TreeNode* TreeNode::getChild(int pos)
-{   
-    if(children.size() < pos)
-        return NULL;
-    else
-        return children[pos];
+void CryptoNode::makeLeaf() {
+    this->isLeaf = true;
 }
 
-int TreeNode::childrenNumber()
-{
-    return children.size();
+void CryptoNode::makeNotLeaf() {
+    this->isLeaf = false;
 }
 
-int TreeNode::grandChildrenNum()
-{   
-    int t = 0;
-
-    if(children.size() < 1)
-    {
-        return 0;
-    }
-
-    countNodesRec(this, t);
-
-    return t;
+int CryptoNode::getNodeNumber() {
+    return this->nodeNumber;
 }
 
-std::string TreeNode::getTextContent()
-{
-    return textContent;
+int CryptoNode::getParentNodeNumber() {
+    return this->parentNodeNumber;
 }
 
-std::string TreeNode::getTagName()
-{
-    return tagName;
+int CryptoNode::getLeftChildNodeNumber() {
+    return this->leftChildNodeNumber;
+}
+
+int CryptoNode::getRightChildNodeNumberr() {
+    return this->rightChildNodeNumber;
+}
+
+std::vector<unsigned char*> CryptoNode::getContent() {
+    return this->content;
+}
+
+std::vector<unsigned char*> CryptoNode::getPayload() {
+    return this->payload;
+}
+
+std::vector<unsigned char*> CryptoNode::setContent(std::vector<unsigned char> &content) {
+    this->content = content;
+    return this->content;
+}
+
+std::vector<unsigned char*> CryptoNode::setPayload(std::vector<unsigned char> &payload) {
+    this->payload = payload;
+    return this->payload;
 }
