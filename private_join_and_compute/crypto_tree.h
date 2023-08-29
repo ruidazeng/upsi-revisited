@@ -15,19 +15,22 @@
 #include <stack>
 #include <vector>
 
+#define TREE_SIZE 100000
+
 class CryptoTree
 {
     private:
         // Array list representation
+        CryptoNode crypto_tree [TREE_SIZE];
 
         // Current position root node of the tree
-        int root = 0;
+        // int root = 0;
 
         // Current stash node of the tree
-        int stash = nullptr;
+        CryptoNode stash;
 
         // The node size of the tree
-        uint8_t node_size;
+        int node_size;
 
         // The max stash of the subtree
         int max_stash;
