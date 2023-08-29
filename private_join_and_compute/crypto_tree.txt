@@ -12,7 +12,7 @@
 // Efficiency
 // 3. Hash structures (Figure out if this is acceptable? If not replace)
 // Add OpenSSL AES (agree on randomly generated key)
-// Use another key to generate random path: random location to allocate, random path different key (private
+// Use another key to generate random path: random location to allocate, random path different key (private)
 // Shared key - Private key
 // Path - seed needs to be randomly sampled everytime
 // - Ruida
@@ -236,3 +236,77 @@
     }
 
   };
+
+
+  import random
+
+class Node:
+    def __init__(self, layer=0):
+        self.values = []
+        self.left = None
+        self.right = None
+        self.layer = layer
+
+    def depth(self):
+        if self.left is None:
+            return 1
+        return 1 + max(self.left(depth), self.right(depth))
+
+class Tree:
+
+    def __init__(self, node_size):
+        self.root = Node()
+        self.stash = Node()
+        self.depth = self.root.layer
+        self.size = 0
+
+        self.node_size = node_size
+        self.max_stash = 0
+
+    def get_next_path(self):
+        if self.size >= pow(2, self.depth) + 1:
+            random.seed()
+            fmt = "{0:0" + str(self.depth + 1) + "b}"
+            return fmt.format(random.randrange(pow(2, self.depth + 1)))
+        else:
+            random.seed()
+            fmt = "{0:0" + str(self.depth) + "b}"
+            return fmt.format(random.randrange(pow(2, self.depth)))
+
+    def insert(self, value):
+        curr_path = self.get_next_path()
+        nodes, stash = self.get_path(curr_path)
+
+        values = set(stash.values + [value])
+        for node in nodes:
+            values |= set(node.values)
+            node.values = []
+
+        for i in range(len(curr_path), 0, -1):
+            matches = [val for val in values if self.hash(val)[:i] == curr_path[:i]]
+            nodes[i].values = matches[:self.node_size]
+            values -= set(nodes[i].values)
+
+        nodes[0].values = list(values)[:self.node_size]
+        values -= set(nodes[0].values)
+        stash.values = list(values)
+        self.size += 1
+
+        self.max_stash = max(self.max_stash, len(stash.values))
+
+    def get_path(self, path):
+        nodes = [self.root]
+        current = self.root
+        for choice in path:
+            if current.left is None:
+                current.left, current.right = Node(current.layer + 1), Node(current.layer + 1)
+                self.depth = max(self.depth, current.left.layer)
+            current = current.left if choice == "0" else current.right
+            nodes.append(current)
+
+        return nodes, self.stash
+
+    def hash(self, value):
+        random.seed(value)
+        fmt = "{0:0" + str(self.depth) + "b}"
+        return fmt.format(random.randrange(pow(2, self.depth)))
