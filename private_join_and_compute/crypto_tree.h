@@ -1,6 +1,7 @@
 #ifndef CryptoTree_H
 #define CryptoTree_H
 
+#include "crypto_node.h"
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -14,24 +15,29 @@
 #include <stack>
 #include <vector>
 
-class TreeNode
+class CryptoTree
 {
-    protected:
-        std::string textContent;
-        std::string tagName;
+    private:
+        // Array list representation
 
-        TreeNode *parent;
+        // Current position root node of the tree
+        int root = 0;
 
-        std::vector<TreeNode *> children;
+        // Current stash node of the tree
+        int stash = nullptr;
 
-        int countNodesRec(TreeNode *root, int& count);
+        // The node size of the tree
+        uint8_t node_size;
+
+        // The max stash of the subtree
+        int max_stash;
 
     public:
-        TreeNode();
-        TreeNode(std::string iTextContent, std::string iTagName);
+        CryptoTree();
+        CryptoTree(std::string iTextContent, std::string iTagName);
 
-        void appendChild(TreeNode *child);
-        void setParent(TreeNode *parent);
+        void appendChild(CryptoTree *child);
+        void setParent(CryptoTree *parent);
 
         void popBackChild();
         void removeChild(int pos);
@@ -39,8 +45,8 @@ class TreeNode
         bool hasChildren();
         bool hasParent();
 
-        TreeNode* getParent();
-        TreeNode* getChild(int pos);
+        CryptoTree* getParent();
+        CryptoTree* getChild(int pos);
 
         int childrenNumber();
         int grandChildrenNum();
