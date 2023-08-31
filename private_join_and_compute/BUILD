@@ -172,3 +172,15 @@ cc_binary(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "crypto_node",
+    srcs = ["crypto_node.cc"],
+    hdrs = ["crypto_node.h"],
+)
+
+cc_library(
+    name = "crypto_tree",
+    srcs = ["crypto_tree.cc"],
+    hdrs = ["crypto_tree.h"],
+)

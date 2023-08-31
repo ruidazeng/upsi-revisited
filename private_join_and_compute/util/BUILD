@@ -263,3 +263,9 @@ cc_test(
         "@com_github_google_googletest//:gtest_main",
     ],
 )
+
+cc_library(
+    name = "hash",
+    hdrs = ["hash.h"],
+    deps = ["@openssl//:openssl"],
+)
