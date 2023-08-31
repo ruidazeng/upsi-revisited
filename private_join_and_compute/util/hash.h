@@ -1,7 +1,3 @@
-//
-// Created by Tiancheng Xie on 2/21/2021.
-//
-
 #ifndef UPSI_HASH_H
 #define UPSI_HASH_H
 
@@ -50,15 +46,5 @@ public:
 };
 
 hash_func h[3] = {hash_func(19260817), hash_func(20210221), hash_func(20200101)};
-
-void cuckoo_hash(const unsigned char *msg, int msg_size, int &res0, int &res1, int &res2, int array_len) //return 3 hash values
-{
-    res0 = h[0].hash(msg, msg_size) % array_len;
-    res1 = h[1].hash(msg, msg_size) % array_len;
-    res2 = h[2].hash(msg, msg_size) % array_len;
-    res0 = (res0 + array_len) % array_len;
-    res1 = (res1 + array_len) % array_len;
-    res2 = (res2 + array_len) % array_len;
-}
 
 #endif //UPSI_HASH_H
