@@ -45,7 +45,7 @@ class CryptoTree
 
         void addNewLayer();
 
-        void generateNextPath();
+        void generateLeaf();
 
         void generatePath();
 
