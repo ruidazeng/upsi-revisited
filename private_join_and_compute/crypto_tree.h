@@ -27,10 +27,10 @@ class CryptoTree
         std::vector<CryptoNode> stash;
 
         // Depth of the tree
-        int depth;
+        int depth = 0;
         
-        // Size of the tree
-        int size;
+        // Size of the tree (including root node)
+        int size = 0;
 
         // The node size of the tree
         int node_size;
@@ -43,11 +43,13 @@ class CryptoTree
 
         CryptoTree(int node_size);
 
+        void addNewLayer();
+
         void getNextPath();
 
-        void insert();
-
         void getPath();
+
+        void insert();
 
         void clientUpdateTree();
 

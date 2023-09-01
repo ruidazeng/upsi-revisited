@@ -19,7 +19,7 @@
 
 // TODO:
 // 1. Finish writing get_path()
-// 2. Finishwriting insert()
+// 2. Finish writing insert()
 // 3. Add UpdateTree functionality (need to be multiparty)
 // 4. Elements need to be encrypted (using AES or similar)
 // - Ruida
