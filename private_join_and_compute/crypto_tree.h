@@ -2,6 +2,7 @@
 #define CryptoTree_H
 
 #include "crypto_node.h"
+#include "util/hash.h"
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -28,6 +29,9 @@ class CryptoTree
         // Depth of the tree
         int depth;
         
+        // Size of the tree
+        int size;
+
         // The node size of the tree
         int node_size;
 
@@ -36,25 +40,18 @@ class CryptoTree
 
     public:
         CryptoTree();
-        CryptoTree( );
 
-        void appendChild(CryptoTree *child);
-        void setParent(CryptoTree *parent);
+        CryptoTree(int node_size);
 
-        void popBackChild();
-        void removeChild(int pos);
+        void getNextPath();
 
-        bool hasChildren();
-        bool hasParent();
+        void insert();
 
-        CryptoTree* getParent();
-        CryptoTree* getChild(int pos);
+        void getPath();
 
-        int childrenNumber();
-        int grandChildrenNum();
+        void clientUpdateTree();
 
-        std::string getTextContent();
-        std::string getTagName();
+        void serverUpdateTree();
 };
 
 #endif

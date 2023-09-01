@@ -5,46 +5,25 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstring>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
-#define MAX_SIZE_BITS 10
-#define AES128_Rounds 10
-
-long long random_bytes(long long seed, uint8_t *dst, int size)
+std::string sha256(const std::string str)
 {
-    srand(seed);
-    for(int i = 0; i < size; ++i)
-        dst[i] = rand();
-    return rand();
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, str.c_str(), str.size());
+    SHA256_Final(hash, &sha256);
+    std::stringstream ss;
+    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    {
+        ss << hex << setw(2) << setfill('0') << (int)hash[i];
+    }
+    return ss.str();
 }
 
-class hash_func
-{
-public:
-    long long _seed;
-    unsigned char data[256];
-    unsigned char hash_res[SHA256_DIGEST_LENGTH];
-    SHA256_CTX ctx;
-    hash_func(long long seed)
-    {
-        _seed = seed;
-    }
-    int hash(const unsigned char *msg, int msg_size)
-    {
-
-        assert(msg_size + 8 < 256);
-        SHA256_Init(&ctx);
-        memcpy(data, msg, sizeof(char) * msg_size);
-        for(int i = 0; i < 8; ++i)
-            data[msg_size + i] = (_seed >> (8 * i)) & (255);
-        SHA256_Update(&ctx, data, msg_size + 8);
-        SHA256_Final(hash_res, &ctx);
-        int res = 0;
-        for(int i = 0; i < 4; ++i)
-            res |= hash_res[i] << (i * 8);
-        return res;
-    }
-};
-
-hash_func h[3] = {hash_func(19260817), hash_func(20210221), hash_func(20200101)};
 
 #endif //UPSI_HASH_H
