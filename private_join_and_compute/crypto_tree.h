@@ -45,15 +45,15 @@ class CryptoTree
 
         void addNewLayer();
 
-        void getNextPath();
+        void generateNextPath();
 
-        void getPath();
+        void generatePath();
 
         void insert();
 
-        void clientUpdateTree();
+        void senderUpdateTree();
 
-        void serverUpdateTree();
+        void receiverUpdateTree();
 };
 
 #endif

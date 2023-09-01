@@ -24,9 +24,9 @@ class CryptoNode
 
         // int nodesize;
         int nodeNumber; // 0 for root, -1 for stash
-        int parentNodeNumber;
-        int leftChildNodeNumber;
-        int rightChildNodeNumber;
+        // int parentNodeNumber;
+        // int leftChildNodeNumber;
+        // int rightChildNodeNumber;
 
         // decide format of content/payload
         // encryption under el gamal or paillier (ecc points)
@@ -50,10 +50,10 @@ class CryptoNode
         void makeLeaf();
         void makeNotLeaf();
 
-        int getNodeNumber();
-        int getParentNodeNumber();
-        int getLeftChildNodeNumber();
-        int getRightChildNodeNumberr();
+        // int getNodeNumber();
+        // int getParentNodeNumber();
+        // int getLeftChildNodeNumber();
+        // int getRightChildNodeNumberr();
 
         std::vector<unsigned char*> getContent();
         std::vector<unsigned char*> getPayload();
