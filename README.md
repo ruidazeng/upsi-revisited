@@ -2,19 +2,19 @@
 
 ## Completed
 
-7. Completed insert() function.
+- Completed insert() function.
 
-6. Wrote function to generate a random path based on a key.
+- Wrote function to generate a random path based on a key.
 
-5. Completed basic structure for crypto_tree using array representation (std::vector).
+- Completed basic structure for crypto_tree using array representation (std::vector).
 
-4. Added hash.h with a simply sha256 hash function with depedency on openssl/sha.h in the util folder. Modified the BUILD file to contain the dependency.
+- Added hash.h with a simply sha256 hash function with depedency on openssl/sha.h in the util folder. Modified the BUILD file to contain the dependency.
 
-3. Completed most of crypto_node. (Note: still need to add an utility function to process the encryptions of payload/content into/from a vector of bytes)
+- Completed most of crypto_node. (Note: still need to add an utility function to process the encryptions of payload/content into/from a vector of bytes)
 
-2. Experimented with the files in this repository. Removed unneeded libraries (java/py), the external library is required to build successfully using bazel.
+- Experimented with the files in this repository. Removed unneeded libraries (java/py), the external library is required to build successfully using bazel.
 
-1. Initialized new crypto_node and crypto_tree class.
+- Initialized new crypto_node and crypto_tree class.
 
 ## In Progress
 
