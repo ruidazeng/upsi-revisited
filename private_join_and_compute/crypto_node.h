@@ -23,7 +23,7 @@ class CryptoNode
         // int layer = 0;
 
         // int nodesize;
-        int nodeNumber;
+        int nodeNumber; // 0 for root, -1 for stash
         int parentNodeNumber;
         int leftChildNodeNumber;
         int rightChildNodeNumber;
@@ -60,5 +60,6 @@ class CryptoNode
 
         std::vector<unsigned char*> setContent(std::vector<unsigned char> &content);
         std::vector<unsigned char*> setPayload(std::vector<unsigned char> &payload);
+}
 
 #endif

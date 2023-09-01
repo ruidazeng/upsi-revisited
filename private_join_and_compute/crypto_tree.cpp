@@ -16,8 +16,29 @@
 
 CryptoTree::CryptoTree() {};
 
-CryptoTree::CryptoTree(int nodeNumber) {
-    nodeNumber(nodeNumber);
-    // if (nodeNumber == 0): this->makeRoot();
+CryptoTree::CryptoTree(int node_size) {
+    node_size(node_size);
+    
+    CryptoNode root = CryptoNode::CryptoNode(0);
+    CryptoNode stash = CryptoNode::CryptoNode(-1);
+
+    this->crypto_tree.push_back(root);
+    this->size += 1;
 }
+
+void CryptoTree::addNewLayer() {
+    this->depth += 1;
+    int new_size = std::pow(2, this->depth + 1) - 1
+    this->crypto_tree.resize(new_size);
+}
+
+void CryptoTree::getNextPath();
+
+void CryptoTree::insert();
+
+void CryptoTree::getPath();
+
+void CryptoTree::clientUpdateTree();
+
+void CryptoTree::serverUpdateTree();
 
