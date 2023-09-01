@@ -67,17 +67,17 @@ int CryptoNode::getNodeNumber() {
     return this->nodeNumber;
 }
 
-int CryptoNode::getParentNodeNumber() {
-    return this->parentNodeNumber;
-}
+// int CryptoNode::getParentNodeNumber() {
+//     return this->parentNodeNumber;
+// }
 
-int CryptoNode::getLeftChildNodeNumber() {
-    return this->leftChildNodeNumber;
-}
+// int CryptoNode::getLeftChildNodeNumber() {
+//     return this->leftChildNodeNumber;
+// }
 
-int CryptoNode::getRightChildNodeNumberr() {
-    return this->rightChildNodeNumber;
-}
+// int CryptoNode::getRightChildNodeNumberr() {
+//     return this->rightChildNodeNumber;
+// }
 
 std::vector<unsigned char*> CryptoNode::getContent() {
     return this->content;

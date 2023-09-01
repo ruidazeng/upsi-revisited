@@ -32,13 +32,16 @@ void CryptoTree::addNewLayer() {
     this->crypto_tree.resize(new_size);
 }
 
-void CryptoTree::getNextPath();
+void CryptoTree::generateNextPath() {
+
+
+}
+
+void CryptoTree::generatePath();
 
 void CryptoTree::insert();
 
-void CryptoTree::getPath();
+void CryptoTree::senderUpdateTree();
 
-void CryptoTree::clientUpdateTree();
-
-void CryptoTree::serverUpdateTree();
+void CryptoTree::receiverUpdateTree();
 
