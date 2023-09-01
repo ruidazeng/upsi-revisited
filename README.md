@@ -2,9 +2,7 @@
 
 ## Completed
 
-- Completed insert() function.
-
-- Wrote function to generate a random path based on a key.
+- Wrote function to generate a random path (leaf node).
 
 - Completed basic structure for crypto_tree using array representation (std::vector).
 
@@ -18,13 +16,19 @@
 
 ## In Progress
 
-1. Still need to get the OpenSSL library to build using bazel.
+1. Complete the insert() function.
 
-2. Implement functionality to update the tree that differ based on sender/receiver. 
+2. Still need to get the OpenSSL library to build using bazel.
 
-3. Need to implement OpenSSL AES encryption for both parties to agree on a shared key.
+3. Implement functionality to update the tree that differ based on sender/receiver. 
+
+4. Need to implement OpenSSL AES encryption for both parties to agree on a shared key.
 
 ## TODO's
+
+1. Integrate node_size into crypto_node.
+
+## TASKS
 
 1. PSI addition only - one-sided cardinality
 

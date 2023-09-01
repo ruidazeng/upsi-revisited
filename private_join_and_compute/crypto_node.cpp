@@ -39,29 +39,29 @@ CryptoNode::CryptoNode(int nodeNumber, std::vector<unsigned char> &content, std:
     // if (nodeNumber == 0): this->makeRoot();
 }
 
-bool CryptoNode::isRoot() {
-    return this->isRoot;
-}
+// bool CryptoNode::isRoot() {
+//     return this->isRoot;
+// }
 
-bool CryptoNode::isLeaf() {
-    return this->isLeaf;
-}
+// bool CryptoNode::isLeaf() {
+//     return this->isLeaf;
+// }
 
-void CryptoNode::makeRoot() {
-    this->isRoot = true;
-}
+// void CryptoNode::makeRoot() {
+//     this->isRoot = true;
+// }
 
-void CryptoNode::makeNotRoot() {
-    this->isRoot = false;
-}
+// void CryptoNode::makeNotRoot() {
+//     this->isRoot = false;
+// }
 
-void CryptoNode::makeLeaf() {
-    this->isLeaf = true;
-}
+// void CryptoNode::makeLeaf() {
+//     this->isLeaf = true;
+// }
 
-void CryptoNode::makeNotLeaf() {
-    this->isLeaf = false;
-}
+// void CryptoNode::makeNotLeaf() {
+//     this->isLeaf = false;
+// }
 
 int CryptoNode::getNodeNumber() {
     return this->nodeNumber;

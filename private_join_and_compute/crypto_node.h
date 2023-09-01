@@ -17,8 +17,8 @@
 class CryptoNode
 {
     private:
-        bool isRoot;
-        bool isLeaf;
+        // bool isRoot;
+        // bool isLeaf;
 
         // int layer = 0;
 
@@ -28,14 +28,14 @@ class CryptoNode
         // int leftChildNodeNumber;
         // int rightChildNodeNumber;
 
-        // decide format of content/payload
+        // decide format of content/payload - payload[i] corresponds to elements[i]
         // encryption under el gamal or paillier (ecc points)
         // additon - element/payload (element under private key, payload under paillier)
         std::vector<unsigned char*> content;
         std::vector<unsigned char*> payload;
         
-        void makeRoot();
-        void makeNotRoot();
+        // void makeRoot();
+        // void makeNotRoot();
         
     public:
         CryptoNode();
@@ -44,11 +44,11 @@ class CryptoNode
         CryptoNode(int nodeNumber, std::vector<unsigned char> &payload);
         CryptoNode(int nodeNumber, std::vector<unsigned char> &content, std::vector<unsigned char> &payload);
 
-        bool isRoot();
-        bool isLeaf();
+        // bool isRoot();
+        // bool isLeaf();
 
-        void makeLeaf();
-        void makeNotLeaf();
+        // void makeLeaf();
+        // void makeNotLeaf();
 
         // int getNodeNumber();
         // int getParentNodeNumber();

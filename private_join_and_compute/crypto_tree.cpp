@@ -32,9 +32,15 @@ void CryptoTree::addNewLayer() {
     this->crypto_tree.resize(new_size);
 }
 
-void CryptoTree::generateNextPath() {
+int CryptoTree::generateLeaf() {
+    int lower_bound = 2 * this->depth - 1;
 
+    int upper_bound = 2 * (this->depth + 1) - 2;
 
+    std::random_device rd; // obtain a random number from hardware
+    std::mt19937 gen(rd()); // seed the generator - Mersenne Twister
+    std::uniform_int_distribution<> distr(lower_bound, upper_bound); // define the range
+    return distr(gen);
 }
 
 void CryptoTree::generatePath();
