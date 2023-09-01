@@ -20,6 +20,9 @@ class CryptoNode
         bool isRoot;
         bool isLeaf;
 
+        // int layer = 0;
+
+        // int nodesize;
         int nodeNumber;
         int parentNodeNumber;
         int leftChildNodeNumber;
