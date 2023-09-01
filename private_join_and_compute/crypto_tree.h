@@ -15,29 +15,28 @@
 #include <stack>
 #include <vector>
 
-#define TREE_SIZE 100000
 
 class CryptoTree
 {
     private:
         // Array list representation
-        CryptoNode crypto_tree [TREE_SIZE];
-
-        // Current position root node of the tree
-        // int root = 0;
+        std::vector<CryptoNode> crypto_tree;
 
         // Current stash node of the tree
-        CryptoNode stash;
+        std::vector<CryptoNode> stash;
 
+        // Depth of the tree
+        int depth;
+        
         // The node size of the tree
         int node_size;
 
         // The max stash of the subtree
-        int max_stash;
+        int max_stash = 0;
 
     public:
         CryptoTree();
-        CryptoTree(std::string iTextContent, std::string iTagName);
+        CryptoTree( );
 
         void appendChild(CryptoTree *child);
         void setParent(CryptoTree *parent);
