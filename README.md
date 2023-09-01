@@ -10,7 +10,7 @@
 
 - Completed most of crypto_node. (Note: still need to add an utility function to process the encryptions of payload/content into/from a vector of bytes)
 
-- Experimented with the files in this repository. Removed unneeded libraries (java/py), the external library is required to build successfully using bazel.
+- Experimented with the files in this repository with bazel build. Removed unneeded libraries (java/py), the external folder (requirements.txt) contains dependencies that is required to build successfully using bazel.
 
 - Initialized new crypto_node and crypto_tree class.
 
