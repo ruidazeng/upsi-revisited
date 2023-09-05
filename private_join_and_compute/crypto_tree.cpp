@@ -20,6 +20,7 @@ CryptoTree::CryptoTree() {};
 CryptoTree::CryptoTree(int node_size) {
     node_size(node_size);
     
+    // Index for root node is 0, index for stash node is -1
     CryptoNode root = CryptoNode::CryptoNode(0);
     CryptoNode stash = CryptoNode::CryptoNode(-1);
 
@@ -61,7 +62,7 @@ std::string CryptoTree::generatePath() {
     return path;
 }
 
-void CryptoTree::hashPath();
+std::string CryptoTree::hashPath(int depth, std::vector<bytes*> content);
 
 void CryptoTree::insert();
 
