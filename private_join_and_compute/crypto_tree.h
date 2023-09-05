@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <list>
@@ -38,23 +39,33 @@ class CryptoTree
         // The max stash of the subtree
         int max_stash = 0;
 
+        // Helper function: generate zero or one
+        std::string randomBinary();
+
     public:
         CryptoTree();
 
         CryptoTree(int node_size);
 
+        // Add a new layer to the tree, expand the size of the vector
         void addNewLayer();
 
+        // Generate a number that corresponds to a leaf node
         void generateLeaf();
 
-        void hashPath();
+        // Generate a path based on content using hash, hashing the same content will result in the same path
+        int hashPath(std::vector<bytes*> content);
 
+        // Generate a path based on leaf node generated
         void generatePath();
 
+        // Insert a new node
         void insert();
 
+        // Update Tree (sender)
         void senderUpdateTree();
 
+        // Update Tree (receiver)
         void receiverUpdateTree();
 };
 

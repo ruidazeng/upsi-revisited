@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <list>
@@ -34,7 +35,6 @@ void CryptoTree::addNewLayer() {
 
 int CryptoTree::generateLeaf() {
     int lower_bound = 2 * this->depth - 1;
-
     int upper_bound = 2 * (this->depth + 1) - 2;
 
     std::random_device rd; // obtain a random number from hardware
@@ -43,7 +43,23 @@ int CryptoTree::generateLeaf() {
     return distr(gen);
 }
 
-void CryptoTree::generatePath();
+// Helper function: generate zero or one (in string format)
+std::string CryptoTree::randomBinary()
+{
+    // Generate the random number
+    int num = ((int)rand() % 2);
+    return std::to_string(num);
+}
+
+
+std::string CryptoTree::generatePath() {
+    std::srand(time(NULL));
+    std::string path = "";
+    for (int i=0; i<this->depth; ++i) {
+        path += randomBinary();
+    }
+    return path;
+}
 
 void CryptoTree::hashPath();
 
