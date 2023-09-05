@@ -54,7 +54,8 @@ class CryptoTree
         void generateLeaf();
 
         // Generate a path based on content using hash, hashing the same content will result in the same path
-        int hashPath(std::vector<bytes*> content);
+        std::string CryptoTree::hashPath(int depth, std::vector<bytes*> content);
+
 
         // Generate a path based on leaf node generated
         void generatePath();
