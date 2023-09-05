@@ -47,6 +47,8 @@ class CryptoTree
 
         void generateLeaf();
 
+        void hashPath();
+
         void generatePath();
 
         void insert();
