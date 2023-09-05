@@ -39,5 +39,6 @@
 4. PSI addition & deletion - one-sided sum with cardinality
 
 ## Questions
++
 
 1. Cost of loading bytes into elliptical curves.

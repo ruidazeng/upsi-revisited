@@ -45,6 +45,8 @@ int CryptoTree::generateLeaf() {
 
 void CryptoTree::generatePath();
 
+void CryptoTree::hashPath();
+
 void CryptoTree::insert();
 
 void CryptoTree::senderUpdateTree();
