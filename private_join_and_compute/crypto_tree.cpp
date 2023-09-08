@@ -60,6 +60,14 @@ void CryptoTree::addNewLayer() {
     this->crypto_tree.resize(new_size);
 }
 
+std::string CryptoTree::binaryHash(std::string const &byte_hash) {
+    std::string binary_hash = "";
+    for (char const &c: byte_hash) {
+        binary_hash += std::bitset<8>(c).to_string();
+    }
+    return binary_hash;
+}
+
 /// @brief Real methods
 
 // Generate a completley random path
