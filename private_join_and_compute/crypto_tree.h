@@ -1,11 +1,10 @@
 #ifndef CryptoTree_H
 #define CryptoTree_H
 
-
+#include "private_join_and_compute/crypto_node.h"
+#include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
 #include "private_join_and_compute/crypto/paillier.h"
-#include "private_join_and_compute/crypto_node.h"
-
 
 #include <array>
 #include <cassert>
@@ -21,6 +20,7 @@
 #include <stack>
 #include <vector>
 
+typedef std::tuple<ECPoint, BigNum> EncryptedElement;
 
 class CryptoTree
 {
@@ -29,48 +29,56 @@ class CryptoTree
         std::vector<CryptoNode> crypto_tree;
 
         // Current stash node of the tree
-        std::vector<CryptoNode> stash;
+        CryptoNode stash;
 
-        // Depth of the tree
+        // Depth of the tree (empty tree or just root is depth 0)
         int depth = 0;
         
         // Size of the tree (including root node)
         int size = 0;
 
-        // The node size of the tree
+        // The node and stash size of the tree
         int node_size;
+        int stash_size;
 
         // The max stash of the subtree
         int max_stash = 0;
 
-        // Helper function: generate zero or one
-        std::string randomBinary();
 
     public:
+        /// @brief Tree Construction
         CryptoTree();
 
-        CryptoTree(int node_size);
+        CryptoTree(int node_size, int stash_size);
 
+        int getDepth();
+
+        int getSize();
+
+        int getNodeSize();
+
+        int getStashSize();
+
+        /// @brief Helper Methods
         // Add a new layer to the tree, expand the size of the vector
         void addNewLayer();
 
-        // Generate a random path
-        void getPath();
+        // Convert byte hash into binary
+        std:string binaryHash(std::string const &byte_hash)
+
+        /// @brief Actual methods
+        // Generate a completley random path
+        std::vector<CryptoNode> getPath();
 
         // Generate a path based on an element
-        void getPath(int element);
+        std::vector<CryptoNode> getPath(std::string element);
 
-        // Replace a path in the tree with a new path
-        void replacePath();
+        // Insert a new element
+        void insert(std::string);
 
-        // Insert a new node
-        void insert();
-
-        // Update Tree (sender)
-        void senderUpdateTree();
-
-        // Update Tree (receiver)
-        void receiverUpdateTree();
+        // Given a path on the tree, replace it with a new path
+        // Return true if success, false if failure
+        bool replacePath(std::vector<CryptoNode> old_path, std::vector<CryptoNode> new_path);
 };
 
 #endif
