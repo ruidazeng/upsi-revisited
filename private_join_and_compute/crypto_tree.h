@@ -1,7 +1,6 @@
 #ifndef CryptoTree_H
 #define CryptoTree_H
 
-#include "private_join_and_compute/stash.h"
 #include "private_join_and_compute/crypto_node.h"
 
 #include "util/hash.h"
