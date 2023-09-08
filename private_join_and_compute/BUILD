@@ -174,19 +174,22 @@ cc_binary(
 )
 
 cc_library(
-    name = "stash",
-    srcs = ["stash.cc"],
-    hdrs = ["stash.h"],
-)
-
-cc_library(
     name = "crypto_node",
     srcs = ["crypto_node.cc"],
     hdrs = ["crypto_node.h"],
+    deps = [
+        "//private_join_and_compute/crypto:ec_commutative_cipher",
+        "//private_join_and_compute/crypto:paillier",
+    ],
 )
 
 cc_library(
     name = "crypto_tree",
     srcs = ["crypto_tree.cc"],
     hdrs = ["crypto_tree.h"],
+    deps = [
+        ":crypto_node",
+        "//private_join_and_compute/crypto:ec_commutative_cipher",
+        "//private_join_and_compute/crypto:paillier",
+    ],
 )

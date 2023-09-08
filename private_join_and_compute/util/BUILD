@@ -264,8 +264,8 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "hash",
-    hdrs = ["hash.h"],
-    deps = ["@openssl//:openssl"],
-)
+# cc_library(
+#     name = "hash",
+#     hdrs = ["hash.h"],
+#     deps = ["@openssl//:openssl"],
+# )

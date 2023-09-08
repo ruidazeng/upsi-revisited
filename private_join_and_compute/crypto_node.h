@@ -1,9 +1,7 @@
 #ifndef CryptoNode_H
 #define CryptoNode_H
 
-#include "private_join_and_compute/crypto/big_num.h"
-#include "private_join_and_compute/crypto/ec_group.h"
-#include "private_join_and_compute/crypto/ec_point.h"
+#include "private_join_and_compute/crypto/ec_commutative_cipher.h"
 #include "private_join_and_compute/crypto/paillier.h"
 
 
