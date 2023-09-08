@@ -1,9 +1,12 @@
 #ifndef CryptoTree_H
 #define CryptoTree_H
 
+
+#include "private_join_and_compute/crypto/ec_commutative_cipher.h"
+#include "private_join_and_compute/crypto/paillier.h"
 #include "private_join_and_compute/crypto_node.h"
 
-#include "util/hash.h"
+
 #include <array>
 #include <cassert>
 #include <cmath>

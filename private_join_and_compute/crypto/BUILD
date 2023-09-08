@@ -354,3 +354,14 @@ grpc_proto_library(
     name = "elgamal_proto",
     srcs = ["elgamal.proto"],
 )
+
+cc_library(
+    name = "hash",
+    hdrs = [
+        "hash.h",
+    ],
+    deps = [
+        ":bn_util",
+        "@com_google_absl//absl/strings",
+    ],
+)
