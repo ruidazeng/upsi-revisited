@@ -17,12 +17,12 @@
 
 CryptoTree::CryptoTree() {};
 
-CryptoTree::CryptoTree(int node_size) {
+CryptoTree::CryptoTree(int stash_size, int node_size) {
     node_size(node_size);
     
     // Index for root node is 0, index for stash node is -1
-    CryptoNode root = CryptoNode::CryptoNode(0);
-    CryptoNode stash = CryptoNode::CryptoNode(-1);
+    CryptoNode root = CryptoNode::CryptoNode(node_size);
+    CryptoNode stash = CryptoNode::CryptoNode(stash_size));
 
     this->crypto_tree.push_back(root);
     this->size += 1;

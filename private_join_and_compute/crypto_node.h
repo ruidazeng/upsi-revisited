@@ -26,12 +26,24 @@ typedef std::tuple<ECPoint, BigNum> EncryptedElement;
 class CryptoNode
 {
     private:
-        std::vector<unsigned char*> content;
-        std::vector<unsigned char*> payload;
-        
-        
+        std::vector<EncryptedElement> node;
+        int node_size;
+
     public:
+        // Default constructor
         CryptoNode();
+
+        // Initialize CryptoNode with node size
+        CryptoNode(int node_size);
+
+        // Get node size
+        int getNodeSize();
+
+        // Get the node vector
+        std::vector<EncryptedElement> getNode();
+
+        // Add an element to the node vector, return true if success, false if it's already full
+        bool addElement(EncryptedElement enc_elem);
 }
 
 #endif
