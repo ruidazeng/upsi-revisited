@@ -1,4 +1,8 @@
-#include "crypto_tree.h"
+#include "private_join_and_compute/crypto_tree.h"
+#include "private_join_and_compute/crypto_node.h"
+#include "private_join_and_compute/crypto/context.h"
+#include "private_join_and_compute/crypto/ec_commutative_cipher.h"
+#include "private_join_and_compute/crypto/paillier.h"
 
 #include <array>
 #include <cassert>
@@ -15,6 +19,8 @@
 #include <vector>
 
 
+/// @brief Tree Construction
+
 CryptoTree::CryptoTree() {};
 
 CryptoTree::CryptoTree(int stash_size, int node_size) {
@@ -22,11 +28,31 @@ CryptoTree::CryptoTree(int stash_size, int node_size) {
     
     // Index for root node is 0, index for stash node is -1
     CryptoNode root = CryptoNode::CryptoNode(node_size);
-    CryptoNode stash = CryptoNode::CryptoNode(stash_size));
+    CryptoNode stash = CryptoNode::CryptoNode(stash_size);
 
     this->crypto_tree.push_back(root);
     this->size += 1;
 }
+
+int CryptoTree::getDepth() {
+    return this->depth;
+}
+
+int CryptoTree::getSize() {
+    return this->size;
+}
+
+
+int CryptoTree::getNodeSize() {
+    return this->node_size;
+}
+
+int CryptoTree::getStashSize() {
+    return this->stash_size;
+}
+
+
+/// @brief Helper methods
 
 void CryptoTree::addNewLayer() {
     this->depth += 1;
@@ -34,9 +60,27 @@ void CryptoTree::addNewLayer() {
     this->crypto_tree.resize(new_size);
 }
 
-void CryptoTree::insert();
+std:string CryptoTree::binaryHash(std::string const &byte_hash) {
+    std::string binary_hash = "";
+    for (char const &c: byte_hash) {
+        binary_hash += std::bitset<8>(c).to_string();
+    }
+    return binary_hash;
+}
 
-void CryptoTree::senderUpdateTree();
 
-void CryptoTree::receiverUpdateTree();
+/// @brief Real methods
+
+// Generate a completley random path
+std::vector<CryptoNode> CryptoTree::getPath();
+
+// Generate a path based on an element
+std::vector<CryptoNode> CryptoTree::getPath(std::string element);
+
+// Insert a new element
+void CryptoTree::insert(std::string);
+
+// Given a path on the tree, replace it with a new path
+// Return true if success, false if failure
+bool CryptoTree::replacePath(std::vector<CryptoNode> old_path, std::vector<CryptoNode> new_path);
 
