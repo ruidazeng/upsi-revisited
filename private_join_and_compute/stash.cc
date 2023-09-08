@@ -1,4 +1,4 @@
-#include "private_join_and_compute/crypto_node.h"
+#include "private_join_and_compute/stash.h"
 
 #include <array>
 #include <cassert>
@@ -14,4 +14,6 @@
 #include <stack>
 #include <vector>
 
-CryptoNode::CryptoNode() {};
+Stash::Stash() {};
+
+#endif

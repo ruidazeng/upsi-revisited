@@ -1,12 +1,12 @@
-#ifndef CryptoNode_H
-#define CryptoNode_H
+#ifndef Stash_H
+#define Stash_H
 
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/ec_point.h"
 #include "private_join_and_compute/crypto/paillier.h"
 
-
+#include "crypto"
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -21,17 +21,23 @@
 #include <stack>
 #include <vector>
 
-typedef std::tuple<ECPoint, BigNum> EncryptedElement;
 
-class CryptoNode
+
+typedef std::tuple<ECGroup, BigNum> EncryptedElement;
+
+class Stash
 {
     private:
-        std::vector<unsigned char*> content;
-        std::vector<unsigned char*> payload;
+        int stash_size;
+
+        char[] stash;
         
         
     public:
-        CryptoNode();
+        Stash();
+
+        Stash(int stash_size);
 }
+
 
 #endif

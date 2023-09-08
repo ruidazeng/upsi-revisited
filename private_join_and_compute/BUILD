@@ -174,6 +174,12 @@ cc_binary(
 )
 
 cc_library(
+    name = "stash",
+    srcs = ["stash.cc"],
+    hdrs = ["stash.h"],
+)
+
+cc_library(
     name = "crypto_node",
     srcs = ["crypto_node.cc"],
     hdrs = ["crypto_node.h"],

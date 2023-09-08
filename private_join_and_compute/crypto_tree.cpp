@@ -34,36 +34,6 @@ void CryptoTree::addNewLayer() {
     this->crypto_tree.resize(new_size);
 }
 
-int CryptoTree::generateLeaf() {
-    int lower_bound = 2 * this->depth - 1;
-    int upper_bound = 2 * (this->depth + 1) - 2;
-
-    std::random_device rd; // obtain a random number from hardware
-    std::mt19937 gen(rd()); // seed the generator - Mersenne Twister
-    std::uniform_int_distribution<> distr(lower_bound, upper_bound); // define the range
-    return distr(gen);
-}
-
-// Helper function: generate zero or one (in string format)
-std::string CryptoTree::randomBinary()
-{
-    // Generate the random number
-    int num = ((int)rand() % 2);
-    return std::to_string(num);
-}
-
-
-std::string CryptoTree::generatePath() {
-    std::srand(time(NULL));
-    std::string path = "";
-    for (int i=0; i<this->depth; ++i) {
-        path += randomBinary();
-    }
-    return path;
-}
-
-std::string CryptoTree::hashPath(int depth, std::vector<bytes*> content);
-
 void CryptoTree::insert();
 
 void CryptoTree::senderUpdateTree();
