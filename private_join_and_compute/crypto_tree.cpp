@@ -60,22 +60,21 @@ void CryptoTree::addNewLayer() {
     this->crypto_tree.resize(new_size);
 }
 
-std:string CryptoTree::binaryHash(std::string const &byte_hash) {
-    std::string binary_hash = "";
-    for (char const &c: byte_hash) {
-        binary_hash += std::bitset<8>(c).to_string();
-    }
-    return binary_hash;
-}
-
-
 /// @brief Real methods
 
 // Generate a completley random path
-std::vector<CryptoNode> CryptoTree::getPath();
+std::vector<CryptoNode> CryptoTree::getPath() {
+    Context ctx;
+    std::string random_path = ctx.GenerateRandomBytes(32); // 32 bytes for SHA256 => obtain random_path as a byte string
+}
 
 // Generate a path based on an element
-std::vector<CryptoNode> CryptoTree::getPath(std::string element);
+std::vector<CryptoNode> CryptoTree::getPath(std::string element) {
+    Context ctx;
+    absl::string_view sv_element = element;
+    std::string fixed_path = ctx.Sha256String(sv_element);
+
+}
 
 // Insert a new element
 void CryptoTree::insert(std::string);
