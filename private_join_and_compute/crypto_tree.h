@@ -1,7 +1,9 @@
 #ifndef CryptoTree_H
 #define CryptoTree_H
 
-#include "crypto_node.h"
+#include "private_join_and_compute/stash.h"
+#include "private_join_and_compute/crypto_node.h"
+
 #include "util/hash.h"
 #include <array>
 #include <cassert>
@@ -50,15 +52,14 @@ class CryptoTree
         // Add a new layer to the tree, expand the size of the vector
         void addNewLayer();
 
-        // Generate a number that corresponds to a leaf node
-        void generateLeaf();
+        // Generate a random path
+        void getPath();
 
-        // Generate a path based on content using hash, hashing the same content will result in the same path
-        std::string CryptoTree::hashPath(int depth, std::vector<bytes*> content);
+        // Generate a path based on an element
+        void getPath(int element);
 
-
-        // Generate a path based on leaf node generated
-        void generatePath();
+        // Replace a path in the tree with a new path
+        void replacePath();
 
         // Insert a new node
         void insert();
