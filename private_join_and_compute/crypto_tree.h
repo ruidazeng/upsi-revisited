@@ -63,6 +63,8 @@ class CryptoTree
         // Add a new layer to the tree, expand the size of the vector
         void addNewLayer();
 
+        std::string binaryHash(std::string const &byte_hash);
+
         /// @brief Actual methods
         // Generate a completley random path
         std::vector<CryptoNode> getPath();
