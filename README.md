@@ -27,16 +27,23 @@ bazel build //private_join_and_compute:all
 ## UPSI Files
 
 private_join_and_compute/crypto_node.h
+
 private_join_and_compute/crypto_node.cc
+
 private_join_and_compute/crypto_tree.h
+
 private_join_and_compute/crypto_tree.cc
 
 private_join_and_compute/protocol_party.h
+
 private_join_and_compute/protocol_party.cc
 
 ## Google Library Files (depdencies)
 
 crypto/bignum.h
+
 crypto/context.h
+
 crypto/ec_commutative_cipher.h
+
 crypto/paillier.h
