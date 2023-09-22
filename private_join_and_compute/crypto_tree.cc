@@ -4,18 +4,7 @@
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
 #include "private_join_and_compute/crypto/paillier.h"
 
-#include <array>
-#include <cassert>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <list>
-#include <memory>
-#include <sstream>
-#include <stack>
+#include <bitset>
 #include <vector>
 
 
@@ -64,13 +53,32 @@ void CryptoTree::addNewLayer() {
     this->crypto_tree.resize(new_size);
 }
 
-// std::string CryptoTree::binaryHash(std::string const &byte_hash) {
-//     std::string binary_hash = "";
-//     for (char const &c: byte_hash) {
-//         binary_hash += std::bitset<8>(c).to_string();
-//     }
-//     return binary_hash;
-// }
+std::string CryptoTree::binaryHash(std::string const &byte_hash) {
+    std::string binary_hash = "";
+    for (char const &c: byte_hash) {
+        binary_hash += std::bitset<8>(c).to_string();
+    }
+    return binary_hash;
+}
+
+
+std::vector<CryptoNode> CryptoTree::findPath(int depth, std::string binary_hash) {
+    std::vector<CryptoNode> path;
+    
+    int node = 0; // root
+    path.push_back(this->crypto_tree[node]);
+
+    for (int i=0; i <= depth; ++i) {
+        if (binary_hash[i] == '0') {
+            node = node * 2 + 1;
+        }
+        else if (binary_hash[i] == '1') {
+            node = node * 2 + 2;
+        }
+        path.push_back(this->crypto_tree[node]);
+    }
+    return path;
+}
 
 /// @brief Real methods
 
@@ -78,6 +86,11 @@ void CryptoTree::addNewLayer() {
 std::vector<CryptoNode> CryptoTree::getPath() {
     Context ctx;
     std::string random_path = ctx.GenerateRandomBytes(32); // 32 bytes for SHA256 => obtain random_path as a byte string
+    std::string random_path_binary = this->binaryHash(random_path);
+
+    // Find path in tree
+    auto tree_path = this->findPath(this->depth, random_path_binary);
+    return tree_path;
 }
 
 // Generate a path based on an element
@@ -85,7 +98,11 @@ std::vector<CryptoNode> CryptoTree::getPath(std::string element) {
     Context ctx;
     absl::string_view sv_element = element;
     std::string fixed_path = ctx.Sha256String(sv_element);
+    std::string fixed_path_binary = this->binaryHash(fixed_path);
 
+    // Find path in tree
+    auto tree_path = this->findPath(this->depth, fixed_path_binary);
+    return tree_path;
 }
 
 // Insert a new element

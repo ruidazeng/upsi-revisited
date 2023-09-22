@@ -4,19 +4,6 @@
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
 #include "private_join_and_compute/crypto/paillier.h"
 
-
-#include <array>
-#include <cassert>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <list>
-#include <memory>
-#include <sstream>
-#include <stack>
 #include <vector>
 
 namespace private_join_and_compute {
