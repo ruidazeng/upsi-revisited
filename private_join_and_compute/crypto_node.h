@@ -9,7 +9,7 @@
 namespace private_join_and_compute {
 
 // typedef std::tuple<ECPoint, BigNum> EncryptedElement;
-typedef std::tuple<int, int> EncryptedElement;
+typedef std::tuple<std::string, int> EncryptedElement;
 
 class CryptoNode
 {
