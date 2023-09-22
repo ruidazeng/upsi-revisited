@@ -6,20 +6,8 @@
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
 #include "private_join_and_compute/crypto/paillier.h"
 
-#include <array>
-#include <cassert>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <list>
-#include <memory>
-#include <sstream>
-#include <stack>
+#include <bitset>
 #include <vector>
-
 
 namespace private_join_and_compute {
 
@@ -67,7 +55,9 @@ class CryptoTree
         // Add a new layer to the tree, expand the size of the vector
         void addNewLayer();
 
-        // std::string binaryHash(std::string const &byte_hash);
+        std::string binaryHash(std::string const &byte_hash);
+
+        std::vector<CryptoNode> findPath(int depth, std::string binary_hash);
 
         /// @brief Actual methods
         // Generate a completley random path
