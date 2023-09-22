@@ -12,7 +12,7 @@
 namespace private_join_and_compute {
 
 // typedef std::tuple<ECPoint, BigNum> EncryptedElement;
-typedef std::tuple<int, int> EncryptedElement;
+typedef std::tuple<std::string, int> EncryptedElement;
 
 class CryptoTree
 {
@@ -67,11 +67,11 @@ class CryptoTree
         std::vector<CryptoNode> getPath(std::string element);
 
         // Insert a new element
-        void insert(std::string);
+        void insert(std::string element);
 
-        // Given a path on the tree, replace it with a new path
+        // Given a leaf node on the tree, replace the root to leaf path with a new path
         // Return true if success, false if failure
-        bool replacePath(std::vector<CryptoNode> old_path, std::vector<CryptoNode> new_path);
+        bool replacePath(int leaf, std::vector<CryptoNode> new_path);
 };
 
 }

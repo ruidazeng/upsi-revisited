@@ -106,10 +106,23 @@ std::vector<CryptoNode> CryptoTree::getPath(std::string element) {
 }
 
 // Insert a new element
-void CryptoTree::insert(std::string);
+void CryptoTree::insert(std::string element) {
+    // find the path based on hash
+    auto old_path = this->getPath(element);
+    // gather every element in the path + stash
+    
+    // find the leaf node  of the path based on depth
 
-// Given a path on the tree, replace it with a new path
+    // construct the new path
+
+    // replace the old path with the new path
+
+}
+
+// Given a leaf node on the tree, replace the root to leaf path with a new path
 // Return true if success, false if failure
-bool CryptoTree::replacePath(std::vector<CryptoNode> old_path, std::vector<CryptoNode> new_path);
+bool CryptoTree::replacePath(int leaf, std::vector<CryptoNode> new_path) {
+
+}
 
 } // namespace private_join_and_compute
