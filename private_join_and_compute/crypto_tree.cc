@@ -98,6 +98,7 @@ std::vector<CryptoNode> CryptoTree::getPath() {
 std::vector<CryptoNode> CryptoTree::getPath(std::string element) {
     Context ctx;
     absl::string_view sv_element = element;
+    // TODO: PRF?????
     std::string fixed_path = ctx.Sha256String(sv_element);
     std::string fixed_path_binary = this->binaryHash(fixed_path);
 
