@@ -6,6 +6,7 @@
 
 #include <bitset>
 #include <vector>
+#include <cmath>
 
 
 /// @brief Tree Construction
@@ -106,23 +107,40 @@ std::vector<CryptoNode> CryptoTree::getPath(std::string element) {
 }
 
 // Insert a new element
+// TODO: WHEN TO ADD A NEW LEVEL OF TREE???
 void CryptoTree::insert(std::string element) {
     // find the path based on hash
     auto old_path = this->getPath(element);
     // gather every element in the path + stash
-    
+    std::vector<EncryptedElement> pathstash;
+
     // find the leaf node  of the path based on depth
 
     // construct the new path
 
     // replace the old path with the new path
 
+    // replace the old stash with the new stash
+
 }
 
 // Given a leaf node on the tree, replace the root to leaf path with a new path
 // Return true if success, false if failure
 bool CryptoTree::replacePath(int leaf, std::vector<CryptoNode> new_path) {
-
+    int node_index = leaf;
+    int path_index = new_path.size();
+    while (node_index != 0 || path_index != -1) {
+        this->crypto_tree[node_index] = new_path[path_index];
+        // find parent and update indexes
+        node_index = std::floor((node_size - 1)/2);
+        path_index -= 1;
+    }
+    if (node_index == 0 && path_index == 1) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 } // namespace private_join_and_compute

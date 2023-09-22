@@ -8,6 +8,7 @@
 
 #include <bitset>
 #include <vector>
+#include <cmath>
 
 namespace private_join_and_compute {
 
