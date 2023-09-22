@@ -24,7 +24,8 @@ std::vector<EncryptedElement> CryptoNode::getNode() {
 
 // Add an encrypted element to the node vector, return true if success, false if it's already full
 bool CryptoNode::addElement(EncryptedElement enc_elem) {
-    if (this->node.size() >= this->node_size) {
+    int node_vec_size = this->node.size();
+    if (node_vec_size >= this->node_size) {
         return false;
     }
     else {
