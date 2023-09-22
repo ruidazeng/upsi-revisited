@@ -21,15 +21,19 @@
 
 /// @brief Tree Construction
 
+namespace private_join_and_compute {
+
 CryptoTree::CryptoTree() {};
 
 CryptoTree::CryptoTree(int stash_size, int node_size) {
-    node_size(node_size);
+    this->node_size = node_size;
+    this->stash_size = node_size;
     
     // Index for root node is 0, index for stash node is -1
-    CryptoNode root = CryptoNode::CryptoNode(node_size);
-    CryptoNode stash = CryptoNode::CryptoNode(stash_size);
+    CryptoNode stash = CryptoNode(stash_size);
+    CryptoNode root = CryptoNode(node_size);
 
+    this->stash = stash;
     this->crypto_tree.push_back(root);
     this->size += 1;
 }
@@ -56,17 +60,17 @@ int CryptoTree::getStashSize() {
 
 void CryptoTree::addNewLayer() {
     this->depth += 1;
-    int new_size = std::pow(2, this->depth + 1) - 1
+    int new_size = std::pow(2, this->depth + 1) - 1;
     this->crypto_tree.resize(new_size);
 }
 
-std::string CryptoTree::binaryHash(std::string const &byte_hash) {
-    std::string binary_hash = "";
-    for (char const &c: byte_hash) {
-        binary_hash += std::bitset<8>(c).to_string();
-    }
-    return binary_hash;
-}
+// std::string CryptoTree::binaryHash(std::string const &byte_hash) {
+//     std::string binary_hash = "";
+//     for (char const &c: byte_hash) {
+//         binary_hash += std::bitset<8>(c).to_string();
+//     }
+//     return binary_hash;
+// }
 
 /// @brief Real methods
 
@@ -91,3 +95,4 @@ void CryptoTree::insert(std::string);
 // Return true if success, false if failure
 bool CryptoTree::replacePath(std::vector<CryptoNode> old_path, std::vector<CryptoNode> new_path);
 
+} // namespace private_join_and_compute

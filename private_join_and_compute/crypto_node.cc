@@ -14,12 +14,14 @@
 #include <stack>
 #include <vector>
 
+namespace private_join_and_compute {
+
 // Default constructor
-CryptoNode::CryptoNode();
+CryptoNode::CryptoNode() {};
 
 // Initialize CryptoNode with node size
 CryptoNode::CryptoNode(int node_size) {
-    node_size(node_size);
+    this->node_size = node_size;
 }
 
 // Get node size
@@ -42,3 +44,5 @@ bool CryptoNode::addElement(EncryptedElement enc_elem) {
         return true;
     }
 }
+
+} // namespace private_join_and_compute

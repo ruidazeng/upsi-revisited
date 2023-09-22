@@ -19,7 +19,10 @@
 #include <stack>
 #include <vector>
 
-typedef std::tuple<ECPoint, BigNum> EncryptedElement;
+namespace private_join_and_compute {
+
+// typedef std::tuple<ECPoint, BigNum> EncryptedElement;
+typedef std::tuple<int, int> EncryptedElement;
 
 class CryptoNode
 {
@@ -42,6 +45,8 @@ class CryptoNode
 
         // Add an element to the node vector, return true if success, false if it's already full
         bool addElement(EncryptedElement enc_elem);
-}
+};
+
+} // namespace private_join_and_compute
 
 #endif

@@ -20,7 +20,11 @@
 #include <stack>
 #include <vector>
 
-typedef std::tuple<ECPoint, BigNum> EncryptedElement;
+
+namespace private_join_and_compute {
+
+// typedef std::tuple<ECPoint, BigNum> EncryptedElement;
+typedef std::tuple<int, int> EncryptedElement;
 
 class CryptoTree
 {
@@ -63,7 +67,7 @@ class CryptoTree
         // Add a new layer to the tree, expand the size of the vector
         void addNewLayer();
 
-        std::string binaryHash(std::string const &byte_hash);
+        // std::string binaryHash(std::string const &byte_hash);
 
         /// @brief Actual methods
         // Generate a completley random path
@@ -79,6 +83,8 @@ class CryptoTree
         // Return true if success, false if failure
         bool replacePath(std::vector<CryptoNode> old_path, std::vector<CryptoNode> new_path);
 };
+
+}
 
 #endif
 
