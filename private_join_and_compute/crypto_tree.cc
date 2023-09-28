@@ -1,21 +1,17 @@
+#include "private_join_and_compute/utils.hpp"
 #include "private_join_and_compute/crypto_tree.h"
 #include "private_join_and_compute/crypto_node.h"
-#include "private_join_and_compute/crypto/context.h"
-#include "private_join_and_compute/crypto/ec_commutative_cipher.h"
-#include "private_join_and_compute/crypto/paillier.h"
-
-#include <bitset>
-#include <vector>
-#include <cmath>
 
 
 /// @brief Tree Construction
 
 namespace private_join_and_compute {
 
-CryptoTree::CryptoTree() {};
+template<typename T> 
+CryptoTree<T>::CryptoTree() {};
 
-CryptoTree::CryptoTree(int stash_size, int node_size) {
+template<typename T> 
+CryptoTree<T>::CryptoTree(int stash_size, int node_size) {
     this->node_size = node_size;
     this->stash_size = node_size;
     
@@ -28,33 +24,37 @@ CryptoTree::CryptoTree(int stash_size, int node_size) {
     this->size += 1;
 }
 
-int CryptoTree::getDepth() {
+template<typename T> 
+int CryptoTree<T>::getDepth() {
     return this->depth;
 }
 
-int CryptoTree::getSize() {
+template<typename T> 
+int CryptoTree<T>::getSize() {
     return this->size;
 }
 
-
-int CryptoTree::getNodeSize() {
+template<typename T> 
+int CryptoTree<T>::getNodeSize() {
     return this->node_size;
 }
 
-int CryptoTree::getStashSize() {
+template<typename T> 
+int CryptoTree<T>::getStashSize() {
     return this->stash_size;
 }
 
 
 /// @brief Helper methods
-
-void CryptoTree::addNewLayer() {
+template<typename T> 
+void CryptoTree<T>::addNewLayer() {
     this->depth += 1;
     int new_size = std::pow(2, this->depth + 1) - 1;
     this->crypto_tree.resize(new_size);
 }
 
-std::string CryptoTree::binaryHash(std::string const &byte_hash) {
+template<typename T> 
+std::string CryptoTree<T>::binaryHash(std::string const &byte_hash) {
     std::string binary_hash = "";
     for (char const &c: byte_hash) {
         binary_hash += std::bitset<8>(c).to_string();
@@ -62,9 +62,9 @@ std::string CryptoTree::binaryHash(std::string const &byte_hash) {
     return binary_hash;
 }
 
-
-std::vector<CryptoNode> CryptoTree::findPath(int depth, std::string binary_hash) {
-    std::vector<CryptoNode> path;
+template<typename T> 
+std::vector<CryptoNode<T> > CryptoTree<T>::findPath(int depth, std::string binary_hash) {
+    std::vector<CryptoNode<T> > path;
     
     int node = 0; // root
     path.push_back(this->crypto_tree[node]);
@@ -84,7 +84,8 @@ std::vector<CryptoNode> CryptoTree::findPath(int depth, std::string binary_hash)
 /// @brief Real methods
 
 // Generate a completley random path
-std::vector<CryptoNode> CryptoTree::getPath() {
+template<typename T> 
+std::vector<CryptoNode<T> > CryptoTree<T>::getPath() {
     Context ctx;
     std::string random_path = ctx.GenerateRandomBytes(32); // 32 bytes for SHA256 => obtain random_path as a byte string
     std::string random_path_binary = this->binaryHash(random_path);
@@ -95,7 +96,8 @@ std::vector<CryptoNode> CryptoTree::getPath() {
 }
 
 // Generate a path based on an element
-std::vector<CryptoNode> CryptoTree::getPath(std::string element) {
+template<typename T> 
+std::vector<CryptoNode<T> > CryptoTree<T>::getPath(std::string element) {
     Context ctx;
     absl::string_view sv_element = element;
     // TODO: PRF?????
@@ -109,13 +111,14 @@ std::vector<CryptoNode> CryptoTree::getPath(std::string element) {
 
 // Insert a new element
 // TODO: WHEN TO ADD A NEW LEVEL OF TREE???
-void CryptoTree::insert(std::string element) {
+template<typename T> 
+void CryptoTree<T>::insert(std::string element) {
     // find the path based on hash
     auto old_path = this->getPath(element);
     // gather every element in the path + stash
-    std::vector<EncryptedElement> pathstash;
+    std::vector<T> pathstash;
 
-    // find the leaf node  of the path based on depth
+    // find the leaf node of the path based on depth
 
     // construct the new path
 
@@ -125,18 +128,26 @@ void CryptoTree::insert(std::string element) {
 
 }
 
+// Replace the stash
+template<typename T> 
+void CryptoTree<T>::replaceStash(CryptoNode<T> new_stash) {
+    this->stash = new_stash;
+}
+
 // Given a leaf node on the tree, replace the root to leaf path with a new path
 // Return true if success, false if failure
-bool CryptoTree::replacePath(int leaf, std::vector<CryptoNode> new_path) {
+template<typename T> 
+bool CryptoTree<T>::replacePath(int leaf, std::vector<CryptoNode<T> > new_path) {
     int node_index = leaf;
-    int path_index = new_path.size();
-    while (node_index != 0 || path_index != -1) {
+    int path_index = new_path.size() - 1;
+    while (path_index != -1) {
         this->crypto_tree[node_index] = new_path[path_index];
+        if(node_index == 0) break;
         // find parent and update indexes
-        node_index = std::floor((node_size - 1)/2);
+        node_index = (node_index - 1)/2;
         path_index -= 1;
     }
-    if (node_index == 0 && path_index == 1) {
+    if (node_index == 0 && path_index == -1) {
         return true;
     }
     else {

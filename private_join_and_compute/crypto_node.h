@@ -1,20 +1,19 @@
 #ifndef CryptoNode_H
 #define CryptoNode_H
 
-#include "private_join_and_compute/crypto/ec_commutative_cipher.h"
-#include "private_join_and_compute/crypto/paillier.h"
-
-#include <vector>
+#include "private_join_and_compute/utils.hpp"
 
 namespace private_join_and_compute {
 
-// typedef std::tuple<ECPoint, BigNum> EncryptedElement;
-typedef std::tuple<std::string, int> EncryptedElement;
-
+/*
+Type T can be a tuple for element and payload 
+	or be one type for element only when there's no payload
+*/
+template<typename T>
 class CryptoNode
 {
     private:
-        std::vector<EncryptedElement> node;
+        std::vector<T> node;
         int node_size;
 
     public:
@@ -28,10 +27,10 @@ class CryptoNode
         int getNodeSize();
 
         // Get the node vector
-        std::vector<EncryptedElement> getNode();
+        std::vector<T> getNode();
 
         // Add an element to the node vector, return true if success, false if it's already full
-        bool addElement(EncryptedElement enc_elem);
+        bool addElement(T elem);
 };
 
 } // namespace private_join_and_compute

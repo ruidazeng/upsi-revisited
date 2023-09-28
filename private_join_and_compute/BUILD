@@ -19,7 +19,7 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "crypto_node",
     srcs = ["crypto_node.cc"],
-    hdrs = ["crypto_node.h"],
+    hdrs = ["utils.hpp", "crypto_node.h"],
     deps = [
         "//private_join_and_compute/crypto:ec_commutative_cipher",
         "//private_join_and_compute/crypto:paillier",
@@ -29,7 +29,7 @@ cc_library(
 cc_library(
     name = "crypto_tree",
     srcs = ["crypto_tree.cc"],
-    hdrs = ["crypto_tree.h"],
+    hdrs = ["utils.hpp", "crypto_tree.h"],
     deps = [
         ":crypto_node",
         "//private_join_and_compute/crypto:ec_commutative_cipher",
