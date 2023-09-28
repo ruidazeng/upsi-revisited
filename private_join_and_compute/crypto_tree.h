@@ -1,28 +1,23 @@
 #ifndef CryptoTree_H
 #define CryptoTree_H
 
+#include "private_join_and_compute/utils.hpp"
 #include "private_join_and_compute/crypto_node.h"
-#include "private_join_and_compute/crypto/context.h"
-#include "private_join_and_compute/crypto/ec_commutative_cipher.h"
-#include "private_join_and_compute/crypto/paillier.h"
-
-#include <bitset>
-#include <vector>
-#include <cmath>
 
 namespace private_join_and_compute {
 
 // typedef std::tuple<ECPoint, BigNum> EncryptedElement;
-typedef std::tuple<std::string, int> EncryptedElement;
+// typedef std::tuple<std::string, int> EncryptedElement;
 
+template<typename T>
 class CryptoTree
 {
     private:
         // Array list representation
-        std::vector<CryptoNode> crypto_tree;
+        std::vector<CryptoNode<T> > crypto_tree;
 
         // Current stash node of the tree
-        CryptoNode stash;
+        CryptoNode<T> stash;
 
         // Depth of the tree (empty tree or just root is depth 0)
         int depth = 0;
@@ -58,21 +53,24 @@ class CryptoTree
 
         std::string binaryHash(std::string const &byte_hash);
 
-        std::vector<CryptoNode> findPath(int depth, std::string binary_hash);
+        std::vector<CryptoNode<T> > findPath(int depth, std::string binary_hash);
 
         /// @brief Actual methods
         // Generate a completley random path
-        std::vector<CryptoNode> getPath();
+        std::vector<CryptoNode<T> > getPath();
 
         // Generate a path based on an element
-        std::vector<CryptoNode> getPath(std::string element);
+        std::vector<CryptoNode<T> > getPath(std::string element);
 
         // Insert a new element
         void insert(std::string element);
+        
+        // Replace the stash
+        void replaceStash(CryptoNode<T> new_stash);
 
         // Given a leaf node on the tree, replace the root to leaf path with a new path
         // Return true if success, false if failure
-        bool replacePath(int leaf, std::vector<CryptoNode> new_path);
+        bool replacePath(int leaf, std::vector<CryptoNode<T> > new_path);
 };
 
 }
