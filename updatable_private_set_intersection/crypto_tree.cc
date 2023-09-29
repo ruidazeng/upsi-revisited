@@ -1,4 +1,4 @@
-#include "updatable_private_set_intersection/utils.hpp"
+#include "updatable_private_set_intersection/utils.h"
 #include "updatable_private_set_intersection/crypto_tree.h"
 #include "updatable_private_set_intersection/crypto_node.h"
 

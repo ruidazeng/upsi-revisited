@@ -1,3 +1,4 @@
+#include "updatable_private_set_intersection/utils.h"
 #include "updatable_private_set_intersection/crypto_node.h"
 
 namespace updatable_private_set_intersection {
