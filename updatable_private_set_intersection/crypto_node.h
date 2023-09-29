@@ -1,7 +1,7 @@
 #ifndef CryptoNode_H
 #define CryptoNode_H
 
-#include "updatable_private_set_intersection/utils.hpp"
+#include "updatable_private_set_intersection/utils.h"
 
 namespace updatable_private_set_intersection {
 

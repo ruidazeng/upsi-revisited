@@ -13,18 +13,18 @@ Once you've installed Bazel and Git, open a Terminal and clone the Private Join
 and Compute repository into a local folder:
 
 ```shell
-git clone https://github.com/ruidazeng/upsi-googlelib.git
+git clone https://github.com/ruidazeng/upsi-new.git
 ```
 
-Navigate into the `private-join-and-compute` folder you just created, and build
-the Private Join and Compute library and dependencies using Bazel:
+Navigate into the `upsi-new` folder you just created, and build
+the Updatable Private Set Intersection library and dependencies using Bazel:
 
 ```bash
-cd private-join-and-compute
+cd upsi-new
 bazel build //updatable_private_set_intersection:all
 ```
 
-## UPSI Files
+## UPSI Files (TODO)
 
 updatable_private_set_intersection/crypto_node.h
 
@@ -38,7 +38,7 @@ updatable_private_set_intersection/protocol_party.h
 
 updatable_private_set_intersection/protocol_party.cc
 
-## Google Library Files (depdencies)
+## Google Library Files (dependencies)
 
 crypto/bignum.h
 
