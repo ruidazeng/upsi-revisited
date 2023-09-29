@@ -21,22 +21,22 @@ the Private Join and Compute library and dependencies using Bazel:
 
 ```bash
 cd private-join-and-compute
-bazel build //private_join_and_compute:all
+bazel build //updatable_private_set_intersection:all
 ```
 
 ## UPSI Files
 
-private_join_and_compute/crypto_node.h
+updatable_private_set_intersection/crypto_node.h
 
-private_join_and_compute/crypto_node.cc
+updatable_private_set_intersection/crypto_node.cc
 
-private_join_and_compute/crypto_tree.h
+updatable_private_set_intersection/crypto_tree.h
 
-private_join_and_compute/crypto_tree.cc
+updatable_private_set_intersection/crypto_tree.cc
 
-private_join_and_compute/protocol_party.h
+updatable_private_set_intersection/protocol_party.h
 
-private_join_and_compute/protocol_party.cc
+updatable_private_set_intersection/protocol_party.cc
 
 ## Google Library Files (depdencies)
 
