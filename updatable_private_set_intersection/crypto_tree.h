@@ -17,17 +17,20 @@ class CryptoTree
         std::vector<CryptoNode<T> > crypto_tree;
 
         // Current stash node of the tree
-        CryptoNode<T> stash;
+        // CryptoNode<T> stash;
 
         // Depth of the tree (empty tree or just root is depth 0)
         int depth = 0;
         
         // Size of the tree (including root node)
-        int size = 0;
+        // int size = 0;
 
         // The node and stash size of the tree
         int node_size;
         int stash_size;
+        
+        // The number of set elements in the tree (= size of set)
+        int actual_size;
 
         // The max stash of the subtree
         int max_stash = 0;
@@ -37,11 +40,11 @@ class CryptoTree
         /// @brief Tree Construction
         CryptoTree();
 
-        CryptoTree(int node_size, int stash_size);
+        CryptoTree(int stash_size, int node_size = default_node_size);
 
         int getDepth();
 
-        int getSize();
+        // int getSize();
 
         int getNodeSize();
 
@@ -50,7 +53,18 @@ class CryptoTree
         /// @brief Helper Methods
         // Add a new layer to the tree, expand the size of the vector
         void addNewLayer();
-
+        
+        
+        int computeIndex(BinaryHash binary_hash);
+        
+        void extractPathIndices(int* leaf_ind, int cnt, std::vector<int> &ind);
+        
+        int* generateRandomPaths(int cnt, std::vector<int> &ind);
+        
+        std::vector<CryptoNode<T> > insert(std::vector<T> elem);
+        
+        void replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes);
+		/*
         std::string binaryHash(std::string const &byte_hash);
 
         std::vector<CryptoNode<T> > findPath(int depth, std::string binary_hash);
@@ -71,6 +85,7 @@ class CryptoTree
         // Given a leaf node on the tree, replace the root to leaf path with a new path
         // Return true if success, false if failure
         bool replacePath(int leaf, std::vector<CryptoNode<T> > new_path);
+        */
 };
 
 }
