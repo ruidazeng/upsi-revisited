@@ -21,13 +21,15 @@ class CryptoNode
         CryptoNode();
 
         // Initialize CryptoNode with node size
-        CryptoNode(int node_size);
+        CryptoNode(int node_size = default_node_size);
 
         // Get node size
         int getNodeSize();
 
         // Get the node vector
         std::vector<T> getNode();
+        
+        void moveElements(std::vector<T> &elem);
 
         // Add an element to the node vector, return true if success, false if it's already full
         bool addElement(T elem);

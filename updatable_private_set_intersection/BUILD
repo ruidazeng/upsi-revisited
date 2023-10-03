@@ -162,6 +162,16 @@ cc_binary(
 )
 
 cc_library(
+    name = "utils",
+    srcs = ["utils.cc"],
+    hdrs = ["utils.h"],
+    deps = [
+        "//updatable_private_set_intersection/crypto:ec_commutative_cipher",
+        "//updatable_private_set_intersection/crypto:paillier",
+    ],
+)
+
+cc_library(
     name = "crypto_node",
     srcs = ["crypto_node.cc"],
     hdrs = ["utils.h", "crypto_node.h"],

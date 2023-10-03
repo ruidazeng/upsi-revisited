@@ -15,25 +15,26 @@ CryptoTree<T>::CryptoTree(int stash_size, int node_size) {
     this->node_size = node_size;
     this->stash_size = node_size;
     
-    // Index for root node is 0, index for stash node is -1
-    CryptoNode stash = CryptoNode(stash_size);
-    CryptoNode root = CryptoNode(node_size);
+    // Index for root node is 1, index for stash node is 0
+    CryptoNode<T> stash = CryptoNode<T>(stash_size);
+    CryptoNode<T> root = CryptoNode<T>(node_size);
 
-    this->stash = stash;
+    // depth = 0
+    this->crypto_tree.push_back(stash);
     this->crypto_tree.push_back(root);
-    this->size += 1;
+    
 }
 
 template<typename T> 
 int CryptoTree<T>::getDepth() {
     return this->depth;
 }
-
+/*
 template<typename T> 
 int CryptoTree<T>::getSize() {
     return this->size;
 }
-
+*/
 template<typename T> 
 int CryptoTree<T>::getNodeSize() {
     return this->node_size;
@@ -43,25 +44,23 @@ template<typename T>
 int CryptoTree<T>::getStashSize() {
     return this->stash_size;
 }
-
+/*
+template<typename T> 
+CryptoNode<T>& CryptoTree<T>::stash() {
+    return this->crypto_tree[0];
+}
+*/
 
 /// @brief Helper methods
 template<typename T> 
 void CryptoTree<T>::addNewLayer() {
     this->depth += 1;
-    int new_size = std::pow(2, this->depth + 1) - 1;
+    int new_size = (1 << (this->depth + 1));
     this->crypto_tree.resize(new_size);
 }
 
-template<typename T> 
-std::string CryptoTree<T>::binaryHash(std::string const &byte_hash) {
-    std::string binary_hash = "";
-    for (char const &c: byte_hash) {
-        binary_hash += std::bitset<8>(c).to_string();
-    }
-    return binary_hash;
-}
 
+/*
 template<typename T> 
 std::vector<CryptoNode<T> > CryptoTree<T>::findPath(int depth, std::string binary_hash) {
     std::vector<CryptoNode<T> > path;
@@ -84,6 +83,7 @@ std::vector<CryptoNode<T> > CryptoTree<T>::findPath(int depth, std::string binar
 /// @brief Real methods
 
 // Generate a completley random path
+
 template<typename T> 
 std::vector<CryptoNode<T> > CryptoTree<T>::getPath() {
     Context ctx;
@@ -127,32 +127,145 @@ void CryptoTree<T>::insert(std::string element) {
     // replace the old stash with the new stash
 
 }
+*/
 
-// Replace the stash
+// compute leaf index of a binary hash
 template<typename T> 
-void CryptoTree<T>::replaceStash(CryptoNode<T> new_stash) {
-    this->stash = new_stash;
+int CryptoTree<T>::computeIndex(BinaryHash binary_hash) {
+	int x = 1;
+	for (int i = 0; i <= this->depth; ++i) {
+        if (binary_hash[i] == '0') {
+            x = (x << 1);
+        }
+        else if (binary_hash[i] == '1') {
+            x = ((x << 1) | 1);
+        }
+    }
+    return x;
 }
 
-// Given a leaf node on the tree, replace the root to leaf path with a new path
-// Return true if success, false if failure
+// Return indices in paths in decreasing order
 template<typename T> 
-bool CryptoTree<T>::replacePath(int leaf, std::vector<CryptoNode<T> > new_path) {
-    int node_index = leaf;
-    int path_index = new_path.size() - 1;
-    while (path_index != -1) {
-        this->crypto_tree[node_index] = new_path[path_index];
-        if(node_index == 0) break;
-        // find parent and update indexes
-        node_index = (node_index - 1)/2;
-        path_index -= 1;
-    }
-    if (node_index == 0 && path_index == -1) {
-        return true;
-    }
-    else {
-        return false;
-    }
+void CryptoTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<int> &ind) {
+	assert(ind.size() == 0);
+	
+	// add the indicies of leaves
+	for (int i = leaf_cnt - 1; i >= 0; --i) 
+		ind.push_back(leaf_ind[i]);  
+		
+	// erase duplicates and sort in decreasing order
+	std::sort(ind.begin(), ind.end(), std::greater<int>());
+	ind.erase(std::unique(ind.begin(), ind.end()), ind.end());
+	
+	int node_cnt = ind.size();
+	for (int i = 0; i <= node_cnt; ++i) {
+		if(ind[i] == 1) break; // is root
+		int par = (ind[i] >> 1); // add its parent 
+		assert(ind[node_cnt - 1] >= par);
+		if(ind[node_cnt - 1] > par) {
+			ind.push_back(par);
+			++node_cnt;
+		}
+	}
 }
+
+// Generate random paths, return the indices of leaves and nodes(including stash)
+template<typename T> 
+int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind) { //ind: node indices
+	// generate binary hash
+	std::vector<BinaryHash> hsh;
+	generateRandomHash(cnt, hsh);
+	
+	// compute leaf indices of the paths
+	int *leaf_ind = new int[cnt];
+	for (int i = 0; i < cnt; ++i) leaf_ind[i] = computeIndex(hsh[i]);
+	
+	// extract indices of nodes in these paths
+	extractPathIndices(leaf_ind, cnt, ind);
+	
+	// insert stash
+	ind.push_back(0);
+	
+	return leaf_ind;
+	// the sender requires indices of leaves (if update paths on its tree one by one)
+	// need to delete leaf_ind outside this function
+}
+
+// Insert new set elements (sender)
+// Return vector of (plaintext) nodes
+// stash: index = 0
+template<typename T> 
+std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
+	int new_elem_cnt = elem.size();
+	
+	// add new layer when tree is full
+	while(new_elem_cnt + this->actual_size >= (1 << this->depth + 1)) addNewLayer();
+	// no need to tell the receiver the new depth of tree?
+	
+	// get the node indices in random paths
+	std::vector<int> ind;
+	int *leaf_ind = generateRandomPaths(new_elem_cnt, &ind);
+	
+	// TODO: rewrite the following code if each time replace one path
+	delete [] leaf_ind;
+	
+	// extract all elements in these nodes and empty the origin node
+	int node_cnt = ind.size();
+	for (int i = 0; i < node_cnt; ++i) crypto_tree[ind[i]].moveElements(elem);
+	
+	int elem_cnt = elem.size();
+	
+	/*
+	// sort the elements by their hash (corresponding leaf index)
+	std::pair<int, int> *elem_pair = new std::pair<int, int> [elem_cnt];
+	for (int i = 0; i < elem_cnt; ++i) {
+		int leaf_index = computeIndex( computeBinaryHash<T>(elem[i]) );
+		elem_pair[i] = std::pair(leaf_index, i);
+	}
+	sort(elem_pair.begin(), elem_pair.end());
+	
+	int *nxt = new int[elem_cnt + 1];
+	for (int i = 0; i < elem_cnt; ++i) nxt[i] = i + 1;
+	
+	// fill nodes
+	for (int i = 0; i <= node_cnt; ++i) {
+		
+	}
+	delete [] elem_pair;
+	delete [] nxt;
+	*/
+	
+	//TODO: fill the nodes
+	
+	// update actual_size
+	this->actual_size += elem_cnt;
+	
+	std::vector<CryptoNode<T> > rs;
+	for (int i = 0; i < node_cnt; ++i) rs.push_back(crypto_tree[ind[i]]);
+	return rs;
+}
+
+// Update tree (receiver)
+template<typename T> 
+void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes) {
+	
+	int node_cnt = new_nodes.size();
+	
+	// add new layer when tree is full
+	while(new_elem_cnt + this->actual_size >= (1 << this->depth + 1)) addNewLayer();
+
+	std::vector<int> ind;
+	int *leaf_ind = generateRandomPaths(new_elem_cnt, &ind);
+	delete [] leaf_ind;
+	
+	assert(node_cnt == ind.size());
+	
+	// replace nodes (including stash)
+	for (int i = 0; i < node_cnt; ++i) crypto_tree[ind[i]] = new_nodes[i];
+	
+	// update actual_size
+	this->actual_size += new_elem_cnt;
+}
+	
 
 } // namespace updatable_private_set_intersection
