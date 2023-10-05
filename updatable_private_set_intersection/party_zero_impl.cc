@@ -29,8 +29,8 @@
 
 namespace updatable_private_set_intersection {
 
-PrivateIntersectionSumProtocolClientImpl::
-    PrivateIntersectionSumProtocolClientImpl(
+PrivateIntersectionSumProtocolPartyZeroImpl::
+    PrivateIntersectionSumProtocolPartyZeroImpl(
         Context* ctx, const std::vector<std::string>& elements,
         const std::vector<BigNum>& values, int32_t modulus_size)
     : ctx_(ctx),
@@ -45,7 +45,7 @@ PrivateIntersectionSumProtocolClientImpl::
               .value())) {}
 
 StatusOr<PrivateIntersectionSumClientMessage::ClientRoundOne>
-PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
+PrivateIntersectionSumProtocolPartyZeroImpl::ReEncryptSet(
     const PrivateIntersectionSumServerMessage::ServerRoundOne& message) {
   private_paillier_ = std::make_unique<PrivatePaillier>(ctx_, p_, q_, 2);
   BigNum pk = p_ * q_;
@@ -87,7 +87,7 @@ PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
 }
 
 StatusOr<std::pair<int64_t, BigNum>>
-PrivateIntersectionSumProtocolClientImpl::DecryptSum(
+PrivateIntersectionSumProtocolPartyZeroImpl::DecryptSum(
     const PrivateIntersectionSumServerMessage::ServerRoundTwo& server_message) {
   if (private_paillier_ == nullptr) {
     return InvalidArgumentError("Called DecryptSum before ReEncryptSet.");
@@ -101,7 +101,7 @@ PrivateIntersectionSumProtocolClientImpl::DecryptSum(
   return std::make_pair(server_message.intersection_size(), sum.value());
 }
 
-Status PrivateIntersectionSumProtocolClientImpl::StartProtocol(
+Status PrivateIntersectionSumProtocolPartyZeroImpl::StartProtocol(
     MessageSink<ClientMessage>* client_message_sink) {
   ClientMessage client_message;
   *(client_message.mutable_private_intersection_sum_client_message()
@@ -110,19 +110,19 @@ Status PrivateIntersectionSumProtocolClientImpl::StartProtocol(
   return client_message_sink->Send(client_message);
 }
 
-Status PrivateIntersectionSumProtocolClientImpl::Handle(
+Status PrivateIntersectionSumProtocolPartyZeroImpl::Handle(
     const ServerMessage& server_message,
     MessageSink<ClientMessage>* client_message_sink) {
   if (protocol_finished()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolClientImpl: Protocol is already "
+        "PrivateIntersectionSumProtocolPartyZeroImpl: Protocol is already "
         "complete.");
   }
 
   // Check that the message is a PrivateIntersectionSum protocol message.
   if (!server_message.has_private_intersection_sum_server_message()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolClientImpl: Received a message for the "
+        "PrivateIntersectionSumProtocolPartyZeroImpl: Received a message for the "
         "wrong protocol type");
   }
 
@@ -159,14 +159,14 @@ Status PrivateIntersectionSumProtocolClientImpl::Handle(
   // If none of the previous cases matched, we received the wrong kind of
   // message.
   return InvalidArgumentError(
-      "PrivateIntersectionSumProtocolClientImpl: Received a server message "
+      "PrivateIntersectionSumProtocolPartyZeroImpl: Received a server message "
       "of an unknown type.");
 }
 
-Status PrivateIntersectionSumProtocolClientImpl::PrintOutput() {
+Status PrivateIntersectionSumProtocolPartyZeroImpl::PrintOutput() {
   if (!protocol_finished()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolClientImpl: Not ready to print the "
+        "PrivateIntersectionSumProtocolPartyZeroImpl: Not ready to print the "
         "output yet.");
   }
   auto maybe_converted_intersection_sum = intersection_sum_.ToIntValue();
