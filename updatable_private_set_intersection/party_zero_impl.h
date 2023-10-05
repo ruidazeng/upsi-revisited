@@ -24,11 +24,13 @@
 #include "updatable_private_set_intersection/crypto/context.h"
 #include "updatable_private_set_intersection/crypto/ec_commutative_cipher.h"
 #include "updatable_private_set_intersection/crypto/paillier.h"
+#include "updatable_private_set_intersection/crypto_tree.h"
 #include "updatable_private_set_intersection/match.pb.h"
 #include "updatable_private_set_intersection/message_sink.h"
 #include "updatable_private_set_intersection/private_intersection_sum.pb.h"
 #include "updatable_private_set_intersection/updatable_private_set_intersection.pb.h"
 #include "updatable_private_set_intersection/protocol_client.h"
+#include "updatable_private_set_intersection/utils.h"
 #include "updatable_private_set_intersection/util/status.inc"
 
 namespace updatable_private_set_intersection {
@@ -75,6 +77,10 @@ class PrivateIntersectionSumProtocolPartyZeroImpl : public ProtocolClient {
   const BigNum& intersection_sum() const { return intersection_sum_; }
 
  private:
+  // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
+  // CryptoTree<UPSI_Element> my_crypto_tree;
+  // CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
+
   // The server sends the first message of the protocol, which contains its
   // encrypted set.  This party then re-encrypts that set and replies with the
   // reencrypted values and its own encrypted set.

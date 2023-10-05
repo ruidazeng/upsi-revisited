@@ -62,6 +62,8 @@ cc_library(
     srcs = ["party_zero_impl.cc"],
     hdrs = ["party_zero_impl.h"],
     deps = [
+        ":crypto_tree",
+        ":utils",
         ":match_proto",
         ":message_sink",
         ":private_intersection_sum_proto",
@@ -89,6 +91,8 @@ cc_library(
     srcs = ["party_one_impl.cc"],
     hdrs = ["party_one_impl.h"],
     deps = [
+        ":crypto_tree",
+        ":utils",
         ":match_proto",
         ":message_sink",
         ":private_intersection_sum_proto",
@@ -174,8 +178,9 @@ cc_library(
 cc_library(
     name = "crypto_node",
     srcs = ["crypto_node.cc"],
-    hdrs = ["utils.h", "crypto_node.h"],
+    hdrs = ["crypto_node.h"],
     deps = [
+        ":utils",
         "//updatable_private_set_intersection/crypto:ec_commutative_cipher",
         "//updatable_private_set_intersection/crypto:paillier",
     ],
@@ -184,9 +189,10 @@ cc_library(
 cc_library(
     name = "crypto_tree",
     srcs = ["crypto_tree.cc"],
-    hdrs = ["utils.h", "crypto_tree.h"],
+    hdrs = ["crypto_tree.h"],
     deps = [
         ":crypto_node",
+        ":utils",
         "//updatable_private_set_intersection/crypto:ec_commutative_cipher",
         "//updatable_private_set_intersection/crypto:paillier",
     ],
