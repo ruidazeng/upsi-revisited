@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_
-#define updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_
+#ifndef updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_PARTY_ONE_IMPL_H_
+#define updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_PARTY_ONE_IMPL_H_
 
 #include <memory>
 #include <string>

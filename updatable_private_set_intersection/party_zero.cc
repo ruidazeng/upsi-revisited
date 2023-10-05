@@ -29,7 +29,7 @@
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/security/credentials.h"
 #include "include/grpcpp/support/status.h"
-#include "updatable_private_set_intersection/client_impl.h"
+#include "updatable_private_set_intersection/party_zero_impl.h"
 #include "updatable_private_set_intersection/data_util.h"
 #include "updatable_private_set_intersection/updatable_private_set_intersection.grpc.pb.h"
 #include "updatable_private_set_intersection/updatable_private_set_intersection.pb.h"
