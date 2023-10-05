@@ -123,7 +123,7 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 	int new_elem_cnt = elem.size();
 	
 	// add new layer when tree is full
-	while(new_elem_cnt + this->actual_size >= (1 << this->depth + 1)) addNewLayer();
+	while(new_elem_cnt + this->actual_size >= (1 << (this->depth + 1))) addNewLayer();
 	// no need to tell the receiver the new depth of tree?
 	
 	// get the node indices in random paths
@@ -167,14 +167,14 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 		int lca = x >> steps;
 		
 		// O(depth)
-		while(crypto_tree[lca].insert(elem[i]) == false) {
+		while(crypto_tree[lca].addElement(elem[i]) == false) {
 			assert(lca > 0);
 			lca >>= 1;
 		}
 		/* use merge-find set: O(log(node_cnt))
 		int u = std::lower_bound(ind.begin(), ind.end(), x, std::greater<int>()) - ind.begin(); // find lca in ind
 		assert(u < node_cnt && ind[u] == x); 
-		while(crypto_tree[ind[u]].insert(elem[i]) == false) {
+		while(crypto_tree[ind[u]].addElement(elem[i]) == false) {
 			assert(ind[u] > 0); // not stash
 			nxt[u] = find_set_rep(par[u], nxt); // find next available node
 		}
@@ -198,7 +198,7 @@ void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > n
 	int node_cnt = new_nodes.size();
 	
 	// add new layer when tree is full
-	while(new_elem_cnt + this->actual_size >= (1 << this->depth + 1)) addNewLayer();
+	while(new_elem_cnt + this->actual_size >= (1 << (this->depth + 1))) addNewLayer();
 
 	std::vector<int> ind;
 	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind);
@@ -229,5 +229,7 @@ std::vector<T> CryptoTree<T>::getPath(std::string element) {
     }
     return encyrpted_elem;
 }
+
+template class CryptoTree<std::string>;
 
 } // namespace updatable_private_set_intersection
