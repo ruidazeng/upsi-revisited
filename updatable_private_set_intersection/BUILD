@@ -148,7 +148,7 @@ cc_binary(
     name = "party_zero",
     srcs = ["party_zero.cc"],
     deps = [
-        ":party_one_impl",
+        ":party_zero_impl",
         ":data_util",
         ":updatable_private_set_intersection_proto",
         ":protocol_client",

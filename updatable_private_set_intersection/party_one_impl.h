@@ -86,4 +86,4 @@ class PrivateIntersectionSumProtocolServerImpl : public ProtocolServer {
 
 }  // namespace updatable_private_set_intersection
 
-#endif  // updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_
+#endif  // updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_PARTY_ONE_IMPL_H_
