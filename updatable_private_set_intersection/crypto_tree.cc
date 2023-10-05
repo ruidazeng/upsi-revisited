@@ -13,7 +13,7 @@ CryptoTree<T>::CryptoTree() {};
 template<typename T> 
 CryptoTree<T>::CryptoTree(int stash_size, int node_size) {
     this->node_size = node_size;
-    this->stash_size = node_size;
+    this->stash_size = stash_size;
     
     // Index for root node is 1, index for stash node is 0
     CryptoNode<T> stash = CryptoNode<T>(stash_size);
@@ -128,8 +128,8 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 	
 	// get the node indices in random paths
 	std::vector<int> ind;
-	int *leaf_ind = generateRandomPaths(new_elem_cnt, &ind); 
-	// int *leaf_ind = generateRandomPaths(new_elem_cnt, &ind, par); -- for merge-find set
+	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind); 
+	// int *leaf_ind = generateRandomPaths(new_elem_cnt, ind, par); -- for merge-find set
 	
 	// TODO: rewrite the following if each time replace one path
 	delete [] leaf_ind;
@@ -140,7 +140,7 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 	
 	int elem_cnt = elem.size();
 	
-	int leaf_cnt = 0; while(leaf_cnt < node_cnt && ind[leaf_cnt] >= (1 << (this->depth + 1))) ++leaf_cnt;
+	int leaf_cnt = 0; while(leaf_cnt < node_cnt && ind[leaf_cnt] >= (1 << this->depth)) ++leaf_cnt;
 	
 	// fill the nodes
 	/* merge-find set (disjoint-set data structure)
@@ -184,7 +184,7 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 	 // delete [] nxt; -- merge-find set
 	
 	// update actual_size
-	this->actual_size += elem_cnt;
+	this->actual_size += new_elem_cnt;
 	
 	std::vector<CryptoNode<T> > rs;
 	for (int i = 0; i < node_cnt; ++i) rs.push_back(crypto_tree[ind[i]]);
@@ -201,7 +201,7 @@ void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > n
 	while(new_elem_cnt + this->actual_size >= (1 << this->depth + 1)) addNewLayer();
 
 	std::vector<int> ind;
-	int *leaf_ind = generateRandomPaths(new_elem_cnt, &ind);
+	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind);
 	delete [] leaf_ind;
 	
 	assert(node_cnt == ind.size());
