@@ -15,9 +15,12 @@ class CryptoTree
     private:
         // Array list representation
         std::vector<CryptoNode<T> > crypto_tree;
+        /*    0 (stash)
+        	  1 (root)
+           2     3
+          4  5  6  7
+        */
 
-        // Current stash node of the tree
-        // CryptoNode<T> stash;
 
         // Depth of the tree (empty tree or just root is depth 0)
         int depth = 0;
@@ -57,35 +60,15 @@ class CryptoTree
         
         int computeIndex(BinaryHash binary_hash);
         
-        void extractPathIndices(int* leaf_ind, int cnt, std::vector<int> &ind);
+        void extractPathIndices(int* leaf_ind, int cnt, std::vector<int> &ind, std::vector<int>* par);
         
-        int* generateRandomPaths(int cnt, std::vector<int> &ind);
+        int* generateRandomPaths(int cnt, std::vector<int> &ind, std::vector<int>* par = NULL);
         
         std::vector<CryptoNode<T> > insert(std::vector<T> elem);
         
         void replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes);
-		/*
-        std::string binaryHash(std::string const &byte_hash);
-
-        std::vector<CryptoNode<T> > findPath(int depth, std::string binary_hash);
-
-        /// @brief Actual methods
-        // Generate a completley random path
-        std::vector<CryptoNode<T> > getPath();
-
-        // Generate a path based on an element
-        std::vector<CryptoNode<T> > getPath(std::string element);
-
-        // Insert a new element
-        void insert(std::string element);
         
-        // Replace the stash
-        void replaceStash(CryptoNode<T> new_stash);
-
-        // Given a leaf node on the tree, replace the root to leaf path with a new path
-        // Return true if success, false if failure
-        bool replacePath(int leaf, std::vector<CryptoNode<T> > new_path);
-        */
+		std::vector<T> getPath(std::string element);
 };
 
 }

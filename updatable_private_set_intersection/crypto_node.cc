@@ -31,6 +31,11 @@ void CryptoNode<T>::moveElements(std::vector<T> &elem) {
     node.clear();
 }
 
+template<typename T> 
+void CryptoNode<T>::copyElements(std::vector<T> &elem) {
+	elem.insert(elem.end(), node.begin(), node.end());
+}
+
 // Add an element to the node vector, return true if success, false if it's already full
 template<typename T> 
 bool CryptoNode<T>::addElement(T elem) {
