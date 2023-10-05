@@ -5,7 +5,7 @@ namespace updatable_private_set_intersection {
 
 
 //convert byte hash to binary hash
-std::string Byte2Binary(std::string const &byte_hash) {
+std::string Byte2Binary(const std::string &byte_hash) {
     std::string binary_hash = "";
     for (char const &c: byte_hash) {
         binary_hash += std::bitset<8>(c).to_string();
