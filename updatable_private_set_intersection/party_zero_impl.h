@@ -33,12 +33,12 @@
 
 namespace updatable_private_set_intersection {
 
-// This class represents the "client" part of the intersection-sum protocol,
-// which supplies the associated values that will be used to compute the sum.
-// This is the party that will receive the sum as output.
-class PrivateIntersectionSumProtocolClientImpl : public ProtocolClient {
+// This class represents the "party 0" part of the updatable private set intersection protocol.
+// This is the party that will receive the output in one-sided UPSI.
+
+class PrivateIntersectionSumProtocolPartyZeroImpl : public ProtocolClient {
  public:
-  PrivateIntersectionSumProtocolClientImpl(
+  PrivateIntersectionSumProtocolPartyZeroImpl(
       Context* ctx, const std::vector<std::string>& elements,
       const std::vector<BigNum>& values, int32_t modulus_size);
 

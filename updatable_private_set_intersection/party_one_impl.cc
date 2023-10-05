@@ -33,7 +33,7 @@ using ::updatable_private_set_intersection::ECCommutativeCipher;
 namespace updatable_private_set_intersection {
 
 StatusOr<PrivateIntersectionSumServerMessage::ServerRoundOne>
-PrivateIntersectionSumProtocolServerImpl::EncryptSet() {
+PrivateIntersectionSumProtocolPartyOneImpl::EncryptSet() {
   if (ec_cipher_ != nullptr) {
     return InvalidArgumentError("Attempted to call EncryptSet twice.");
   }
@@ -60,7 +60,7 @@ PrivateIntersectionSumProtocolServerImpl::EncryptSet() {
 }
 
 StatusOr<PrivateIntersectionSumServerMessage::ServerRoundTwo>
-PrivateIntersectionSumProtocolServerImpl::ComputeIntersection(
+PrivateIntersectionSumProtocolPartyOneImpl::ComputeIntersection(
     const PrivateIntersectionSumClientMessage::ClientRoundOne& client_message) {
   if (ec_cipher_ == nullptr) {
     return InvalidArgumentError(
@@ -124,19 +124,19 @@ PrivateIntersectionSumProtocolServerImpl::ComputeIntersection(
   return result;
 }
 
-Status PrivateIntersectionSumProtocolServerImpl::Handle(
+Status PrivateIntersectionSumProtocolPartyOneImpl::Handle(
     const ClientMessage& request,
     MessageSink<ServerMessage>* server_message_sink) {
   if (protocol_finished()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolServerImpl: Protocol is already "
+        "PrivateIntersectionSumProtocolPartyOneImpl: Protocol is already "
         "complete.");
   }
 
   // Check that the message is a PrivateIntersectionSum protocol message.
   if (!request.has_private_intersection_sum_client_message()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolServerImpl: Received a message for the "
+        "PrivateIntersectionSumProtocolPartyOneImpl: Received a message for the "
         "wrong protocol type");
   }
   const PrivateIntersectionSumClientMessage& client_message =
@@ -167,7 +167,7 @@ Status PrivateIntersectionSumProtocolServerImpl::Handle(
     protocol_finished_ = true;
   } else {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolServerImpl: Received a client message "
+        "PrivateIntersectionSumProtocolPartyOneImpl: Received a client message "
         "of an unknown type.");
   }
 
