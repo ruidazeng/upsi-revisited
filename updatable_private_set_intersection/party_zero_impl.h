@@ -109,4 +109,4 @@ class PrivateIntersectionSumProtocolClientImpl : public ProtocolClient {
 
 }  // namespace updatable_private_set_intersection
 
-#endif  // updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_CLIENT_IMPL_H_
+#endif  // updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_PARTY_ZERO_IMPL_IMPL_H_
