@@ -32,7 +32,7 @@
 #include "updatable_private_set_intersection/updatable_private_set_intersection.grpc.pb.h"
 #include "updatable_private_set_intersection/updatable_private_set_intersection_rpc_impl.h"
 #include "updatable_private_set_intersection/protocol_server.h"
-#include "updatable_private_set_intersection/server_impl.h"
+#include "updatable_private_set_intersection/party_one_impl.h"
 
 ABSL_FLAG(std::string, port, "0.0.0.0:10501", "Port on which to listen");
 ABSL_FLAG(std::string, server_data_file, "",

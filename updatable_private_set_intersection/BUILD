@@ -58,9 +58,9 @@ cc_library(
 )
 
 cc_library(
-    name = "client_impl",
-    srcs = ["client_impl.cc"],
-    hdrs = ["client_impl.h"],
+    name = "party_zero_impl",
+    srcs = ["party_zero_impl.cc"],
+    hdrs = ["party_zero_impl.h"],
     deps = [
         ":match_proto",
         ":message_sink",
@@ -85,9 +85,9 @@ cc_library(
 )
 
 cc_library(
-    name = "server_impl",
-    srcs = ["server_impl.cc"],
-    hdrs = ["server_impl.h"],
+    name = "party_one_impl",
+    srcs = ["party_one_impl.cc"],
+    hdrs = ["party_one_impl.h"],
     deps = [
         ":match_proto",
         ":message_sink",
@@ -128,14 +128,14 @@ cc_library(
 )
 
 cc_binary(
-    name = "server",
-    srcs = ["server.cc"],
+    name = "party_one",
+    srcs = ["party_one.cc"],
     deps = [
         ":data_util",
         ":updatable_private_set_intersection_proto",
         ":updatable_private_set_intersection_rpc_impl",
         ":protocol_server",
-        ":server_impl",
+        ":party_one_impl",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_absl//absl/base",
@@ -145,10 +145,10 @@ cc_binary(
 )
 
 cc_binary(
-    name = "client",
-    srcs = ["client.cc"],
+    name = "party_zero",
+    srcs = ["party_zero.cc"],
     deps = [
-        ":client_impl",
+        ":party_one_impl",
         ":data_util",
         ":updatable_private_set_intersection_proto",
         ":protocol_client",

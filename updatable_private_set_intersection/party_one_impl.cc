@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "updatable_private_set_intersection/server_impl.h"
+#include "updatable_private_set_intersection/party_one_impl.h"
 
 #include <algorithm>
 #include <iterator>
