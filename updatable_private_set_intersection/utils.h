@@ -12,8 +12,8 @@
 
 namespace updatable_private_set_intersection {
 
-// typedef std::tuple<ECPoint, BigNum> EncryptedElement;
-// typedef std::tuple<std::string, int> EncryptedElement;
+	typedef std::tuple<std::string, int> Encrypted_UPSI_Element;
+	typedef std::tuple<std::string, int> UPSI_Element;
 
 	typedef std::string BinaryHash;
 	
