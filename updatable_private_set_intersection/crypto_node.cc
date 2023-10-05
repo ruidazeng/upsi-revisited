@@ -3,10 +3,10 @@
 
 namespace updatable_private_set_intersection {
 
-// Default constructor
+/* Default constructor
 template<typename T> 
 CryptoNode<T>::CryptoNode() {};
-
+*/
 // Initialize CryptoNode with node size
 template<typename T> 
 CryptoNode<T>::CryptoNode(int node_size) {
@@ -48,5 +48,7 @@ bool CryptoNode<T>::addElement(T elem) {
         return true;
     }
 }
+
+template class CryptoNode<std::string>;
 
 } // namespace updatable_private_set_intersection

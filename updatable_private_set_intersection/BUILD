@@ -165,6 +165,23 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "test",
+    srcs = ["test.cc"],
+    deps = [
+        ":data_util",
+        ":updatable_private_set_intersection_proto",
+        ":updatable_private_set_intersection_rpc_impl",
+        ":protocol_server",
+        ":party_one_impl",
+        "@com_github_grpc_grpc//:grpc",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+    ],
+)
+
 cc_library(
     name = "utils",
     srcs = ["utils.cc"],

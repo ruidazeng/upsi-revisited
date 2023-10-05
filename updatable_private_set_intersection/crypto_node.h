@@ -18,7 +18,7 @@ class CryptoNode
 
     public:
         // Default constructor
-        CryptoNode();
+        // CryptoNode();
 
         // Initialize CryptoNode with node size
         CryptoNode(int node_size = default_node_size);
