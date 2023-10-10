@@ -74,12 +74,12 @@ class PrivateIntersectionSumProtocolPartyOneImpl : public ProtocolServer {
   // CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
   
   // Encrypts the server's identifiers.
-  StatusOr<PrivateIntersectionSumServerMessage::ServerRoundOne> EncryptSet();
+  // StatusOr<PrivateIntersectionSumServerMessage::ServerRoundOne> EncryptSet();
 
   // Computes the intersection size and encrypted intersection_sum.
-  StatusOr<PrivateIntersectionSumServerMessage::ServerRoundTwo>
-  ComputeIntersection(const PrivateIntersectionSumClientMessage::ClientRoundOne&
-                          client_message);
+  // StatusOr<PrivateIntersectionSumServerMessage::ServerRoundTwo>
+  // ComputeIntersection(const PrivateIntersectionSumClientMessage::ClientRoundOne&
+  //                         client_message);
 
   Context* ctx_;  // not owned
   std::unique_ptr<ECCommutativeCipher> ec_cipher_;
