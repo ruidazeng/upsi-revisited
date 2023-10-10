@@ -32,97 +32,97 @@ using ::updatable_private_set_intersection::ECCommutativeCipher;
 
 namespace updatable_private_set_intersection {
 
-StatusOr<PrivateIntersectionSumServerMessage::ServerRoundOne>
-PrivateIntersectionSumProtocolPartyOneImpl::EncryptSet() {
-  if (ec_cipher_ != nullptr) {
-    return InvalidArgumentError("Attempted to call EncryptSet twice.");
-  }
-  StatusOr<std::unique_ptr<ECCommutativeCipher>> ec_cipher =
-      ECCommutativeCipher::CreateWithNewKey(
-          NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256);
-  if (!ec_cipher.ok()) {
-    return ec_cipher.status();
-  }
-  ec_cipher_ = std::move(ec_cipher.value());
+// StatusOr<PrivateIntersectionSumServerMessage::ServerRoundOne>
+// PrivateIntersectionSumProtocolPartyOneImpl::EncryptSet() {
+//   if (ec_cipher_ != nullptr) {
+//     return InvalidArgumentError("Attempted to call EncryptSet twice.");
+//   }
+//   StatusOr<std::unique_ptr<ECCommutativeCipher>> ec_cipher =
+//       ECCommutativeCipher::CreateWithNewKey(
+//           NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256);
+//   if (!ec_cipher.ok()) {
+//     return ec_cipher.status();
+//   }
+//   ec_cipher_ = std::move(ec_cipher.value());
 
-  PrivateIntersectionSumServerMessage::ServerRoundOne result;
-  for (const std::string& input : inputs_) {
-    EncryptedElement* encrypted =
-        result.mutable_encrypted_set()->add_elements();
-    StatusOr<std::string> encrypted_element = ec_cipher_->Encrypt(input);
-    if (!encrypted_element.ok()) {
-      return encrypted_element.status();
-    }
-    *encrypted->mutable_element() = encrypted_element.value();
-  }
+//   PrivateIntersectionSumServerMessage::ServerRoundOne result;
+//   for (const std::string& input : inputs_) {
+//     EncryptedElement* encrypted =
+//         result.mutable_encrypted_set()->add_elements();
+//     StatusOr<std::string> encrypted_element = ec_cipher_->Encrypt(input);
+//     if (!encrypted_element.ok()) {
+//       return encrypted_element.status();
+//     }
+//     *encrypted->mutable_element() = encrypted_element.value();
+//   }
 
-  return result;
-}
+//   return result;
+// }
 
-StatusOr<PrivateIntersectionSumServerMessage::ServerRoundTwo>
-PrivateIntersectionSumProtocolPartyOneImpl::ComputeIntersection(
-    const PrivateIntersectionSumClientMessage::ClientRoundOne& client_message) {
-  if (ec_cipher_ == nullptr) {
-    return InvalidArgumentError(
-        "Called ComputeIntersection before EncryptSet.");
-  }
-  PrivateIntersectionSumServerMessage::ServerRoundTwo result;
-  BigNum N = ctx_->CreateBigNum(client_message.public_key());
-  PublicPaillier public_paillier(ctx_, N, 2);
+// StatusOr<PrivateIntersectionSumServerMessage::ServerRoundTwo>
+// PrivateIntersectionSumProtocolPartyOneImpl::ComputeIntersection(
+//     const PrivateIntersectionSumClientMessage::ClientRoundOne& client_message) {
+//   if (ec_cipher_ == nullptr) {
+//     return InvalidArgumentError(
+//         "Called ComputeIntersection before EncryptSet.");
+//   }
+//   PrivateIntersectionSumServerMessage::ServerRoundTwo result;
+//   BigNum N = ctx_->CreateBigNum(client_message.public_key());
+//   PublicPaillier public_paillier(ctx_, N, 2);
 
-  std::vector<EncryptedElement> server_set, client_set, intersection;
+//   std::vector<EncryptedElement> server_set, client_set, intersection;
 
-  // First, we re-encrypt the client party's set, so that we can compare with
-  // the re-encrypted set received from the client.
-  for (const EncryptedElement& element :
-       client_message.encrypted_set().elements()) {
-    EncryptedElement reencrypted;
-    *reencrypted.mutable_associated_data() = element.associated_data();
-    StatusOr<std::string> reenc = ec_cipher_->ReEncrypt(element.element());
-    if (!reenc.ok()) {
-      return reenc.status();
-    }
-    *reencrypted.mutable_element() = reenc.value();
-    client_set.push_back(reencrypted);
-  }
-  for (const EncryptedElement& element :
-       client_message.reencrypted_set().elements()) {
-    server_set.push_back(element);
-  }
+//   // First, we re-encrypt the client party's set, so that we can compare with
+//   // the re-encrypted set received from the client.
+//   for (const EncryptedElement& element :
+//        client_message.encrypted_set().elements()) {
+//     EncryptedElement reencrypted;
+//     *reencrypted.mutable_associated_data() = element.associated_data();
+//     StatusOr<std::string> reenc = ec_cipher_->ReEncrypt(element.element());
+//     if (!reenc.ok()) {
+//       return reenc.status();
+//     }
+//     *reencrypted.mutable_element() = reenc.value();
+//     client_set.push_back(reencrypted);
+//   }
+//   for (const EncryptedElement& element :
+//        client_message.reencrypted_set().elements()) {
+//     server_set.push_back(element);
+//   }
 
-  // std::set_intersection requires sorted inputs.
-  std::sort(client_set.begin(), client_set.end(),
-            [](const EncryptedElement& a, const EncryptedElement& b) {
-              return a.element() < b.element();
-            });
-  std::sort(server_set.begin(), server_set.end(),
-            [](const EncryptedElement& a, const EncryptedElement& b) {
-              return a.element() < b.element();
-            });
-  std::set_intersection(
-      client_set.begin(), client_set.end(), server_set.begin(),
-      server_set.end(), std::back_inserter(intersection),
-      [](const EncryptedElement& a, const EncryptedElement& b) {
-        return a.element() < b.element();
-      });
+//   // std::set_intersection requires sorted inputs.
+//   std::sort(client_set.begin(), client_set.end(),
+//             [](const EncryptedElement& a, const EncryptedElement& b) {
+//               return a.element() < b.element();
+//             });
+//   std::sort(server_set.begin(), server_set.end(),
+//             [](const EncryptedElement& a, const EncryptedElement& b) {
+//               return a.element() < b.element();
+//             });
+//   std::set_intersection(
+//       client_set.begin(), client_set.end(), server_set.begin(),
+//       server_set.end(), std::back_inserter(intersection),
+//       [](const EncryptedElement& a, const EncryptedElement& b) {
+//         return a.element() < b.element();
+//       });
 
-  // From the intersection we compute the sum of the associated values, which is
-  // the result we return to the client.
-  StatusOr<BigNum> encrypted_zero =
-      public_paillier.Encrypt(ctx_->CreateBigNum(0));
-  if (!encrypted_zero.ok()) {
-    return encrypted_zero.status();
-  }
-  BigNum sum = encrypted_zero.value();
-  for (const EncryptedElement& element : intersection) {
-    sum =
-        public_paillier.Add(sum, ctx_->CreateBigNum(element.associated_data()));
-  }
+//   // From the intersection we compute the sum of the associated values, which is
+//   // the result we return to the client.
+//   StatusOr<BigNum> encrypted_zero =
+//       public_paillier.Encrypt(ctx_->CreateBigNum(0));
+//   if (!encrypted_zero.ok()) {
+//     return encrypted_zero.status();
+//   }
+//   BigNum sum = encrypted_zero.value();
+//   for (const EncryptedElement& element : intersection) {
+//     sum =
+//         public_paillier.Add(sum, ctx_->CreateBigNum(element.associated_data()));
+//   }
 
-  *result.mutable_encrypted_sum() = sum.ToBytes();
-  result.set_intersection_size(intersection.size());
-  return result;
-}
+//   *result.mutable_encrypted_sum() = sum.ToBytes();
+//   result.set_intersection_size(intersection.size());
+//   return result;
+// }
 
 Status PrivateIntersectionSumProtocolPartyOneImpl::Handle(
     const ClientMessage& request,
