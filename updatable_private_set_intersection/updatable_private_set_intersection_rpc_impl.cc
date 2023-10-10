@@ -62,7 +62,7 @@ class SingleMessageSink : public MessageSink<ServerMessage> {
 
 }  // namespace
 
-::grpc::Status PrivateJoinAndComputeRpcImpl::Handle(
+::grpc::Status UpdatablePrivateSetIntersectionRpcImpl::Handle(
     ::grpc::ServerContext* context, const ClientMessage* request,
     ServerMessage* response) {
   SingleMessageSink message_sink(response);

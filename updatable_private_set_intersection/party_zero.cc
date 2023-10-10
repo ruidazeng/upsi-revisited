@@ -52,7 +52,7 @@ namespace {
 class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
  public:
   explicit InvokeServerHandleClientMessageSink(
-      std::unique_ptr<PrivateJoinAndComputeRpc::Stub> stub)
+      std::unique_ptr<UpdatablePrivateSetIntersectionRpc::Stub> stub)
       : stub_(std::move(stub)) {}
 
   ~InvokeServerHandleClientMessageSink() override = default;
@@ -74,7 +74,7 @@ class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
   const ServerMessage& last_server_response() { return last_server_response_; }
 
  private:
-  std::unique_ptr<PrivateJoinAndComputeRpc::Stub> stub_;
+  std::unique_ptr<UpdatablePrivateSetIntersectionRpc::Stub> stub_;
   ServerMessage last_server_response_;
 };
 
@@ -103,8 +103,8 @@ int ExecuteProtocol() {
           absl::GetFlag(FLAGS_paillier_modulus_size));
 
   // Consider grpc::SslServerCredentials if not running locally.
-  std::unique_ptr<PrivateJoinAndComputeRpc::Stub> stub =
-      PrivateJoinAndComputeRpc::NewStub(::grpc::CreateChannel(
+  std::unique_ptr<UpdatablePrivateSetIntersectionRpc::Stub> stub =
+      UpdatablePrivateSetIntersectionRpc::NewStub(::grpc::CreateChannel(
           absl::GetFlag(FLAGS_port), ::grpc::experimental::LocalCredentials(
                                          grpc_local_connect_type::LOCAL_TCP)));
   InvokeServerHandleClientMessageSink invoke_server_handle_message_sink(

@@ -45,8 +45,8 @@ class PrivateIntersectionSumProtocolPartyZeroImpl : public ProtocolClient {
       const std::vector<BigNum>& values, int32_t modulus_size);
 
   // Generates the StartProtocol message and sends it on the message sink.
-  Status StartProtocol(
-      MessageSink<ClientMessage>* client_message_sink) override;
+//   Status StartProtocol(
+//       MessageSink<ClientMessage>* client_message_sink) override;
 
   // Executes the next Client round and creates a new server request, which must
   // be sent to the server unless the protocol is finished.
@@ -64,11 +64,11 @@ class PrivateIntersectionSumProtocolPartyZeroImpl : public ProtocolClient {
   // PrivateIntersectionSumServerMessage of the expected round, or if the
   // message is otherwise not as expected. Forwards all other failures
   // encountered.
-  Status Handle(const ServerMessage& server_message,
-                MessageSink<ClientMessage>* client_message_sink) override;
+//   Status Handle(const ServerMessage& server_message,
+//                 MessageSink<ClientMessage>* client_message_sink) override;
 
-  // Prints the result, namely the intersection size and the intersection sum.
-  Status PrintOutput() override;
+//   // Prints the result, namely the intersection size and the intersection sum.
+//   Status PrintOutput() override;
 
   bool protocol_finished() override { return protocol_finished_; }
 

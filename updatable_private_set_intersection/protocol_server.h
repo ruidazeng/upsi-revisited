@@ -39,7 +39,7 @@ class ProtocolServer {
 
   // All subclasses should return true if the protocol is complete, and false
   // otherwise.
-  virtual bool protocol_finished() = 0;
+  // virtual bool protocol_finished() = 0;
 
  protected:
   ProtocolServer() = default;
