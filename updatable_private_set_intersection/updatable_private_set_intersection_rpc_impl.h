@@ -29,7 +29,7 @@
 namespace updatable_private_set_intersection {
 
 // Implements the PrivateJoin and Compute RPC-handling Server.
-class PrivateJoinAndComputeRpcImpl : public PrivateJoinAndComputeRpc::Service {
+class UpdatablePrivateSetIntersectionRpcImpl : public UpdatablePrivateSetIntersectionRpc::Service {
  public:
   // Takes as a parameter an implementation of the server actually implementing
   // the steps of the protocol.
@@ -39,7 +39,7 @@ class PrivateJoinAndComputeRpcImpl : public PrivateJoinAndComputeRpc::Service {
   // with INVALID_ARGUMENT if more than one message is supplied. All supplied
   // protocol_server_impls' Handle methods should therefore Send at most one
   // message to the server_message_sink.
-  explicit PrivateJoinAndComputeRpcImpl(
+  explicit UpdatablePrivateSetIntersectionRpcImpl(
       std::unique_ptr<ProtocolServer> protocol_server_impl)
       : protocol_server_impl_(std::move(protocol_server_impl)) {}
 

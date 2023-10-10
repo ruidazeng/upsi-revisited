@@ -34,7 +34,7 @@ message ServerMessage {
 }
 
 // gRPC interface for Private Join and Compute.
-service PrivateJoinAndComputeRpc {
+service UpdatablePrivateSetIntersectionRpc {
   // Handles a single protocol round.
   rpc Handle(ClientMessage) returns (ServerMessage) {}
 }

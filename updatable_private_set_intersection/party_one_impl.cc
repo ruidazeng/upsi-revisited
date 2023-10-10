@@ -124,54 +124,54 @@ namespace updatable_private_set_intersection {
 //   return result;
 // }
 
-Status PrivateIntersectionSumProtocolPartyOneImpl::Handle(
-    const ClientMessage& request,
-    MessageSink<ServerMessage>* server_message_sink) {
-  if (protocol_finished()) {
-    return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolPartyOneImpl: Protocol is already "
-        "complete.");
-  }
+// Status PrivateIntersectionSumProtocolPartyOneImpl::Handle(
+//     const ClientMessage& request,
+//     MessageSink<ServerMessage>* server_message_sink) {
+//   if (protocol_finished()) {
+//     return InvalidArgumentError(
+//         "PrivateIntersectionSumProtocolPartyOneImpl: Protocol is already "
+//         "complete.");
+//   }
 
-  // Check that the message is a PrivateIntersectionSum protocol message.
-  if (!request.has_private_intersection_sum_client_message()) {
-    return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolPartyOneImpl: Received a message for the "
-        "wrong protocol type");
-  }
-  const PrivateIntersectionSumClientMessage& client_message =
-      request.private_intersection_sum_client_message();
+//   // Check that the message is a PrivateIntersectionSum protocol message.
+//   if (!request.has_private_intersection_sum_client_message()) {
+//     return InvalidArgumentError(
+//         "PrivateIntersectionSumProtocolPartyOneImpl: Received a message for the "
+//         "wrong protocol type");
+//   }
+//   const PrivateIntersectionSumClientMessage& client_message =
+//       request.private_intersection_sum_client_message();
 
-  ServerMessage server_message;
+//   ServerMessage server_message;
 
-  if (client_message.has_start_protocol_request()) {
-    // Handle a protocol start message.
-    auto maybe_server_round_one = EncryptSet();
-    if (!maybe_server_round_one.ok()) {
-      return maybe_server_round_one.status();
-    }
-    *(server_message.mutable_private_intersection_sum_server_message()
-          ->mutable_server_round_one()) =
-        std::move(maybe_server_round_one.value());
-  } else if (client_message.has_client_round_one()) {
-    // Handle the client round 1 message.
-    auto maybe_server_round_two =
-        ComputeIntersection(client_message.client_round_one());
-    if (!maybe_server_round_two.ok()) {
-      return maybe_server_round_two.status();
-    }
-    *(server_message.mutable_private_intersection_sum_server_message()
-          ->mutable_server_round_two()) =
-        std::move(maybe_server_round_two.value());
-    // Mark the protocol as finished here.
-    protocol_finished_ = true;
-  } else {
-    return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolPartyOneImpl: Received a client message "
-        "of an unknown type.");
-  }
+//   if (client_message.has_start_protocol_request()) {
+//     // Handle a protocol start message.
+//     auto maybe_server_round_one = EncryptSet();
+//     if (!maybe_server_round_one.ok()) {
+//       return maybe_server_round_one.status();
+//     }
+//     *(server_message.mutable_private_intersection_sum_server_message()
+//           ->mutable_server_round_one()) =
+//         std::move(maybe_server_round_one.value());
+//   } else if (client_message.has_client_round_one()) {
+//     // Handle the client round 1 message.
+//     auto maybe_server_round_two =
+//         ComputeIntersection(client_message.client_round_one());
+//     if (!maybe_server_round_two.ok()) {
+//       return maybe_server_round_two.status();
+//     }
+//     *(server_message.mutable_private_intersection_sum_server_message()
+//           ->mutable_server_round_two()) =
+//         std::move(maybe_server_round_two.value());
+//     // Mark the protocol as finished here.
+//     protocol_finished_ = true;
+//   } else {
+//     return InvalidArgumentError(
+//         "PrivateIntersectionSumProtocolPartyOneImpl: Received a client message "
+//         "of an unknown type.");
+//   }
 
-  return server_message_sink->Send(server_message);
-}
+//   return server_message_sink->Send(server_message);
+// }
 
 }  // namespace updatable_private_set_intersection

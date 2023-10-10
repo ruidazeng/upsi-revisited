@@ -101,82 +101,82 @@ PrivateIntersectionSumProtocolPartyZeroImpl::
 //   return std::make_pair(server_message.intersection_size(), sum.value());
 // }
 
-Status PrivateIntersectionSumProtocolPartyZeroImpl::StartProtocol(
-    MessageSink<ClientMessage>* client_message_sink) {
-  ClientMessage client_message;
-  *(client_message.mutable_private_intersection_sum_client_message()
-        ->mutable_start_protocol_request()) =
-      PrivateIntersectionSumClientMessage::StartProtocolRequest();
-  return client_message_sink->Send(client_message);
-}
+// Status PrivateIntersectionSumProtocolPartyZeroImpl::StartProtocol(
+//     MessageSink<ClientMessage>* client_message_sink) {
+//   ClientMessage client_message;
+//   *(client_message.mutable_private_intersection_sum_client_message()
+//         ->mutable_start_protocol_request()) =
+//       PrivateIntersectionSumClientMessage::StartProtocolRequest();
+//   return client_message_sink->Send(client_message);
+// }
 
-Status PrivateIntersectionSumProtocolPartyZeroImpl::Handle(
-    const ServerMessage& server_message,
-    MessageSink<ClientMessage>* client_message_sink) {
-  if (protocol_finished()) {
-    return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolPartyZeroImpl: Protocol is already "
-        "complete.");
-  }
+// Status PrivateIntersectionSumProtocolPartyZeroImpl::Handle(
+//     const ServerMessage& server_message,
+//     MessageSink<ClientMessage>* client_message_sink) {
+//   if (protocol_finished()) {
+//     return InvalidArgumentError(
+//         "PrivateIntersectionSumProtocolPartyZeroImpl: Protocol is already "
+//         "complete.");
+//   }
 
-  // Check that the message is a PrivateIntersectionSum protocol message.
-  if (!server_message.has_private_intersection_sum_server_message()) {
-    return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolPartyZeroImpl: Received a message for the "
-        "wrong protocol type");
-  }
+//   // Check that the message is a PrivateIntersectionSum protocol message.
+//   if (!server_message.has_private_intersection_sum_server_message()) {
+//     return InvalidArgumentError(
+//         "PrivateIntersectionSumProtocolPartyZeroImpl: Received a message for the "
+//         "wrong protocol type");
+//   }
 
-  if (server_message.private_intersection_sum_server_message()
-          .has_server_round_one()) {
-    // Handle the server round one message.
-    ClientMessage client_message;
+//   if (server_message.private_intersection_sum_server_message()
+//           .has_server_round_one()) {
+//     // Handle the server round one message.
+//     ClientMessage client_message;
 
-    auto maybe_client_round_one =
-        ReEncryptSet(server_message.private_intersection_sum_server_message()
-                         .server_round_one());
-    if (!maybe_client_round_one.ok()) {
-      return maybe_client_round_one.status();
-    }
-    *(client_message.mutable_private_intersection_sum_client_message()
-          ->mutable_client_round_one()) =
-        std::move(maybe_client_round_one.value());
-    return client_message_sink->Send(client_message);
-  } else if (server_message.private_intersection_sum_server_message()
-                 .has_server_round_two()) {
-    // Handle the server round two message.
-    auto maybe_result =
-        DecryptSum(server_message.private_intersection_sum_server_message()
-                       .server_round_two());
-    if (!maybe_result.ok()) {
-      return maybe_result.status();
-    }
-    std::tie(intersection_size_, intersection_sum_) =
-        std::move(maybe_result.value());
-    // Mark the protocol as finished here.
-    protocol_finished_ = true;
-    return OkStatus();
-  }
-  // If none of the previous cases matched, we received the wrong kind of
-  // message.
-  return InvalidArgumentError(
-      "PrivateIntersectionSumProtocolPartyZeroImpl: Received a server message "
-      "of an unknown type.");
-}
+//     auto maybe_client_round_one =
+//         ReEncryptSet(server_message.private_intersection_sum_server_message()
+//                          .server_round_one());
+//     if (!maybe_client_round_one.ok()) {
+//       return maybe_client_round_one.status();
+//     }
+//     *(client_message.mutable_private_intersection_sum_client_message()
+//           ->mutable_client_round_one()) =
+//         std::move(maybe_client_round_one.value());
+//     return client_message_sink->Send(client_message);
+//   } else if (server_message.private_intersection_sum_server_message()
+//                  .has_server_round_two()) {
+//     // Handle the server round two message.
+//     auto maybe_result =
+//         DecryptSum(server_message.private_intersection_sum_server_message()
+//                        .server_round_two());
+//     if (!maybe_result.ok()) {
+//       return maybe_result.status();
+//     }
+//     std::tie(intersection_size_, intersection_sum_) =
+//         std::move(maybe_result.value());
+//     // Mark the protocol as finished here.
+//     protocol_finished_ = true;
+//     return OkStatus();
+//   }
+//   // If none of the previous cases matched, we received the wrong kind of
+//   // message.
+//   return InvalidArgumentError(
+//       "PrivateIntersectionSumProtocolPartyZeroImpl: Received a server message "
+//       "of an unknown type.");
+// }
 
-Status PrivateIntersectionSumProtocolPartyZeroImpl::PrintOutput() {
-  if (!protocol_finished()) {
-    return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolPartyZeroImpl: Not ready to print the "
-        "output yet.");
-  }
-  auto maybe_converted_intersection_sum = intersection_sum_.ToIntValue();
-  if (!maybe_converted_intersection_sum.ok()) {
-    return maybe_converted_intersection_sum.status();
-  }
-  std::cout << "Client: The intersection size is " << intersection_size_
-            << " and the intersection-sum is "
-            << maybe_converted_intersection_sum.value() << std::endl;
-  return OkStatus();
-}
+// Status PrivateIntersectionSumProtocolPartyZeroImpl::PrintOutput() {
+//   if (!protocol_finished()) {
+//     return InvalidArgumentError(
+//         "PrivateIntersectionSumProtocolPartyZeroImpl: Not ready to print the "
+//         "output yet.");
+//   }
+//   auto maybe_converted_intersection_sum = intersection_sum_.ToIntValue();
+//   if (!maybe_converted_intersection_sum.ok()) {
+//     return maybe_converted_intersection_sum.status();
+//   }
+//   std::cout << "Client: The intersection size is " << intersection_size_
+//             << " and the intersection-sum is "
+//             << maybe_converted_intersection_sum.value() << std::endl;
+//   return OkStatus();
+// }
 
 }  // namespace updatable_private_set_intersection

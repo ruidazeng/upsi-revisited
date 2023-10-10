@@ -60,10 +60,10 @@ class PrivateIntersectionSumProtocolPartyOneImpl : public ProtocolServer {
   // PrivateIntersectionSumClientMessage of the expected round, or if the
   // message is otherwise not as expected. Forwards all other failures
   // encountered.
-  Status Handle(const ClientMessage& request,
-                MessageSink<ServerMessage>* server_message_sink) override;
+  // Status Handle(const ClientMessage& request,
+  //               MessageSink<ServerMessage>* server_message_sink) override;
 
-  bool protocol_finished() override { return protocol_finished_; }
+  // bool protocol_finished() override { return protocol_finished_; }
 
   // Utility function, used for testing.
   ECCommutativeCipher* GetECCipher() { return ec_cipher_.get(); }
