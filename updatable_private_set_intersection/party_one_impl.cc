@@ -124,25 +124,25 @@ namespace updatable_private_set_intersection {
 //   return result;
 // }
 
-// Status PrivateIntersectionSumProtocolPartyOneImpl::Handle(
-//     const ClientMessage& request,
-//     MessageSink<ServerMessage>* server_message_sink) {
-//   if (protocol_finished()) {
-//     return InvalidArgumentError(
-//         "PrivateIntersectionSumProtocolPartyOneImpl: Protocol is already "
-//         "complete.");
-//   }
+Status PrivateIntersectionSumProtocolPartyOneImpl::Handle(
+    const ClientMessage& request,
+    MessageSink<ServerMessage>* server_message_sink) {
+  if (protocol_finished()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolPartyOneImpl: Protocol is already "
+        "complete.");
+  }
 
-//   // Check that the message is a PrivateIntersectionSum protocol message.
-//   if (!request.has_private_intersection_sum_client_message()) {
-//     return InvalidArgumentError(
-//         "PrivateIntersectionSumProtocolPartyOneImpl: Received a message for the "
-//         "wrong protocol type");
-//   }
+  // Check that the message is a PrivateIntersectionSum protocol message.
+  if (!request.has_private_intersection_sum_client_message()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolPartyOneImpl: Received a message for the "
+        "wrong protocol type");
+  }
 //   const PrivateIntersectionSumClientMessage& client_message =
 //       request.private_intersection_sum_client_message();
 
-//   ServerMessage server_message;
+  ServerMessage server_message;
 
 //   if (client_message.has_start_protocol_request()) {
 //     // Handle a protocol start message.
@@ -171,7 +171,7 @@ namespace updatable_private_set_intersection {
 //         "of an unknown type.");
 //   }
 
-//   return server_message_sink->Send(server_message);
-// }
+  return server_message_sink->Send(server_message);
+}
 
 }  // namespace updatable_private_set_intersection

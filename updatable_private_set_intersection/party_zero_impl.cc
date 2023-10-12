@@ -29,20 +29,27 @@
 
 namespace updatable_private_set_intersection {
 
+// PrivateIntersectionSumProtocolPartyZeroImpl::
+//     PrivateIntersectionSumProtocolPartyZeroImpl(
+//         Context* ctx, const std::vector<std::string>& elements,
+//         const std::vector<BigNum>& values, int32_t modulus_size)
+//     : ctx_(ctx),
+//       elements_(elements),
+//       values_(values),
+//       p_(ctx_->GenerateSafePrime(modulus_size / 2)),
+//       q_(ctx_->GenerateSafePrime(modulus_size / 2)),
+//       intersection_sum_(ctx->Zero()),
+//       ec_cipher_(std::move(
+//           ECCommutativeCipher::CreateWithNewKey(
+//               NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256)
+//               .value())) {}
+
 PrivateIntersectionSumProtocolPartyZeroImpl::
-    PrivateIntersectionSumProtocolPartyZeroImpl(
-        Context* ctx, const std::vector<std::string>& elements,
-        const std::vector<BigNum>& values, int32_t modulus_size)
-    : ctx_(ctx),
-      elements_(elements),
-      values_(values),
-      p_(ctx_->GenerateSafePrime(modulus_size / 2)),
-      q_(ctx_->GenerateSafePrime(modulus_size / 2)),
-      intersection_sum_(ctx->Zero()),
-      ec_cipher_(std::move(
-          ECCommutativeCipher::CreateWithNewKey(
-              NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256)
-              .value())) {}
+    PrivateIntersectionSumProtocolPartyZeroImpl(Context* ctx, int32_t modulus_size) {
+        this->ctx_ = ctx;
+        this->p_ = this->ctx_->GenerateSafePrime(modulus_size / 2);
+        this->q_ = this->ctx_->GenerateSafePrime(modulus_size / 2);
+}
 
 // StatusOr<PrivateIntersectionSumClientMessage::ClientRoundOne>
 // PrivateIntersectionSumProtocolPartyZeroImpl::ReEncryptSet(
@@ -163,20 +170,5 @@ PrivateIntersectionSumProtocolPartyZeroImpl::
 //       "of an unknown type.");
 // }
 
-// Status PrivateIntersectionSumProtocolPartyZeroImpl::PrintOutput() {
-//   if (!protocol_finished()) {
-//     return InvalidArgumentError(
-//         "PrivateIntersectionSumProtocolPartyZeroImpl: Not ready to print the "
-//         "output yet.");
-//   }
-//   auto maybe_converted_intersection_sum = intersection_sum_.ToIntValue();
-//   if (!maybe_converted_intersection_sum.ok()) {
-//     return maybe_converted_intersection_sum.status();
-//   }
-//   std::cout << "Client: The intersection size is " << intersection_size_
-//             << " and the intersection-sum is "
-//             << maybe_converted_intersection_sum.value() << std::endl;
-//   return OkStatus();
-// }
 
 }  // namespace updatable_private_set_intersection
