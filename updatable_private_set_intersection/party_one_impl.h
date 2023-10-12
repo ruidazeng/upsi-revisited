@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "updatable_private_set_intersection/crypto/context.h"
+#include "updatable_private_set_intersection/crypto/elgamal.h"
 #include "updatable_private_set_intersection/crypto/ec_commutative_cipher.h"
 #include "updatable_private_set_intersection/crypto/paillier.h"
 #include "updatable_private_set_intersection/crypto_tree.h"
@@ -80,7 +81,7 @@ class PrivateIntersectionSumProtocolPartyOneImpl : public ProtocolServer {
   //                         client_message);
 
   Context* ctx_;  // not owned
-  // std::unique_ptr<ECCommutativeCipher> ec_cipher_;
+  std::unique_ptr<ElGamalDecrypter> elgamal_decrypter_;
 
   // inputs_ will first contain the plaintext server identifiers, and later
   // contain the encrypted server identifiers.

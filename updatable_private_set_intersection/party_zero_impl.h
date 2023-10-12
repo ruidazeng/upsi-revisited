@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "updatable_private_set_intersection/crypto/context.h"
+#include "updatable_private_set_intersection/crypto/elgamal.h"
 #include "updatable_private_set_intersection/crypto/ec_commutative_cipher.h"
 #include "updatable_private_set_intersection/crypto/paillier.h"
 #include "updatable_private_set_intersection/crypto_tree.h"
@@ -88,11 +89,14 @@ class PrivateIntersectionSumProtocolPartyZeroImpl : public ProtocolClient {
 //           server_message);
 
   Context* ctx_;  // not owned
+  std::vector<std::string> elements_;
+  std::vector<BigNum> values_;
+
 
   // The Paillier private key
   BigNum p_, q_;
 
-  std::unique_ptr<ECCommutativeCipher> ec_cipher_;
+  std::unique_ptr<ElGamalEncrypter> elgamal_encrypter_;
   std::unique_ptr<PrivatePaillier> private_paillier_;
 
   bool protocol_finished_ = false;

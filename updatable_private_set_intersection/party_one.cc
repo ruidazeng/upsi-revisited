@@ -38,13 +38,13 @@ ABSL_FLAG(std::string, port, "0.0.0.0:10501", "Port on which to listen");
 ABSL_FLAG(std::string, server_data_file, "",
           "The file from which to read the server database.");
 
-int RunServer() {
+int RunPartyOne() {
   std::cout << "Server: loading data... " << std::endl;
   auto maybe_server_identifiers =
       ::updatable_private_set_intersection::ReadServerDatasetFromFile(
           absl::GetFlag(FLAGS_server_data_file));
   if (!maybe_server_identifiers.ok()) {
-    std::cerr << "RunServer: failed " << maybe_server_identifiers.status()
+    std::cerr << "RunPartyOne: failed " << maybe_server_identifiers.status()
               << std::endl;
     return 1;
   }
@@ -89,5 +89,5 @@ int RunServer() {
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
 
-  return RunServer();
+  return RunPartyOne();
 }
