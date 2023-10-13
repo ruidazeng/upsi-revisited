@@ -21,7 +21,7 @@ import "updatable_private_set_intersection/match.proto";
 
 // Client Messages
 
-message PrivateIntersectionSumClientMessage {
+message PrivateIntersectionClientMessage {
   oneof message_content {
     StartProtocolRequest start_protocol_request = 1;
     ClientRoundOne client_round_one = 2;
@@ -41,7 +41,7 @@ message PrivateIntersectionSumClientMessage {
 
 // Server Messages.
 
-message PrivateIntersectionSumServerMessage {
+message PrivateIntersectionServerMessage {
   oneof message_content {
     ServerRoundOne server_round_one = 1;
     ServerRoundTwo server_round_two = 2;

@@ -28,7 +28,7 @@
 #include "updatable_private_set_intersection/crypto_tree.h"
 #include "updatable_private_set_intersection/match.pb.h"
 #include "updatable_private_set_intersection/message_sink.h"
-#include "updatable_private_set_intersection/private_intersection_sum.pb.h"
+#include "updatable_private_set_intersection/private_intersection.pb.h"
 #include "updatable_private_set_intersection/updatable_private_set_intersection.pb.h"
 #include "updatable_private_set_intersection/protocol_client.h"
 #include "updatable_private_set_intersection/utils.h"

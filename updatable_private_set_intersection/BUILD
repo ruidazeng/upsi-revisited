@@ -22,8 +22,8 @@ grpc_proto_library(
 )
 
 grpc_proto_library(
-    name = "private_intersection_sum_proto",
-    srcs = ["private_intersection_sum.proto"],
+    name = "private_intersection_proto",
+    srcs = ["private_intersection.proto"],
     deps = [
         ":match_proto",
     ],
@@ -33,7 +33,7 @@ grpc_proto_library(
     name = "updatable_private_set_intersection_proto",
     srcs = ["updatable_private_set_intersection.proto"],
     deps = [
-        ":private_intersection_sum_proto",
+        ":private_intersection_proto",
     ],
 )
 
@@ -66,7 +66,7 @@ cc_library(
         ":utils",
         ":match_proto",
         ":message_sink",
-        ":private_intersection_sum_proto",
+        ":private_intersection_proto",
         ":updatable_private_set_intersection_proto",
         ":protocol_client",
         "//updatable_private_set_intersection/crypto:bn_util",
@@ -96,7 +96,7 @@ cc_library(
         ":utils",
         ":match_proto",
         ":message_sink",
-        ":private_intersection_sum_proto",
+        ":private_intersection_proto",
         ":updatable_private_set_intersection_proto",
         ":protocol_server",
         "//updatable_private_set_intersection/crypto:bn_util",
