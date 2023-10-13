@@ -50,7 +50,22 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // Generates the StartProtocol message and sends it on the message sink.
     Status StartProtocol(MessageSink<ClientMessage>* client_message_sink) override;
 
-    // Handle
+    // Executes the next Client round and creates a new server request, which must
+    // be sent to the server unless the protocol is finished.
+    //
+    // If the ServerMessage is ServerRoundOne, a ClientRoundOne will be sent on
+    // the message sink, containing the encrypted client identifiers and
+    // associated values, and the re-encrypted and shuffled server identifiers.
+    //
+    // If the ServerMessage is ServerRoundTwo, nothing will be sent on
+    // the message sink, and the client will internally store the intersection sum
+    // and size. The intersection sum and size can be retrieved either through
+    // accessors, or by calling PrintOutput.
+    //
+    // Fails with InvalidArgument if the message is not a
+    // PrivateIntersectionSumServerMessage of the expected round, or if the
+    // message is otherwise not as expected. Forwards all other failures
+    // encountered.
     Status Handle(const ServerMessage& server_message,
                   MessageSink<ClientMessage>* client_message_sink) override;
 

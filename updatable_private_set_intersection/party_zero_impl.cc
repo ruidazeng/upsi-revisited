@@ -60,13 +60,11 @@ Status PrivateIntersectionSumProtocolPartyZeroImpl::StartProtocol(
   ClientMessage client_message;
   *(client_message.mutable_private_intersection_client_message()
         ->mutable_start_protocol_request()) =
-      PrivateIntersectionSumClientMessage::StartProtocolRequest();
+      PrivateIntersectionSumMessage::StartProtocolRequest();
   return client_message_sink->Send(client_message);
 }
 
-
-
-StatusOr<std::unique_ptr<PublicKey>> GeneratePublicKeyFromShares(
-    const std::vector<std::unique_ptr<elgamal::PublicKey>>& shares);
+// StatusOr<std::unique_ptr<PublicKey>> GeneratePublicKeyFromShares(
+//     const std::vector<std::unique_ptr<elgamal::PublicKey>>& shares);
 
 }  // namespace updatable_private_set_intersection
