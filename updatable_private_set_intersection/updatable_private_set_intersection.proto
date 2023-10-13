@@ -17,19 +17,19 @@ syntax = "proto2";
 
 package updatable_private_set_intersection;
 
-import "updatable_private_set_intersection/private_intersection_sum.proto";
+import "updatable_private_set_intersection/private_intersection.proto";
 
 message ClientMessage {
   oneof client_message_oneof {
-    PrivateIntersectionSumClientMessage
-        private_intersection_sum_client_message = 1;
+    PrivateIntersectionClientMessage
+        private_intersection_client_message = 1;
   }
 }
 
 message ServerMessage {
   oneof server_message_oneof {
-    PrivateIntersectionSumServerMessage
-        private_intersection_sum_server_message = 1;
+    PrivateIntersectionServerMessage
+        private_intersection_server_message = 1;
   }
 }
 
