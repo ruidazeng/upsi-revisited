@@ -38,10 +38,6 @@ class ProtocolClient {
   virtual Status Handle(const ServerMessage& server_message,
                         MessageSink<ClientMessage>* client_message_sink) = 0;
 
-  // For all subclasses, if the protocol is finished, calling this function
-  // should print the output.
-  virtual Status PrintOutput() = 0;
-
   // All subclasses should return true if the protocol is complete, and
   // false otherwise.
   virtual bool protocol_finished() = 0;
