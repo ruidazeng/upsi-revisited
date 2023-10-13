@@ -29,8 +29,8 @@
 
 namespace updatable_private_set_intersection {
 
-PrivateIntersectionSumProtocolPartyZeroImpl::
-    PrivateIntersectionSumProtocolPartyZeroImpl(Context* ctx, int32_t modulus_size) {
+PrivateIntersectionProtocolPartyZeroImpl::
+    PrivateIntersectionProtocolPartyZeroImpl(Context* ctx, int32_t modulus_size) {
         // Assign context
         this->ctx_ = ctx;
         // Use curve_id and context to create EC_Group for ElGamal

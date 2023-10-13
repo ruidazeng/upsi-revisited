@@ -23,17 +23,11 @@
 #include <vector>
 
 #include "absl/memory/memory.h"
-#include "updatable_private_set_intersection/crypto/ec_commutative_cipher.h"
-#include "updatable_private_set_intersection/crypto/paillier.h"
-#include "updatable_private_set_intersection/util/status.inc"
-
-using ::updatable_private_set_intersection::BigNum;
-using ::updatable_private_set_intersection::ECCommutativeCipher;
 
 namespace updatable_private_set_intersection {
 
-PrivateIntersectionSumProtocolPartyOneImpl::
-    PrivateIntersectionSumProtocolPartyOneImpl(Context* ctx, int32_t modulus_size) {
+PrivateIntersectionProtocolPartyOneImpl::
+    PrivateIntersectionProtocolPartyOneImpl(Context* ctx, int32_t modulus_size) {
         // Assign context
         this->ctx_ = ctx;
         // Use curve_id and context to create EC_Group for ElGamal
