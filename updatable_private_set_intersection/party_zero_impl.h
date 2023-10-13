@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_PARTY_ZERO_IMPL_H_
-#define updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_PARTY_ZERO_IMPL_H_
+#ifndef UPDATABLE_PRIVATE_SET_INTERSECTION_PRIVATE_INTERSECTION_PARTYZERO_IMPL_H_
+#define UPDATABLE_PRIVATE_SET_INTERSECTION_PRIVATE_INTERSECTION_PARTYZERO_IMPL_H_
 
 #include <memory>
 #include <string>
@@ -39,40 +39,44 @@ namespace updatable_private_set_intersection {
 // This class represents the "party 0" part of the updatable private set intersection protocol.
 // This is the party that will receive the output in one-sided UPSI.
 
-class PrivateIntersectionSumProtocolPartyZeroImpl : public ProtocolClient {
+class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
  public:
-  PrivateIntersectionSumProtocolPartyZeroImpl(Context* ctx, int32_t modulus_size);
+    PrivateIntersectionProtocolPartyZeroImpl(
+      Context* ctx, const std::vector<std::string>& elements,
+      const std::vector<BigNum>& values, int32_t modulus_size);
 
-  ~PrivateIntersectionSumProtocolPartyZeroImpl() override = default;
+    ~PrivateIntersectionProtocolPartyZeroImpl() override = default;
 
-  // Generates the StartProtocol message and sends it on the message sink.
-  Status StartProtocol(MessageSink<ClientMessage>* client_message_sink) override;
+    // Generates the StartProtocol message and sends it on the message sink.
+    Status StartProtocol(MessageSink<ClientMessage>* client_message_sink) override;
 
-  // Handle
-  Status Handle(const ServerMessage& server_message,
-                MessageSink<ClientMessage>* client_message_sink) override;
+    // Handle
+    Status Handle(const ServerMessage& server_message,
+                  MessageSink<ClientMessage>* client_message_sink) override;
 
 
-  bool protocol_finished() override { return protocol_finished_; }
+    bool protocol_finished() override { return protocol_finished_; }
 
  private:
-  // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
-  CryptoTree<UPSI_Element> my_crypto_tree;
-  CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
+    // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
+    CryptoTree<UPSI_Element> my_crypto_tree;
+    CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
 
-  Context* ctx_;  // not owned
+    Context* ctx_;  // not owned
+    std::vector<std::string> elements_;
+    std::vector<BigNum> payloads_;
 
-  // The ElGamal key pairs
-  BigNum g_, y_;
-  BigNum x_;
+    // The ElGamal key pairs
+    BigNum g_, y_;
+    BigNum x_;
 
-  // The Paillier key pairs
-  BigNum n_;
-  BigNum p_, q_;
+    // The Paillier key pairs
+    BigNum n_;
+    BigNum p_, q_;
 
-  bool protocol_finished_ = false;
+    bool protocol_finished_ = false;
 };
 
 }  // namespace updatable_private_set_intersection
 
-#endif  // updatable_private_set_intersection_PRIVATE_INTERSECTION_SUM_PARTY_ZERO_IMPL_IMPL_H_
+#endif  // UPDATABLE_PRIVATE_SET_INTERSECTION_PRIVATE_INTERSECTION_PARTYZERO_IMPL_H_
