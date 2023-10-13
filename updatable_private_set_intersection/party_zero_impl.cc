@@ -53,7 +53,6 @@ PrivateIntersectionSumProtocolPartyZeroImpl::
         this->p_ = p;
         this->q_ = q;
         this->n_ = n;
-
 }
 
 // StatusOr<PrivateIntersectionSumClientMessage::ClientRoundOne>
