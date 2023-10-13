@@ -45,18 +45,6 @@ class PrivateIntersectionSumProtocolPartyOneImpl : public ProtocolServer {
   ~PrivateIntersectionSumProtocolPartyOneImpl() override = default;
 
   // Executes the next Server round and creates a response.
-  //
-  // If the ClientMessage is StartProtocol, a ServerRoundOne will be sent to the
-  // message sink, containing the encrypted server identifiers.
-  //
-  // If the ClientMessage is ClientRoundOne, a ServerRoundTwo will be sent to
-  // the message sink, containing the intersection size, and encrypted
-  // intersection-sum.
-  //
-  // Fails with InvalidArgument if the message is not a
-  // PrivateIntersectionSumClientMessage of the expected round, or if the
-  // message is otherwise not as expected. Forwards all other failures
-  // encountered.
   Status Handle(const ClientMessage& request,
                 MessageSink<ServerMessage>* server_message_sink) override;
 
@@ -68,21 +56,16 @@ class PrivateIntersectionSumProtocolPartyOneImpl : public ProtocolServer {
   CryptoTree<UPSI_Element> my_crypto_tree;
   CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
   
-  // Encrypts the server's identifiers.
-  // StatusOr<PrivateIntersectionSumServerMessage::ServerRoundOne> EncryptSet();
-
-  // Computes the intersection size and encrypted intersection_sum.
-  // StatusOr<PrivateIntersectionSumServerMessage::ServerRoundTwo>
-  // ComputeIntersection(const PrivateIntersectionSumClientMessage::ClientRoundOne&
-  //                         client_message);
-
   Context* ctx_;  // not owned
-  std::unique_ptr<ElGamalDecrypter> elgamal_decrypter_;
+  
+  // The ElGamal key pairs
+  BigNum g_, y_;
+  BigNum x_;
 
-  // inputs_ will first contain the plaintext server identifiers, and later
-  // contain the encrypted server identifiers.
-  std::vector<std::string> inputs_;
-  bool protocol_finished_ = false;
+  // The Paillier key pairs
+  BigNum n_;
+  BigNum p_, q_;
+
 };
 
 }  // namespace updatable_private_set_intersection
