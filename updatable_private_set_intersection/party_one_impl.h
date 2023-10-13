@@ -36,10 +36,8 @@
 
 namespace updatable_private_set_intersection {
 
-// The "server side" of the intersection-sum protocol.  This represents the
-// party that will receive the size of the intersection as its output.  The
-// values that will be summed are supplied by the other party; this party will
-// only supply set elements as its inputs.
+// This class represents the "party 1" part of the updatable private set intersection protocol.
+// This is the party that will NOT receive the output in one-sided UPSI.
 class PrivateIntersectionSumProtocolPartyOneImpl : public ProtocolServer {
  public:
   PrivateIntersectionSumProtocolPartyOneImpl(Context* ctx, int32_t modulus_size);
