@@ -29,26 +29,31 @@
 
 namespace updatable_private_set_intersection {
 
-// PrivateIntersectionSumProtocolPartyZeroImpl::
-//     PrivateIntersectionSumProtocolPartyZeroImpl(
-//         Context* ctx, const std::vector<std::string>& elements,
-//         const std::vector<BigNum>& values, int32_t modulus_size)
-//     : ctx_(ctx),
-//       elements_(elements),
-//       values_(values),
-//       p_(ctx_->GenerateSafePrime(modulus_size / 2)),
-//       q_(ctx_->GenerateSafePrime(modulus_size / 2)),
-//       intersection_sum_(ctx->Zero()),
-//       ec_cipher_(std::move(
-//           ECCommutativeCipher::CreateWithNewKey(
-//               NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256)
-//               .value())) {}
-
 PrivateIntersectionSumProtocolPartyZeroImpl::
     PrivateIntersectionSumProtocolPartyZeroImpl(Context* ctx, int32_t modulus_size) {
+        // Assign context
         this->ctx_ = ctx;
-        this->p_ = this->ctx_->GenerateSafePrime(modulus_size / 2);
-        this->q_ = this->ctx_->GenerateSafePrime(modulus_size / 2);
+        // Use curve_id and context to create EC_Group for ElGamal
+        const int kTestCurveId = NID_X9_62_prime256v1;
+        auto ec_group = ECGroup::Create(kTestCurveId, &ctx);
+        // ElGamal key pairs
+        auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group);
+        auto elgamal_public_key_struct = std::move(elgamal_key_pair.first);
+        auto elgamal_private_key_struct = std::move(elgamal_key_pair.second);
+        this->g_ = elgamal_public_key_struct->g;
+        this->y_ = elgamal_public_key_struct->y;
+        this->x_ = elgamal_private_key_struct->x;
+        // Paillier Key Pairs
+        BigNum p = ctx->GenerateSafePrime(modulus_length / 2);
+        BigNum q = ctx->GenerateSafePrime(modulus_length / 2);
+        while (p == q) {
+            q = ctx->GenerateSafePrime(modulus_length / 2);
+        }
+        BigNum n = p * q;
+        this->p_ = p;
+        this->q_ = q;
+        this->n_ = n;
+
 }
 
 // StatusOr<PrivateIntersectionSumClientMessage::ClientRoundOne>

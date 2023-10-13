@@ -74,30 +74,18 @@ class PrivateIntersectionSumProtocolPartyZeroImpl : public ProtocolClient {
   CryptoTree<UPSI_Element> my_crypto_tree;
   CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
 
-  // The server sends the first message of the protocol, which contains its
-  // encrypted set.  This party then re-encrypts that set and replies with the
-  // reencrypted values and its own encrypted set.
-//   StatusOr<PrivateIntersectionSumClientMessage::ClientRoundOne> ReEncryptSet(
-//       const PrivateIntersectionSumServerMessage::ServerRoundOne&
-//           server_message);
-
-  // After the server computes the intersection-sum, it will send it back to
-  // this party for decryption, together with the intersection_size. This party
-  // will decrypt and output the intersection sum and intersection size.
-//   StatusOr<std::pair<int64_t, BigNum>> DecryptSum(
-//       const PrivateIntersectionSumServerMessage::ServerRoundTwo&
-//           server_message);
-
   Context* ctx_;  // not owned
-  std::vector<std::string> elements_;
-  std::vector<BigNum> values_;
 
+  // The ElGamal key pairs
+  BigNum g_, y_;
+  BigNum x_;
 
-  // The Paillier private key
+  // The Paillier key pairs
+  BigNum n_;
   BigNum p_, q_;
 
-  std::unique_ptr<ElGamalEncrypter> elgamal_encrypter_;
-  std::unique_ptr<PrivatePaillier> private_paillier_;
+  // std::unique_ptr<ElGamalEncrypter> elgamal_encrypter_;
+  // std::unique_ptr<PrivatePaillier> private_paillier_;
 
   bool protocol_finished_ = false;
 };

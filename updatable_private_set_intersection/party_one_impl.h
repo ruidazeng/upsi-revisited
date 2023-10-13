@@ -42,9 +42,7 @@ namespace updatable_private_set_intersection {
 // only supply set elements as its inputs.
 class PrivateIntersectionSumProtocolPartyOneImpl : public ProtocolServer {
  public:
-  PrivateIntersectionSumProtocolPartyOneImpl(
-      ::updatable_private_set_intersection::Context* ctx, std::vector<std::string> inputs)
-      : ctx_(ctx), inputs_(std::move(inputs)) {}
+  PrivateIntersectionSumProtocolPartyOneImpl(Context* ctx, int32_t modulus_size);
 
   ~PrivateIntersectionSumProtocolPartyOneImpl() override = default;
 
