@@ -60,9 +60,9 @@ class CryptoTree
         
         int computeIndex(BinaryHash binary_hash);
         
-        void extractPathIndices(int* leaf_ind, int cnt, std::vector<int> &ind, std::vector<int>* par);
+        void extractPathIndices(int* leaf_ind, int cnt, std::vector<int> &ind);
         
-        int* generateRandomPaths(int cnt, std::vector<int> &ind, std::vector<int>* par = NULL);
+        int* generateRandomPaths(int cnt, std::vector<int> &ind);
         
         std::vector<CryptoNode<T> > insert(std::vector<T> elem);
         
