@@ -29,9 +29,9 @@ class CryptoNode
         // Get the node vector
         std::vector<T> getNode();
         
-        void moveElements(std::vector<T> &elem);
+        void clear();
         
-        void copyElements(std::vector<T> &elem);
+        void copyElementsTo(std::vector<T> &elem);
 
         // Add an element to the node vector, return true if success, false if it's already full
         bool addElement(T elem);

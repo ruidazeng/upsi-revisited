@@ -69,7 +69,7 @@ int CryptoTree<T>::computeIndex(BinaryHash binary_hash) {
 
 // Return indices in paths in decreasing order (including stash)
 template<typename T> 
-void CryptoTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<int> &ind, std::vector<int>* par) {
+void CryptoTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<int> &ind) {
 	assert(ind.size() == 0);
 	
 	// add the indicies of leaves
@@ -84,7 +84,6 @@ void CryptoTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<
 	for (int i = 0; i < node_cnt; ++i) {
 		if(ind[i] == 0) break; // stash
 		int tmp = (ind[i] >> 1); // find its parent 
-		if(par != NULL) par->push_back(tmp); // store its parent
 		assert(ind[node_cnt - 1] >= tmp);
 		if(ind[node_cnt - 1] > tmp) {
 			ind.push_back(tmp);
@@ -95,7 +94,7 @@ void CryptoTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<
 
 // Generate random paths, return the indices of leaves and nodes(including stash)
 template<typename T> 
-int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind, std::vector<int>* par) { //ind: node indices
+int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind) { //ind: node indices
 	// generate binary hash
 	std::vector<BinaryHash> hsh;
 	generateRandomHash(cnt, hsh);
@@ -105,7 +104,7 @@ int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind, std::vec
 	for (int i = 0; i < cnt; ++i) leaf_ind[i] = computeIndex(hsh[i]);
 	
 	// extract indices of nodes in these paths (including stash)
-	extractPathIndices(leaf_ind, cnt, ind, par);
+	extractPathIndices(leaf_ind, cnt, ind);
 	
 	return leaf_ind;
 	// the sender requires indices of leaves if update one path at a time
@@ -129,63 +128,49 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 	// get the node indices in random paths
 	std::vector<int> ind;
 	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind); 
-	// int *leaf_ind = generateRandomPaths(new_elem_cnt, ind, par); -- for merge-find set
 	
-	// TODO: rewrite the following if each time replace one path
-	delete [] leaf_ind;
-	
-	// extract all elements in these nodes and empty the origin node
-	int node_cnt = ind.size();
-	for (int i = 0; i < node_cnt; ++i) crypto_tree[ind[i]].moveElements(elem);
-	
-	int elem_cnt = elem.size();
-	
-	int leaf_cnt = 0; while(leaf_cnt < node_cnt && ind[leaf_cnt] >= (1 << this->depth)) ++leaf_cnt;
-	
-	// fill the nodes
-	/* merge-find set (disjoint-set data structure)
-	int *nxt = new int[node_cnt + 1]; // next available node 
-	for (int i = 0; i < node_cnt; ++i) nxt[i] = i; // merge-find set setup
+	/*
+		To compute lca of x , y:
+		let t be the leftmost 1 of (x xor y), steps = log2(t) + 1
+		lca = x / 2t = x >> steps
 	*/
-	for (int i = 0; i < elem_cnt; ++i) {
-		int x = computeIndex( computeBinaryHash(elem[i]) );
-		// O(log(leaf_cnt))
-		int p = std::lower_bound(ind.begin(), ind.begin() + leaf_cnt, x, std::greater<int>()) - ind.begin();
-		int steps = this->depth;
-		/*
-			To compute lca of x , y:
-			let t be the leftmost 1 of (x xor y), steps = log2(t) + 1
-			lca = x / 2t = x >> steps
-		*/
-		if(p < leaf_cnt && ind[p] == x) steps = 0;
-		else {
-			if(p < leaf_cnt) 
-				steps = std::min(steps, 32 - __builtin_clz(x ^ ind[p])); //__builtin_clz: count leading zeros
-			if(p > 0) 
-				steps = std::min(steps, 32 - __builtin_clz(x ^ ind[p - 1]));
-		}
-		int lca = x >> steps;
+	
+	for (int o = 0; o < new_elem_cnt; ++o) {
+		if(!crypto_tree[0].addElement(elem[o])) assert(0);
 		
-		// O(depth)
-		while(crypto_tree[lca].addElement(elem[i]) == false) {
-			assert(lca > 0);
-			lca >>= 1;
+		// extract all elements in the path and empty the origin node
+		std::vector<T> tmp_elem[this->depth + 2];
+		for (int u = leaf_ind[o]; ; u >>= 1) {
+			std::vector<T> tmp_node = crypto_tree[u].getNode();
+			for (auto it = tmp_node.begin(); it != tmp_node.end(); ++it) {
+				int x = computeIndex( computeBinaryHash(*it) );
+				int steps = 32 - __builtin_clz(x ^ leaf_ind[o]);
+				tmp_elem[steps].push_back(*it);
+			}
+			crypto_tree[u].clear();
+			if(u == 0) break;
 		}
-		/* use merge-find set: O(log(node_cnt))
-		int u = std::lower_bound(ind.begin(), ind.end(), x, std::greater<int>()) - ind.begin(); // find lca in ind
-		assert(u < node_cnt && ind[u] == x); 
-		while(crypto_tree[ind[u]].addElement(elem[i]) == false) {
-			assert(ind[u] > 0); // not stash
-			nxt[u] = find_set_rep(par[u], nxt); // find next available node
+		//fill the path
+		int st = 0;
+		for (int u = leaf_ind[o], steps = 0; ; u >>= 1, ++steps) {
+			while(st <= steps && tmp_elem[st].empty()) ++st;
+			while(st <= steps) {
+				T cur_elem = tmp_elem[st].back();
+				if(crypto_tree[u].addElement(cur_elem)) tmp_elem[st].pop_back();
+				else break;
+				while(st <= steps && tmp_elem[st].empty()) ++st;
+			}
+			if(u == 0) break;
 		}
-		*/
+		assert(st > this->steps);
 	}
 	
-	 // delete [] nxt; -- merge-find set
+	delete [] leaf_ind;
 	
 	// update actual_size
 	this->actual_size += new_elem_cnt;
 	
+	int node_cnt = ind.size();
 	std::vector<CryptoNode<T> > rs;
 	for (int i = 0; i < node_cnt; ++i) rs.push_back(crypto_tree[ind[i]]);
 	return rs;
@@ -220,12 +205,12 @@ std::vector<T> CryptoTree<T>::getPath(std::string element) {
     std::vector<T> encyrpted_elem;
     std::string binary_hash = computeBinaryHash(element);
     
-    this->crypto_tree[0].copyElements(encyrpted_elem); // stash
-    this->crypto_tree[1].copyElements(encyrpted_elem); // root
+    this->crypto_tree[0].copyElementsTo(encyrpted_elem); // stash
+    this->crypto_tree[1].copyElementsTo(encyrpted_elem); // root
     for (int i = 0, x = 1; i < this->depth; ++i) {
         if (binary_hash[i] == '0') x = (x << 1);
         else if (binary_hash[i] == '1') x = ((x << 1) | 1);
-    	this->crypto_tree[x].copyElements(encyrpted_elem);
+    	this->crypto_tree[x].copyElementsTo(encyrpted_elem);
     }
     return encyrpted_elem;
 }
