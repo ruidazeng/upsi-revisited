@@ -73,6 +73,9 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     bool protocol_finished() override { return protocol_finished_; }
 
  private:
+    // Key exchange - day 0 setup
+    StatusOr<BigNum> KeyExchangePzero(BigNum x, BigNum n);
+    
     // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
     CryptoTree<UPSI_Element> my_crypto_tree;
     CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;

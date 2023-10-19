@@ -64,6 +64,10 @@ Status PrivateIntersectionSumProtocolPartyZeroImpl::StartProtocol(
   return client_message_sink->Send(client_message);
 }
 
+StatusOr<BigNum> KeyExchangePzero(BigNum x, BigNum n) {
+  ClientMessage client_message;
+
+}
 // StatusOr<std::unique_ptr<PublicKey>> GeneratePublicKeyFromShares(
 //     const std::vector<std::unique_ptr<elgamal::PublicKey>>& shares);
 
