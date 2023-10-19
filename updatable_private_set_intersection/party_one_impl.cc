@@ -27,29 +27,96 @@
 namespace updatable_private_set_intersection {
 
 PrivateIntersectionProtocolPartyOneImpl::
-    PrivateIntersectionProtocolPartyOneImpl(Context* ctx, int32_t modulus_size) {
-        // Assign context
-        this->ctx_ = ctx;
-        // Use curve_id and context to create EC_Group for ElGamal
-        const int kTestCurveId = NID_X9_62_prime256v1;
-        auto ec_group = ECGroup::Create(kTestCurveId, &ctx);
-        // ElGamal key pairs
-        auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group);
-        auto elgamal_public_key_struct = std::move(elgamal_key_pair.first);
-        auto elgamal_private_key_struct = std::move(elgamal_key_pair.second);
-        this->g_ = elgamal_public_key_struct->g;
-        this->y_ = elgamal_public_key_struct->y;
-        this->x_ = elgamal_private_key_struct->x;
-        // Paillier Key Pairs
-        BigNum p = ctx->GenerateSafePrime(modulus_length / 2);
-        BigNum q = ctx->GenerateSafePrime(modulus_length / 2);
-        while (p == q) {
-            q = ctx->GenerateSafePrime(modulus_length / 2);
-        }
-        BigNum n = p * q;
-        this->p_ = p;
-        this->q_ = q;
-        this->n_ = n;
+    PrivateIntersectionProtocolPartyOneImpl(
+        Context* ctx, const std::vector<std::string>& elements,
+        const std::vector<BigNum>& payloads, int32_t modulus_size)  {
+            // Assign context
+            this->ctx_ = ctx;
+            // Use curve_id and context to create EC_Group for ElGamal
+            const int kTestCurveId = NID_X9_62_prime256v1;
+            auto ec_group = ECGroup::Create(kTestCurveId, &ctx);
+            // ElGamal key pairs
+            auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group);
+            auto elgamal_public_key_struct = std::move(elgamal_key_pair.first);
+            auto elgamal_private_key_struct = std::move(elgamal_key_pair.second);
+            this->g_ = elgamal_public_key_struct->g;
+            this->y_ = elgamal_public_key_struct->y;
+            this->x_ = elgamal_private_key_struct->x;
+            // Paillier Key Pairs
+            BigNum p = ctx->GenerateSafePrime(modulus_length / 2);
+            BigNum q = ctx->GenerateSafePrime(modulus_length / 2);
+            while (p == q) {
+                q = ctx->GenerateSafePrime(modulus_length / 2);
+            }
+            BigNum n = p * q;
+            this->p_ = p;
+            this->q_ = q;
+            this->n_ = n;
+            // Elements and payloads assignments
+            this->elements_ = elements;
+            this->new_elements_ = elements;
+            this->payloads_ = payloads;
+            this->new_payloads_ = payloads;
+}
+
+void PrivateIntersectionProtocolPartyOneImpl::UpdateElements(std::vector<std::string> new_elements) {
+  this->new_elements_ = new_elements;
+  this->elements_.insert(this->elements_.end(), new_elements.begin(), new_elements.end());
+}
+
+void PrivateIntersectionProtocolPartyOneImpl::UpdatePayload(std::vector<BigNum> new_payloads) {
+  this->new_payloads_ = new_payloads;
+  this->payloads_.insert(this->payloads_.end(), new_payloads.begin(), new_payloads.end());
+}
+
+Status PrivateIntersectionProtocolPartyOneImpl::Handle(
+    const ClientMessage& request,
+    MessageSink<ServerMessage>* server_message_sink) {
+  if (protocol_finished()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolServerImpl: Protocol is already "
+        "complete.");
+  }
+
+  // Check that the message is a PrivateIntersectionSum protocol message.
+  if (!request.has_private_intersection_sum_client_message()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolServerImpl: Received a message for the "
+        "wrong protocol type");
+  }
+  const PrivateIntersectionSumClientMessage& client_message =
+      request.private_intersection_sum_client_message();
+
+  ServerMessage server_message;
+
+  if (client_message.has_start_protocol_request()) {
+    // Handle a protocol start message.
+    auto maybe_server_round_one = EncryptSet();
+    if (!maybe_server_round_one.ok()) {
+      return maybe_server_round_one.status();
+    }
+    *(server_message.mutable_private_intersection_sum_server_message()
+          ->mutable_server_round_one()) =
+        std::move(maybe_server_round_one.value());
+  } else if (client_message.has_client_round_one()) {
+    // Handle the client round 1 message.
+    auto maybe_server_round_two =
+        ComputeIntersection(client_message.client_round_one());
+    if (!maybe_server_round_two.ok()) {
+      return maybe_server_round_two.status();
+    }
+    *(server_message.mutable_private_intersection_sum_server_message()
+          ->mutable_server_round_two()) =
+        std::move(maybe_server_round_two.value());
+    // Mark the protocol as finished here.
+    protocol_finished_ = true;
+  } else {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolServerImpl: Received a client message "
+        "of an unknown type.");
+  }
+
+  return server_message_sink->Send(server_message);
 }
 
 }  // namespace updatable_private_set_intersection

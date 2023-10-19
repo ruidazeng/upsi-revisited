@@ -30,7 +30,9 @@
 namespace updatable_private_set_intersection {
 
 PrivateIntersectionProtocolPartyZeroImpl::
-    PrivateIntersectionProtocolPartyZeroImpl(Context* ctx, int32_t modulus_size) {
+    PrivateIntersectionProtocolPartyZeroImpl(
+      Context* ctx, const std::vector<std::string>& elements,
+      const std::vector<BigNum>& payloads, int32_t modulus_size) {
         // Assign context
         this->ctx_ = ctx;
         // Use curve_id and context to create EC_Group for ElGamal
@@ -53,9 +55,24 @@ PrivateIntersectionProtocolPartyZeroImpl::
         this->p_ = p;
         this->q_ = q;
         this->n_ = n;
+        // Elements and payloads assignments
+        this->elements_ = elements;
+        this->new_elements_ = elements;
+        this->payloads_ = payloads;
+        this->new_payloads_ = payloads;
 }
 
-Status PrivateIntersectionSumProtocolPartyZeroImpl::StartProtocol(
+void PrivateIntersectionProtocolPartyZeroImpl::UpdateElements(std::vector<std::string> new_elements) {
+  this->new_elements_ = new_elements;
+  this->elements_.insert(this->elements_.end(), new_elements.begin(), new_elements.end());
+}
+
+void PrivateIntersectionProtocolPartyZeroImpl::UpdatePayload(std::vector<BigNum> new_payloads) {
+  this->new_payloads_ = new_payloads;
+  this->payloads_.insert(this->payloads_.end(), new_payloads.begin(), new_payloads.end());
+}
+
+Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
     MessageSink<ClientMessage>* client_message_sink) {
   ClientMessage client_message;
   *(client_message.mutable_private_intersection_client_message()
@@ -64,11 +81,60 @@ Status PrivateIntersectionSumProtocolPartyZeroImpl::StartProtocol(
   return client_message_sink->Send(client_message);
 }
 
-StatusOr<BigNum> KeyExchangePzero(BigNum x, BigNum n) {
-  ClientMessage client_message;
-
-}
 // StatusOr<std::unique_ptr<PublicKey>> GeneratePublicKeyFromShares(
 //     const std::vector<std::unique_ptr<elgamal::PublicKey>>& shares);
+
+Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
+    const ServerMessage& server_message,
+    MessageSink<ClientMessage>* client_message_sink) {
+  if (protocol_finished()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolClientImpl: Protocol is already "
+        "complete.");
+  }
+
+  // Check that the message is a PrivateIntersectionSum protocol message.
+  if (!server_message.has_private_intersection_sum_server_message()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolClientImpl: Received a message for the "
+        "wrong protocol type");
+  }
+
+  if (server_message.private_intersection_sum_server_message()
+          .has_server_round_one()) {
+    // Handle the server round one message.
+    ClientMessage client_message;
+
+    auto maybe_client_round_one =
+        ReEncryptSet(server_message.private_intersection_sum_server_message()
+                         .server_round_one());
+    if (!maybe_client_round_one.ok()) {
+      return maybe_client_round_one.status();
+    }
+    *(client_message.mutable_private_intersection_sum_client_message()
+          ->mutable_client_round_one()) =
+        std::move(maybe_client_round_one.value());
+    return client_message_sink->Send(client_message);
+  } else if (server_message.private_intersection_sum_server_message()
+                 .has_server_round_two()) {
+    // Handle the server round two message.
+    auto maybe_result =
+        DecryptSum(server_message.private_intersection_sum_server_message()
+                       .server_round_two());
+    if (!maybe_result.ok()) {
+      return maybe_result.status();
+    }
+    std::tie(intersection_size_, intersection_sum_) =
+        std::move(maybe_result.value());
+    // Mark the protocol as finished here.
+    protocol_finished_ = true;
+    return OkStatus();
+  }
+  // If none of the previous cases matched, we received the wrong kind of
+  // message.
+  return InvalidArgumentError(
+      "PrivateIntersectionSumProtocolClientImpl: Received a server message "
+      "of an unknown type.");
+}
 
 }  // namespace updatable_private_set_intersection

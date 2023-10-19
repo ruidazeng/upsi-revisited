@@ -42,7 +42,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
  public:
     PrivateIntersectionProtocolPartyOneImpl (
       Context* ctx, const std::vector<std::string>& elements,
-      const std::vector<BigNum>& values, int32_t modulus_size);
+      const std::vector<BigNum>& payloads, int32_t modulus_size);
 
     ~PrivateIntersectionProtocolPartyOneImpl() override = default;
 
@@ -53,8 +53,11 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     bool protocol_finished() override { return protocol_finished_; }
 
  private:
-    // Key exchange - day 1 setup
-    StatusOr<BigNum> KeyExchangePone(BigNum x, BigNum n);
+    // Update elements and payloads
+    std::vector<std::string> new_elements_;
+    std::vector<BigNum> new_payloads_;
+    void UpdateElements(std::vector<std::string> new_elements);
+    void UpdatePayloads(std::vector<BigNum> new_payloads);
 
     // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
     CryptoTree<UPSI_Element> my_crypto_tree;
