@@ -52,17 +52,11 @@ message PrivateIntersectionClientMessage {
 message PrivateIntersectionServerMessage {
   oneof message_content {
     ServerRoundOne server_round_one = 1;
-    ServerRoundTwo server_round_two = 2;
-    ServerKeyExchange server_key_exchange = 3;
+    ServerKeyExchange server_key_exchange = 2;
   }
 
   message ServerRoundOne {
     optional EncryptedSet encrypted_set = 1;
-  }
-
-  message ServerRoundTwo {
-    optional int64 intersection_size = 1;
-    optional bytes encrypted_sum = 2;
   }
 
   // Server key exchange - Threshold ElGamal & Threshold Paillier
