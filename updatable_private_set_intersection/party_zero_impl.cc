@@ -91,7 +91,50 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
     return InvalidArgumentError(
         "PrivateIntersectionSumProtocolClientImpl: Protocol is already "
         "complete.");
+        
   }
+   // Check that the message is a PrivateIntersectionSum protocol message.
+  if (!server_message.has_private_intersection_sum_server_message()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolClientImpl: Received a message for the "
+        "wrong protocol type");
+  }
+
+  if (server_message.private_intersection_sum_server_message()
+          .has_server_round_one()) {
+    // Handle the server round one message.
+    ClientMessage client_message;
+
+    auto maybe_client_round_one =
+        ReEncryptSet(server_message.private_intersection_sum_server_message()
+                         .server_round_one());
+    if (!maybe_client_round_one.ok()) {
+      return maybe_client_round_one.status();
+    }
+    *(client_message.mutable_private_intersection_sum_client_message()
+          ->mutable_client_round_one()) =
+        std::move(maybe_client_round_one.value());
+    return client_message_sink->Send(client_message);
+  } else if (server_message.private_intersection_sum_server_message()
+                 .has_server_round_two()) {
+    // Handle the server round two message.
+    auto maybe_result =
+        DecryptSum(server_message.private_intersection_sum_server_message()
+                       .server_round_two());
+    if (!maybe_result.ok()) {
+      return maybe_result.status();
+    }
+    std::tie(intersection_size_, intersection_sum_) =
+        std::move(maybe_result.value());
+    // Mark the protocol as finished here.
+    protocol_finished_ = true;
+    return OkStatus();
+  }
+  // If none of the previous cases matched, we received the wrong kind of
+  // message.
+  return InvalidArgumentError(
+      "PrivateIntersectionSumProtocolClientImpl: Received a server message "
+      "of an unknown type.");
 
 }
 
