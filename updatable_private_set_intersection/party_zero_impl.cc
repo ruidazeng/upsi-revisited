@@ -89,37 +89,37 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
     MessageSink<ClientMessage>* client_message_sink) {
   if (protocol_finished()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolClientImpl: Protocol is already "
+        "PrivateIntersectionProtocolClientImpl: Protocol is already "
         "complete.");
         
   }
    // Check that the message is a PrivateIntersectionSum protocol message.
-  if (!server_message.has_private_intersection_sum_server_message()) {
+  if (!server_message.has_private_intersection_server_message()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolClientImpl: Received a message for the "
+        "PrivateIntersectionProtocolClientImpl: Received a message for the "
         "wrong protocol type");
   }
 
-  if (server_message.private_intersection_sum_server_message()
+  if (server_message.private_intersection_server_message()
           .has_server_round_one()) {
     // Handle the server round one message.
     ClientMessage client_message;
 
     auto maybe_client_round_one =
-        ReEncryptSet(server_message.private_intersection_sum_server_message()
+        ReEncryptSet(server_message.private_intersection_server_message()
                          .server_round_one());
     if (!maybe_client_round_one.ok()) {
       return maybe_client_round_one.status();
     }
-    *(client_message.mutable_private_intersection_sum_client_message()
+    *(client_message.mutable_private_intersection_client_message()
           ->mutable_client_round_one()) =
         std::move(maybe_client_round_one.value());
     return client_message_sink->Send(client_message);
-  } else if (server_message.private_intersection_sum_server_message()
+  } else if (server_message.private_intersection_server_message()
                  .has_server_round_two()) {
     // Handle the server round two message.
     auto maybe_result =
-        DecryptSum(server_message.private_intersection_sum_server_message()
+        DecryptSum(server_message.private_intersection_server_message()
                        .server_round_two());
     if (!maybe_result.ok()) {
       return maybe_result.status();
@@ -133,7 +133,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
   // If none of the previous cases matched, we received the wrong kind of
   // message.
   return InvalidArgumentError(
-      "PrivateIntersectionSumProtocolClientImpl: Received a server message "
+      "PrivateIntersectionProtocolClientImpl: Received a server message "
       "of an unknown type.");
 
 }
