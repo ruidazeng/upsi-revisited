@@ -74,17 +74,17 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
     MessageSink<ServerMessage>* server_message_sink) {
   if (protocol_finished()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolServerImpl: Protocol is already "
+        "PrivateIntersectionProtocolServerImpl: Protocol is already "
         "complete.");
   }
    // Check that the message is a PrivateIntersectionSum protocol message.
-  if (!request.has_private_intersection_sum_client_message()) {
+  if (!request.has_private_intersection_client_message()) {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolServerImpl: Received a message for the "
+        "PrivateIntersectionProtocolServerImpl: Received a message for the "
         "wrong protocol type");
   }
   const PrivateIntersectionSumClientMessage& client_message =
-      request.private_intersection_sum_client_message();
+      request.private_intersection_client_message();
 
   ServerMessage server_message;
 
@@ -94,7 +94,7 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
     if (!maybe_server_round_one.ok()) {
       return maybe_server_round_one.status();
     }
-    *(server_message.mutable_private_intersection_sum_server_message()
+    *(server_message.mutable_private_intersection_server_message()
           ->mutable_server_round_one()) =
         std::move(maybe_server_round_one.value());
   } else if (client_message.has_client_round_one()) {
@@ -104,14 +104,14 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
     if (!maybe_server_round_two.ok()) {
       return maybe_server_round_two.status();
     }
-    *(server_message.mutable_private_intersection_sum_server_message()
+    *(server_message.mutable_private_intersection_server_message()
           ->mutable_server_round_two()) =
         std::move(maybe_server_round_two.value());
     // Mark the protocol as finished here.
     protocol_finished_ = true;
   } else {
     return InvalidArgumentError(
-        "PrivateIntersectionSumProtocolServerImpl: Received a client message "
+        "PrivateIntersectionProtocolServerImpl: Received a client message "
         "of an unknown type.");
   }
 
