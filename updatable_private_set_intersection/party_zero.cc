@@ -97,7 +97,7 @@ int ExecuteProtocol() {
   std::cout << "Client: Generating keys..." << std::endl;
   std::unique_ptr<::updatable_private_set_intersection::ProtocolClient> client =
       std::make_unique<
-          ::updatable_private_set_intersection::PrivateIntersectionSumProtocolPartyZeroImpl>(
+          ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyZeroImpl>(
           &context, std::move(client_identifiers_and_associated_values.first),
           std::move(client_identifiers_and_associated_values.second),
           absl::GetFlag(FLAGS_paillier_modulus_size));

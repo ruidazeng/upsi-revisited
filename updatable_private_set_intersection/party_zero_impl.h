@@ -63,7 +63,7 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // accessors, or by calling PrintOutput.
     //
     // Fails with InvalidArgument if the message is not a
-    // PrivateIntersectionSumServerMessage of the expected round, or if the
+    // PrivateIntersectionServerMessage of the expected round, or if the
     // message is otherwise not as expected. Forwards all other failures
     // encountered.
     Status Handle(const ServerMessage& server_message,
@@ -73,16 +73,13 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     bool protocol_finished() override { return protocol_finished_; }
 
  private:
-    // Complete server side processing:
-    // 1. Shuffle
-    // 2. Mask with a random exponent
-    // 3. Partial decryption (ElGamal/Paillier)
-    // 4. Update P0's tree
-    // 5. Update P1's tree
-    // 6. Generate {Path_i}_i
-    StatusOr<PrivateIntersectionSumServerMessage::ServerRoundTwo>
-    ComputeIntersection(const PrivateIntersectionSumClientMessage::ClientRoundOne&
-                           client_message);
+    // Complete client side processing:
+    // 1. Partial decryption (ElGamal/Paillier)
+    // 2. Update P0's tree
+    // 3. Update P1's tree
+    // 4. Payload Processing
+    Status ClientProcessing(const PrivateIntersectionClientMessage::ServerRoundOne&
+                           server_message);
 
     // Update elements and payloads
     std::vector<std::string> new_elements_;

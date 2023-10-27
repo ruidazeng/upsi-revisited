@@ -53,6 +53,17 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     bool protocol_finished() override { return protocol_finished_; }
 
  private:
+    // Complete server side processing:
+    // 1. Shuffle
+    // 2. Mask with a random exponent
+    // 3. Partial decryption (ElGamal/Paillier)
+    // 4. Update P0's tree
+    // 5. Update P1's tree
+    // 6. Generate {Path_i}_i
+    StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>
+    ServerProcessing(const PrivateIntersectionClientMessage::ClientRoundOne&
+                           client_message);
+
     // Update elements and payloads
     std::vector<std::string> new_elements_;
     std::vector<BigNum> new_payloads_;

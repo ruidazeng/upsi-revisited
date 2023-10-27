@@ -69,6 +69,10 @@ void PrivateIntersectionProtocolPartyOneImpl::UpdatePayload(std::vector<BigNum> 
   this->payloads_.insert(this->payloads_.end(), new_payloads.begin(), new_payloads.end());
 }
 
+StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>
+PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersectionClientMessage::ClientRoundOne&
+                        client_message);
+
 Status PrivateIntersectionProtocolPartyOneImpl::Handle(
     const ClientMessage& request,
     MessageSink<ServerMessage>* server_message_sink) {
@@ -77,13 +81,13 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
         "PrivateIntersectionProtocolServerImpl: Protocol is already "
         "complete.");
   }
-   // Check that the message is a PrivateIntersectionSum protocol message.
+   // Check that the message is a PrivateIntersection protocol message.
   if (!request.has_private_intersection_client_message()) {
     return InvalidArgumentError(
         "PrivateIntersectionProtocolServerImpl: Received a message for the "
         "wrong protocol type");
   }
-  const PrivateIntersectionSumClientMessage& client_message =
+  const PrivateIntersectionClientMessage& client_message =
       request.private_intersection_client_message();
 
   ServerMessage server_message;

@@ -52,7 +52,7 @@ int RunPartyOne() {
   ::updatable_private_set_intersection::Context context;
   std::unique_ptr<::updatable_private_set_intersection::ProtocolServer> server =
       std::make_unique<
-          ::updatable_private_set_intersection::PrivateIntersectionSumProtocolPartyOneImpl>(
+          ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyOneImpl>(
           &context, std::move(maybe_server_identifiers.value()));
   ::updatable_private_set_intersection::UpdatablePrivateSetIntersectionRpcImpl service(
       std::move(server));
