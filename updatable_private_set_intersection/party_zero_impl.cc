@@ -77,7 +77,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   ClientMessage client_message;
   *(client_message.mutable_private_intersection_client_message()
         ->mutable_start_protocol_request()) =
-      PrivateIntersectionSumMessage::StartProtocolRequest();
+      PrivateIntersectionMessage::StartProtocolRequest();
   return client_message_sink->Send(client_message);
 }
 
@@ -93,7 +93,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
         "complete.");
         
   }
-   // Check that the message is a PrivateIntersectionSum protocol message.
+   // Check that the message is a PrivateIntersection protocol message.
   if (!server_message.has_private_intersection_server_message()) {
     return InvalidArgumentError(
         "PrivateIntersectionProtocolClientImpl: Received a message for the "
