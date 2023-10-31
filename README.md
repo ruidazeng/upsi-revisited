@@ -24,6 +24,26 @@ cd upsi-new
 bazel build //updatable_private_set_intersection:all
 ```
 
+
+## Threshold Paillier
+Two party threshold Paillier is in `updatable_private_set_intersection/crypto/threshold_paillier.h`.
+
+To run the associated tests:
+```bash
+bazel test //updatable_private_set_intersection/crypto:threshold_paillier_test
+```
+It will take around two minutes.
+
+There are only four functions of note:
+ 1. `GenerateThresholdPaillierKeys` generates two keys, one for each party.
+ 2. `Encrypt` encrypts a message using either party's key
+ 3. `PartialDecrypt` takes a ciphertext and partially decrypts it with one party's key.
+ 4. `Decrypt` takes a ciphertext and the other party's partial decryption and recovers the message.
+Essentially of the elements involved are `BigNum`s (e.g., message, ciphertext, key components).
+
+To see how one would use these functions, check the tests in `threshold_paillier_test.cc`.
+
+
 ## UPSI Files (TODO)
 
 updatable_private_set_intersection/crypto_node.h
