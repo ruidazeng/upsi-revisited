@@ -241,9 +241,11 @@ cc_library(
     name = "paillier",
     srcs = [
         "paillier.cc",
+        "threshold_paillier.cc",
     ],
     hdrs = [
         "paillier.h",
+        "threshold_paillier.h",
     ],
     deps = [
         ":bn_util",
@@ -255,6 +257,19 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "threshold_paillier_test",
+    srcs = [
+        "threshold_paillier_test.cc",
+    ],
+    deps = [
+        ":paillier",
+        "//updatable_private_set_intersection/util:status_includes",
+        "//updatable_private_set_intersection/util:status_testing_includes",
+        "@com_github_google_googletest//:gtest_main",
     ],
 )
 
