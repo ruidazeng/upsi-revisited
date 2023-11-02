@@ -39,12 +39,11 @@ template<typename T>
 int CryptoTree<T>::getStashSize() {
     return this->stash_size;
 }
-/*
+
 template<typename T> 
-CryptoNode<T>& CryptoTree<T>::stash() {
-    return this->crypto_tree[0];
+std::vector<CryptoNode<T> > CryptoTree<T>::getTree() {
+	return this->crypto_tree;
 }
-*/
 
 /// @brief Helper methods
 template<typename T> 
@@ -73,7 +72,7 @@ void CryptoTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<
 	assert(ind.size() == 0);
 	
 	// add the indicies of leaves
-	for (int i = leaf_cnt - 1; i >= 0; --i) 
+	for (int i = 0; i < leaf_cnt; ++i) 
 		ind.push_back(leaf_ind[i]);
 		
 	// erase duplicates and sort in decreasing order
@@ -134,22 +133,26 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 		let t be the leftmost 1 of (x xor y), steps = log2(t) + 1
 		lca = x / 2t = x >> steps
 	*/
-	
 	for (int o = 0; o < new_elem_cnt; ++o) {
-		if(!crypto_tree[0].addElement(elem[o])) assert(0);
-		
 		// extract all elements in the path and empty the origin node
 		std::vector<T> tmp_elem[this->depth + 2];
+		
 		for (int u = leaf_ind[o]; ; u >>= 1) {
+		
 			std::vector<T> tmp_node = crypto_tree[u].getNode();
+			if(u == 0) tmp_node.push_back(elem[o]);
+			
 			for (auto it = tmp_node.begin(); it != tmp_node.end(); ++it) {
 				int x = computeIndex( computeBinaryHash(*it) );
-				int steps = 32 - __builtin_clz(x ^ leaf_ind[o]);
+				int steps = 0;
+				if(x != leaf_ind[o]) steps = 32 - __builtin_clz(x ^ leaf_ind[o]);
 				tmp_elem[steps].push_back(*it);
 			}
+			
 			crypto_tree[u].clear();
 			if(u == 0) break;
 		}
+		
 		//fill the path
 		int st = 0;
 		for (int u = leaf_ind[o], steps = 0; ; u >>= 1, ++steps) {
@@ -162,7 +165,7 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 			}
 			if(u == 0) break;
 		}
-		assert(st > this->steps);
+		assert(st > this->depth);
 	}
 	
 	delete [] leaf_ind;
@@ -203,15 +206,13 @@ void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > n
 template<typename T> 
 std::vector<T> CryptoTree<T>::getPath(std::string element) {
     std::vector<T> encyrpted_elem;
-    std::string binary_hash = computeBinaryHash(element);
-    
-    this->crypto_tree[0].copyElementsTo(encyrpted_elem); // stash
-    this->crypto_tree[1].copyElementsTo(encyrpted_elem); // root
-    for (int i = 0, x = 1; i < this->depth; ++i) {
-        if (binary_hash[i] == '0') x = (x << 1);
-        else if (binary_hash[i] == '1') x = ((x << 1) | 1);
-    	this->crypto_tree[x].copyElementsTo(encyrpted_elem);
-    }
+    BinaryHash binary_hash = computeBinaryHash(element);
+    int leaf_index = computeIndex(binary_hash);
+
+	for (int u = leaf_index; ; u >>= 1) {
+		this->crypto_tree[u].copyElementsTo(encyrpted_elem);
+		if (u == 0) break;
+	}
     return encyrpted_elem;
 }
 

@@ -52,6 +52,8 @@ class CryptoTree
         int getNodeSize();
 
         int getStashSize();
+        
+        std::vector<CryptoNode<T> > getTree();
 
         /// @brief Helper Methods
         // Add a new layer to the tree, expand the size of the vector
