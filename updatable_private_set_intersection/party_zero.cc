@@ -98,12 +98,14 @@ int ExecuteProtocol() {
       std::move(maybe_client_identifiers_and_associated_values.value());
 
   std::cout << "Client: Generating keys..." << std::endl;
+  // TODO: Double check dummy data generation
   std::unique_ptr<::updatable_private_set_intersection::ProtocolClient> party_zero =
       std::make_unique<
           ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyZeroImpl>(
           &context, std::move(client_identifiers_and_associated_values.first),
           std::move(client_identifiers_and_associated_values.second),
-          absl::GetFlag(FLAGS_paillier_modulus_size));
+          absl::GetFlag(FLAGS_paillier_modulus_size),
+          absl::GetFlag(FLAGS_paillier_statistical_param));
 
   // Consider grpc::SslServerCredentials if not running locally.
   std::unique_ptr<UpdatablePrivateSetIntersectionRpc::Stub> stub =

@@ -49,20 +49,30 @@ ABSL_FLAG(
 
 int RunPartyOne() {
   std::cout << "Server: loading data... " << std::endl;
-  auto maybe_server_identifiers =
-      ::updatable_private_set_intersection::ReadServerDatasetFromFile(
+  // NOTE: SERVER AND CLIENT HAVE IDENTIFICAL DATASET
+  // ReadServerDatasetFromFile does not work here as a function, the namings are retained
+  // and might be confusing, but we are reading the server's set with the "original client"'s
+  // format. Therefore, we are using ReadClientDatasetFromFile.
+  auto maybe_server_identifiers_and_associated_values =
+      ::updatable_private_set_intersection::ReadClientDatasetFromFile(
           absl::GetFlag(FLAGS_server_data_file));
-  if (!maybe_server_identifiers.ok()) {
+  if (!maybe_server_identifiers_and_associated_values.ok()) {
     std::cerr << "RunPartyOne: failed " << maybe_server_identifiers.status()
               << std::endl;
     return 1;
   }
+  auto server_identifiers_and_associated_values =
+    std::move(maybe_server_identifiers_and_associated_values.value());
 
   ::updatable_private_set_intersection::Context context;
   std::unique_ptr<::updatable_private_set_intersection::ProtocolServer> party_one =
       std::make_unique<
           ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyOneImpl>(
-          &context, std::move(maybe_server_identifiers.value()));
+          &context, std::move(server_identifiers_and_associated_values.first),
+          std::move(server_identifiers_and_associated_values.second),
+          absl::GetFlag(FLAGS_paillier_modulus_size),
+          absl::GetFlag(FLAGS_paillier_statistical_param));
+
   ::updatable_private_set_intersection::UpdatablePrivateSetIntersectionRpcImpl service(
       std::move(server));
 
