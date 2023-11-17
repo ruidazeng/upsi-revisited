@@ -42,7 +42,7 @@ PrivateIntersectionProtocolPartyOneImpl::
             this->g_ = elgamal_public_key_struct->g;
             this->y_ = elgamal_public_key_struct->y;
             this->x_ = elgamal_private_key_struct->x;
-            // Paillier Key Pairs
+            // Threshold Paillier Key Pairs
             BigNum p = ctx->GenerateSafePrime(modulus_length / 2);
             BigNum q = ctx->GenerateSafePrime(modulus_length / 2);
             while (p == q) {

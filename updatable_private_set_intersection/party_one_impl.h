@@ -25,6 +25,7 @@
 #include "updatable_private_set_intersection/crypto/elgamal.h"
 #include "updatable_private_set_intersection/crypto/ec_commutative_cipher.h"
 #include "updatable_private_set_intersection/crypto/paillier.h"
+#include "updatable_private_set_intersection/crypto/threshold_paillier.h"
 #include "updatable_private_set_intersection/crypto_tree.h"
 #include "updatable_private_set_intersection/match.pb.h"
 #include "updatable_private_set_intersection/message_sink.h"
