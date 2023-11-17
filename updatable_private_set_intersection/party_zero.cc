@@ -46,6 +46,10 @@ ABSL_FLAG(
     "will be the product of two safe primes, each of size "
     "paillier_modulus_size/2.");
 
+ABSL_FLAG(
+    int32_t, paillier_statistical_param, 100,
+    "Paillier statistical parameter.");
+
 namespace updatable_private_set_intersection {
 namespace {
 

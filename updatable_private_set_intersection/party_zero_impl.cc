@@ -32,7 +32,7 @@ namespace updatable_private_set_intersection {
 PrivateIntersectionProtocolPartyZeroImpl::
     PrivateIntersectionProtocolPartyZeroImpl(
       Context* ctx, const std::vector<std::string>& elements,
-      const std::vector<BigNum>& payloads, int32_t modulus_size) {
+      const std::vector<BigNum>& payloads, int32_t modulus_size, int32_t statistical_param) {
         // Assign context
         this->ctx_ = ctx;
         // Use curve_id and context to create EC_Group for ElGamal
