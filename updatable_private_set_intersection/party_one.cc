@@ -49,15 +49,15 @@ ABSL_FLAG(
 
 int RunPartyOne() {
   std::cout << "Server: loading data... " << std::endl;
-  // NOTE: SERVER AND CLIENT HAVE IDENTIFICAL DATASET
+  // NOTE: SERVER AND CLIENT HAVE IDENTIFICAL DATASET FORMAT!
   // ReadServerDatasetFromFile does not work here as a function, the namings are retained
   // and might be confusing, but we are reading the server's set with the "original client"'s
-  // format. Therefore, we are using ReadClientDatasetFromFile.
+  // format. Therefore, we are using ReadClientDatasetFromFile function.
   auto maybe_server_identifiers_and_associated_values =
       ::updatable_private_set_intersection::ReadClientDatasetFromFile(
           absl::GetFlag(FLAGS_server_data_file));
   if (!maybe_server_identifiers_and_associated_values.ok()) {
-    std::cerr << "RunPartyOne: failed " << maybe_server_identifiers.status()
+    std::cerr << "RunPartyOne: failed " << maybe_server_identifiers_and_associated_values.status()
               << std::endl;
     return 1;
   }
