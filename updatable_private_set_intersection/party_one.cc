@@ -37,6 +37,15 @@
 ABSL_FLAG(std::string, port, "0.0.0.0:10501", "Port on which to listen");
 ABSL_FLAG(std::string, server_data_file, "",
           "The file from which to read the server database.");
+ABSL_FLAG(
+    int32_t, paillier_modulus_size, 1536,
+    "The bit-length of the modulus to use for Paillier encryption. The modulus "
+    "will be the product of two safe primes, each of size "
+    "paillier_modulus_size/2.");
+ABSL_FLAG(
+    int32_t, paillier_statistical_param, 100,
+    "Paillier statistical parameter.");
+
 
 int RunPartyOne() {
   std::cout << "Server: loading data... " << std::endl;
@@ -50,7 +59,7 @@ int RunPartyOne() {
   }
 
   ::updatable_private_set_intersection::Context context;
-  std::unique_ptr<::updatable_private_set_intersection::ProtocolServer> server =
+  std::unique_ptr<::updatable_private_set_intersection::ProtocolServer> party_one =
       std::make_unique<
           ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyOneImpl>(
           &context, std::move(maybe_server_identifiers.value()));

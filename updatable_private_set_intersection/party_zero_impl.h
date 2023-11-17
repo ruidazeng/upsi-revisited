@@ -100,9 +100,8 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     BigNum g_, y_;
     BigNum x_;
 
-    // The Paillier key pairs
-    BigNum n_;
-    BigNum p_, q_;
+    // The Threshold Paillier object
+    ThresholdPaillier threshold_paillier;
 
     bool protocol_finished_ = false;
 };

@@ -45,9 +45,10 @@ PrivateIntersectionProtocolPartyZeroImpl::
         this->g_ = elgamal_public_key_struct->g;
         this->y_ = elgamal_public_key_struct->y;
         this->x_ = elgamal_private_key_struct->x;
-        // Threshold Paillier Key Pairs
+        // Threshold Paillier Key & Object
         auto threshold_paillier_keys = GenerateThresholdPaillierKeys(&ctx, modulus_length, statistical_param);
-        ThresholdPaillier threshold_paillier(&ctx, std::get<0>(keys));
+        ThresholdPaillier party_zero(&ctx, std::get<0>(keys));
+        this->threshold_paillier = party_zero;
         // Elements and payloads assignments
         this->elements_ = elements;
         this->new_elements_ = elements;
