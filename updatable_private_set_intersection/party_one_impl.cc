@@ -43,15 +43,8 @@ PrivateIntersectionProtocolPartyOneImpl::
             this->y_ = elgamal_public_key_struct->y;
             this->x_ = elgamal_private_key_struct->x;
             // Threshold Paillier Key Pairs
-            BigNum p = ctx->GenerateSafePrime(modulus_length / 2);
-            BigNum q = ctx->GenerateSafePrime(modulus_length / 2);
-            while (p == q) {
-                q = ctx->GenerateSafePrime(modulus_length / 2);
-            }
-            BigNum n = p * q;
-            this->p_ = p;
-            this->q_ = q;
-            this->n_ = n;
+            auto threshold_paillier_keys = GenerateThresholdPaillierKeys(&ctx, modulus_length, statistical_param);
+            ThresholdPaillier threshold_paillier(&ctx, std::get<1>(keys));
             // Elements and payloads assignments
             this->elements_ = elements;
             this->new_elements_ = elements;
