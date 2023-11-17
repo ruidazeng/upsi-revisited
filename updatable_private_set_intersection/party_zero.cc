@@ -45,7 +45,6 @@ ABSL_FLAG(
     "The bit-length of the modulus to use for Paillier encryption. The modulus "
     "will be the product of two safe primes, each of size "
     "paillier_modulus_size/2.");
-
 ABSL_FLAG(
     int32_t, paillier_statistical_param, 100,
     "Paillier statistical parameter.");
@@ -99,7 +98,7 @@ int ExecuteProtocol() {
       std::move(maybe_client_identifiers_and_associated_values.value());
 
   std::cout << "Client: Generating keys..." << std::endl;
-  std::unique_ptr<::updatable_private_set_intersection::ProtocolClient> client =
+  std::unique_ptr<::updatable_private_set_intersection::ProtocolClient> party_zero =
       std::make_unique<
           ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyZeroImpl>(
           &context, std::move(client_identifiers_and_associated_values.first),

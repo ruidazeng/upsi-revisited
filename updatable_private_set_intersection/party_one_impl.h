@@ -83,9 +83,9 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     BigNum g_, y_;
     BigNum x_;
 
-    // The Paillier key pairs
-    BigNum n_;
-    BigNum p_, q_;
+    // The Threshold Paillier object
+    ThresholdPaillier threshold_paillier;
+
 
 };
 
