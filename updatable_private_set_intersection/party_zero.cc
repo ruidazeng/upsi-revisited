@@ -146,34 +146,6 @@ int ExecuteProtocol() {
     return 1;
   }
 
-  // Execute ServerRoundTwo.
-  // std::cout << "Client: Sending double encrypted server data and "
-  //              "single-encrypted client data to the server."
-  //           << std::endl
-  //           << "Client: Waiting for encrypted intersection sum..." << std::endl;
-  // ServerMessage server_round_two =
-  //     invoke_server_handle_message_sink.last_server_response();
-
-  // // Compute the intersection size and sum.
-  // std::cout << "Client: Received response from the server. Decrypting the "
-  //              "intersection-sum."
-  //           << std::endl;
-  // auto intersection_size_and_sum_status =
-  //     client->Handle(server_round_two, &invoke_server_handle_message_sink);
-  // if (!intersection_size_and_sum_status.ok()) {
-  //   std::cerr << "Client::ExecuteProtocol: failed to DecryptSum: "
-  //             << intersection_size_and_sum_status << std::endl;
-  //   return 1;
-  // }
-
-  // // Output the result.
-  // auto client_print_output_status = client->PrintOutput();
-  // if (!client_print_output_status.ok()) {
-  //   std::cerr << "Client::ExecuteProtocol: failed to PrintOutput: "
-  //             << client_print_output_status << std::endl;
-  //   return 1;
-  // }
-
   return 0;
 }
 
