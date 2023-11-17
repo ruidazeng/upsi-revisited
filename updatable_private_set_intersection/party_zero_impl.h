@@ -43,7 +43,7 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
  public:
     PrivateIntersectionProtocolPartyZeroImpl(
       Context* ctx, const std::vector<std::string>& elements,
-      const std::vector<BigNum>& payloads, int32_t modulus_size);
+      const std::vector<BigNum>& payloads, int32_t modulus_size, int32_t statistical_param);
 
     ~PrivateIntersectionProtocolPartyZeroImpl() override = default;
 
