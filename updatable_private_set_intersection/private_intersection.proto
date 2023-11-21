@@ -42,7 +42,7 @@ message PrivateIntersectionClientMessage {
   // Client key exchange - Threshold ElGamal & Threshold Paillier
   message ClientKeyExchange {
     optional BigNum elgamal_x = 1;
-    optional BigNum paillier_n = 2;
+    // optional BigNum paillier_n = 2;
   }
 
 }
@@ -62,7 +62,7 @@ message PrivateIntersectionServerMessage {
   // Server key exchange - Threshold ElGamal & Threshold Paillier
   message ServerKeyExchange {
     optional BigNum elgamal_x = 1;
-    optional BigNum paillier_n = 2;    
+    // optional BigNum paillier_n = 2;    
   }
 
 }

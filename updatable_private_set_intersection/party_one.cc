@@ -49,6 +49,7 @@ ABSL_FLAG(
 
 int RunPartyOne() {
   std::cout << "Server: loading data... " << std::endl;
+  // Note that the server does not handle payload, even in secret shares.
   auto maybe_server_identifiers =
         ::private_join_and_compute::ReadServerDatasetFromFile(
             absl::GetFlag(FLAGS_server_data_file));
@@ -62,8 +63,7 @@ int RunPartyOne() {
   std::unique_ptr<::updatable_private_set_intersection::ProtocolServer> party_one =
       std::make_unique<
           ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyOneImpl>(
-          &context, std::move(server_identifiers_and_associated_values.first),
-          std::move(server_identifiers_and_associated_values.second),
+          &context, std::move(server_identifiers.values()),
           absl::GetFlag(FLAGS_paillier_modulus_size),
           absl::GetFlag(FLAGS_paillier_statistical_param));
 
