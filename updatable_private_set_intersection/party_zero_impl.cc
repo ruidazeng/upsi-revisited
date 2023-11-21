@@ -94,7 +94,12 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
         "wrong protocol type");
   }
 
-  if (server_message.private_intersection_server_message()
+  if (server_message.private_intersection_server_message().
+          .has_server_key_exchange()) {
+    // Handle the server key exchange message.       
+        
+  
+  } else if (server_message.private_intersection_server_message()
           .has_server_round_one()) {
     // Handle the server round one message.
     ClientMessage client_message;

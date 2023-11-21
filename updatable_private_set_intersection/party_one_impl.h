@@ -43,13 +43,13 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
  public:
     PrivateIntersectionProtocolPartyOneImpl (
       Context* ctx, const std::vector<std::string>& elements,
-      const std::vector<BigNum>& payloads, int32_t modulus_size, int32_t statistical_param);
+      int32_t modulus_size, int32_t statistical_param);
 
     ~PrivateIntersectionProtocolPartyOneImpl() override = default;
 
     // Executes the next Server round and creates a response.
     Status Handle(const ClientMessage& request,
-                  MessageSink<ServerMessage>* server_message_sink) override;
+                  MessageSink<ServerMessage>* server_message_sink) override
 
     bool protocol_finished() override { return protocol_finished_; }
 
@@ -67,9 +67,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
 
     // Update elements and payloads
     std::vector<std::string> new_elements_;
-    std::vector<BigNum> new_payloads_;
     void UpdateElements(std::vector<std::string> new_elements);
-    void UpdatePayloads(std::vector<BigNum> new_payloads);
 
     // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
     CryptoTree<UPSI_Element> my_crypto_tree;
@@ -77,11 +75,11 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     
     Context* ctx_;  // not owned
     std::vector<std::string> elements_;
-    std::vector<BigNum> payloads_;
     
     // The ElGamal key pairs
     BigNum g_, y_;
     BigNum x_;
+    BigNum shared_x_;
 
     // The Threshold Paillier object
     ThresholdPaillier threshold_paillier;

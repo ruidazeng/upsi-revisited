@@ -29,7 +29,7 @@ namespace updatable_private_set_intersection {
 PrivateIntersectionProtocolPartyOneImpl::
     PrivateIntersectionProtocolPartyOneImpl(
         Context* ctx, const std::vector<std::string>& elements,
-        const std::vector<BigNum>& payloads, int32_t modulus_size, int32_t statistical_param)  {
+        int32_t modulus_size, int32_t statistical_param)  {
             // Assign context
             this->ctx_ = ctx;
             // Use curve_id and context to create EC_Group for ElGamal
@@ -43,24 +43,17 @@ PrivateIntersectionProtocolPartyOneImpl::
             this->y_ = elgamal_public_key_struct->y;
             this->x_ = elgamal_private_key_struct->x;
             // Threshold Paillier Key & Object
-          auto threshold_paillier_keys = GenerateThresholdPaillierKeys(&ctx, modulus_length, statistical_param);
-          ThresholdPaillier party_one(&ctx, std::get<1>(keys));
-          this->threshold_paillier = party_one;
-            // Elements and payloads assignments
+            auto threshold_paillier_keys = GenerateThresholdPaillierKeys(&ctx, modulus_length, statistical_param);
+            ThresholdPaillier party_one(&ctx, std::get<1>(keys));
+            this->threshold_paillier = party_one;
+            // Elements assignments
             this->elements_ = elements;
             this->new_elements_ = elements;
-            this->payloads_ = payloads;
-            this->new_payloads_ = payloads;
 }
 
 void PrivateIntersectionProtocolPartyOneImpl::UpdateElements(std::vector<std::string> new_elements) {
   this->new_elements_ = new_elements;
   this->elements_.insert(this->elements_.end(), new_elements.begin(), new_elements.end());
-}
-
-void PrivateIntersectionProtocolPartyOneImpl::UpdatePayload(std::vector<BigNum> new_payloads) {
-  this->new_payloads_ = new_payloads;
-  this->payloads_.insert(this->payloads_.end(), new_payloads.begin(), new_payloads.end());
 }
 
 StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>
@@ -95,6 +88,12 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
     *(server_message.mutable_private_intersection_server_message()
           ->mutable_server_round_one()) =
         std::move(maybe_server_round_one.value());
+  } else if (client_message.has_client_key_exchange()) {
+    // Handle the client key exchange message.
+    // TODO: save elgamal client
+    *(server_message.mutable_private_intersection_server_message()
+          ->mutable_server_key_exchange()) =
+        std::move(this->x_);
   } else if (client_message.has_client_round_one()) {
     // Handle the client round 1 message.
     auto maybe_server_round_two =
