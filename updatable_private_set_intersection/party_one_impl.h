@@ -79,7 +79,6 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     // The ElGamal key pairs
     BigNum g_, y_;
     BigNum x_;
-    BigNum shared_x_;
 
     // The Threshold Paillier object
     ThresholdPaillier threshold_paillier;
