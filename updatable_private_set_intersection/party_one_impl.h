@@ -54,6 +54,14 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     bool protocol_finished() override { return protocol_finished_; }
 
  private:
+    // Complete P_1 key exchange:
+    // 1. Retrieve P_0's (g, y)
+    // 2. Generate Threshold ElGamal public key from shares
+    // 3. Generate ServerKeyExchange message using P_1's (g, y)
+    StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
+    ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
+                           client_message);
+
     // Complete server side processing:
     // 1. Shuffle
     // 2. Mask with a random exponent

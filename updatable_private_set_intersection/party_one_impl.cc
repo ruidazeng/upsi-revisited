@@ -56,9 +56,17 @@ void PrivateIntersectionProtocolPartyOneImpl::UpdateElements(std::vector<std::st
   this->elements_.insert(this->elements_.end(), new_elements.begin(), new_elements.end());
 }
 
+StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
+PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
+                        client_message) {
+  return null;
+}
+
 StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>
 PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersectionClientMessage::ClientRoundOne&
-                        client_message);
+                        client_message) {
+  return null;
+}
 
 Status PrivateIntersectionProtocolPartyOneImpl::Handle(
     const ClientMessage& request,
@@ -81,19 +89,13 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
 
   if (client_message.has_start_protocol_request()) {
     // Handle a protocol start message.
-    auto maybe_server_round_one = EncryptSet();
-    if (!maybe_server_round_one.ok()) {
-      return maybe_server_round_one.status();
+    auto maybe_server_key_exchange = ServerKeyExchange();
+    if (!maybe_server_key_exchange.ok()) {
+      return maybe_server_key_exchange.status();
     }
     *(server_message.mutable_private_intersection_server_message()
-          ->mutable_server_round_one()) =
-        std::move(maybe_server_round_one.value());
-  } else if (client_message.has_client_key_exchange()) {
-    // Handle the client key exchange message.
-    // TODO: save elgamal client
-    *(server_message.mutable_private_intersection_server_message()
           ->mutable_server_key_exchange()) =
-        std::move(this->x_);
+        std::move(maybe_server_key_exchange.value());
   } else if (client_message.has_client_round_one()) {
     // Handle the client round 1 message.
     auto maybe_server_round_two =
