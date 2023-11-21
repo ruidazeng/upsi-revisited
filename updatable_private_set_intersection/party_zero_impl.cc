@@ -69,9 +69,12 @@ void PrivateIntersectionProtocolPartyZeroImpl::UpdatePayload(std::vector<BigNum>
 Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
     MessageSink<ClientMessage>* client_message_sink) {
   ClientMessage client_message;
+  PrivateIntersectionSumClientMessage::StartProtocolRequest start_protocol_request;
+  *start_protocol_request.mutable_elgamal_g() = this->g_.ToBytes();
+  *start_protocol_request.mutable_elgamal_y() = this->y_.ToBytes();
   *(client_message.mutable_private_intersection_client_message()
         ->mutable_start_protocol_request()) =
-      PrivateIntersectionMessage::StartProtocolRequest();
+      std::move(start_protocol_request.value());
   return client_message_sink->Send(client_message);
 }
 
@@ -96,8 +99,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
 
   if (server_message.private_intersection_server_message().
           .has_server_key_exchange()) {
-    // Handle the server key exchange message.       
-        
+    // Handle the server key exchange message.           
   
   } else if (server_message.private_intersection_server_message()
           .has_server_round_one()) {

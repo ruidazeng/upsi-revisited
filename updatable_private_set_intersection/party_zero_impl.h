@@ -49,6 +49,8 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     ~PrivateIntersectionProtocolPartyZeroImpl() override = default;
 
     // Generates the StartProtocol message and sends it on the message sink.
+    // This function also contains the first step of Threshold ElGamal key exchange.
+    // Sends the Threshold ElGamal public key pairs (g, y) to the server.
     Status StartProtocol(MessageSink<ClientMessage>* client_message_sink) override;
 
     // Executes the next Client round and creates a new server request, which must

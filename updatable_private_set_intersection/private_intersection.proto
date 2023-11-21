@@ -25,11 +25,14 @@ message PrivateIntersectionClientMessage {
   oneof message_content {
     StartProtocolRequest start_protocol_request = 1;
     ClientRoundOne client_round_one = 2;
-    ClientKeyExchange client_key_exchange = 3;
   }
 
   // For initiating the protocol.
-  message StartProtocolRequest {}
+  // Client key exchange - Threshold ElGamal
+  message StartProtocolRequest {
+    optional bytes elgamal_g = 1;
+    optional bytes elgamal_y = 2;
+  }
 
   // Message containing the client's set encrypted under the client's keys, and
   // the server's set re-encrypted with the client's key, and shuffled.
@@ -39,30 +42,23 @@ message PrivateIntersectionClientMessage {
     optional EncryptedSet reencrypted_set = 3;
   }
 
-  // Client key exchange - Threshold ElGamal & Threshold Paillier
-  message ClientKeyExchange {
-    optional BigNum elgamal_g = 1;
-    optional BigNum elgamal_y = 2;
-  }
-
 }
 
 // Server Messages.
 
 message PrivateIntersectionServerMessage {
   oneof message_content {
-    ServerRoundOne server_round_one = 1;
-    ServerKeyExchange server_key_exchange = 2;
+    ServerKeyExchange server_key_exchange = 1;
+    ServerRoundOne server_round_one = 2;
+  }
+
+  // Server key exchange - Threshold ElGamal
+  message ServerKeyExchange {
+    optional bytes elgamal_g = 1;
+    optional bytes elgamal_y = 2;
   }
 
   message ServerRoundOne {
     optional EncryptedSet encrypted_set = 1;
   }
-
-  // Server key exchange - Threshold ElGamal & Threshold Paillier
-  message ServerKeyExchange {
-    optional BigNum elgamal_g = 1;
-    optional BigNum elgamal_y = 2;
-  }
-
 }
