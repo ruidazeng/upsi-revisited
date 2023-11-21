@@ -49,20 +49,14 @@ ABSL_FLAG(
 
 int RunPartyOne() {
   std::cout << "Server: loading data... " << std::endl;
-  // NOTE: SERVER AND CLIENT HAVE IDENTIFICAL DATASET FORMAT!
-  // ReadServerDatasetFromFile does not work here as a function, the namings are retained
-  // and might be confusing, but we are reading the server's set with the "original client"'s
-  // format. Therefore, we are using ReadClientDatasetFromFile function.
-  auto maybe_server_identifiers_and_associated_values =
-      ::updatable_private_set_intersection::ReadClientDatasetFromFile(
-          absl::GetFlag(FLAGS_server_data_file));
-  if (!maybe_server_identifiers_and_associated_values.ok()) {
-    std::cerr << "RunPartyOne: failed " << maybe_server_identifiers_and_associated_values.status()
-              << std::endl;
-    return 1;
-  }
-  auto server_identifiers_and_associated_values =
-    std::move(maybe_server_identifiers_and_associated_values.value());
+  auto maybe_server_identifiers =
+        ::private_join_and_compute::ReadServerDatasetFromFile(
+            absl::GetFlag(FLAGS_server_data_file));
+    if (!maybe_server_identifiers.ok()) {
+      std::cerr << "RunServer: failed " << maybe_server_identifiers.status()
+                << std::endl;
+      return 1;
+    }
 
   ::updatable_private_set_intersection::Context context;
   std::unique_ptr<::updatable_private_set_intersection::ProtocolServer> party_one =

@@ -120,6 +120,18 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "generate_dummy_data",
+    srcs = ["generate_dummy_data.cc"],
+    deps = [
+        ":data_util",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/log",
+    ],
+)
+
 cc_library(
     name = "updatable_private_set_intersection_rpc_impl",
     srcs = ["updatable_private_set_intersection_rpc_impl.cc"],
