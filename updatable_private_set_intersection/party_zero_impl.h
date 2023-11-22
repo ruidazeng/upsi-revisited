@@ -76,6 +76,12 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     bool protocol_finished() override { return protocol_finished_; }
 
  private:
+    // Complete P_0 key exchange:
+    // 1. Retrieve P_1's (g, y)
+    // 2. Generate Threshold ElGamal public key from shares, save it to P_0's member variable
+    Status ClientExchange(const PrivateIntersectionClientMessage::ServerKeyExchange&
+                           server_message);
+
     // Complete client side processing:
     // 1. Partial decryption (ElGamal/Paillier)
     // 2. Update P0's tree
@@ -99,11 +105,15 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     std::vector<BigNum> payloads_;
 
     // The ElGamal key pairs
-    BigNum g_, y_;
-    BigNum x_;
+    BigNum g_, y_; // public
+    BigNum x_;     // private
+
+    // The ElGamal shared public key
+    BigNum shared_g_, shared_y_;
+
 
     // The Threshold Paillier object
-    ThresholdPaillier threshold_paillier;
+    // ThresholdPaillier threshold_paillier;
 
     bool protocol_finished_ = false;
 };

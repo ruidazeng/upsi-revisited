@@ -59,7 +59,24 @@ void PrivateIntersectionProtocolPartyOneImpl::UpdateElements(std::vector<std::st
 StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
 PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
                         client_message) {
-  return null;
+  // 1. Retrieve P_0's (g, y)
+  BigNum client_g = this->ctx_->CreateBigNum(client_message.elgamal_g());
+  BigNum client_y = this->ctx_->CreateBigNum(client_message.elgamal_y());
+  // 2. Generate Threshold ElGamal public key from shares, save it to P_1's member variable
+  elgamal::PublicKey client_public_key;
+  elgamal::PublicKey my_public_key;
+  std::vector<std::unique_ptr<elgamal::PublicKey>> key_shares;
+  key_shares.reserve(2);
+  key_shares.push_back(std::move(client_public_key));
+  key_shares.push_back(std::move(my_public_key));
+  elgamal::PublicKey shared_public_key = elgamal::GeneratePublicKeyFromShares(key_shares);
+  this->shared_g_ = shared_public_key->g;
+  this->shared_y_ = shared_public_key->y;
+  // 3. Generate ServerKeyExchange message using P_1's (g, y)
+  PrivateIntersectionSumClientMessage::ServerKeyExchange result;
+  *result.mutable_elgamal_g() = this->g_.ToBytes();
+  *result.mutable_elgamal_y() = this->y_.ToBytes();
+  return result;
 }
 
 StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>

@@ -56,7 +56,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
  private:
     // Complete P_1 key exchange:
     // 1. Retrieve P_0's (g, y)
-    // 2. Generate Threshold ElGamal public key from shares
+    // 2. Generate Threshold ElGamal public key from shares, save it to P_1's member variable
     // 3. Generate ServerKeyExchange message using P_1's (g, y)
     StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
     ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
@@ -85,11 +85,14 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     std::vector<std::string> elements_;
     
     // The ElGamal key pairs
-    BigNum g_, y_;
-    BigNum x_;
+    BigNum g_, y_; // public
+    BigNum x_;     // private
+
+    // The ElGamal shared public key
+    BigNum shared_g_, shared_y_;
 
     // The Threshold Paillier object
-    ThresholdPaillier threshold_paillier;
+    // ThresholdPaillier threshold_paillier;
 
 
 };
