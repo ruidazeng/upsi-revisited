@@ -105,12 +105,11 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     std::vector<BigNum> payloads_;
 
     // The ElGamal key pairs
-    BigNum g_, y_; // public
-    BigNum x_;     // private
+    elgamal::PublicKey elgamal_public_key; // (g, y)
+    elgamal::PrivateKey elgamal_private_key; // x
 
-    // The ElGamal shared public key
-    BigNum shared_g_, shared_y_;
-
+    // The ElGamal shared public key (2-out-of-2 threshold ElGamal encryption scheme)
+    elgamal::PublicKey shared_elgamal_public_key; // shared (g, x)
 
     // The Threshold Paillier object
     // ThresholdPaillier threshold_paillier;
