@@ -55,8 +55,9 @@ message PrivateIntersectionServerMessage {
 
   // Server key exchange - Threshold ElGamal
   message ServerKeyExchange {
-    optional bytes elgamal_g = 1;
-    optional bytes elgamal_y = 2;
+    optional bytes elgamal_p = 1; // modulus of the integer group
+    optional bytes elgamal_g = 2;
+    optional bytes elgamal_y = 3;
   }
 
   message ServerRoundOne {

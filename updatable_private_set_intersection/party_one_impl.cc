@@ -60,26 +60,20 @@ StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
 PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
                         client_message) {
   // 1. Retrieve P_0's (g, y)
-  ECPoint client_g = this->ctx_->CreateBigNum(client_message.elgamal_g());
-  BigNum client_y = this->ctx_->CreateBigNum(client_message.elgamal_y());
-    ASSIGN_OR_RETURN(ECPoint public_key_struct_g,
-                   ec_group->CreateECPoint(public_key_proto.g()));
-  ASSIGN_OR_RETURN(ECPoint public_key_struct_y,
-                   ec_group->CreateECPoint(public_key_proto.y()));
+  ECPoint client_g = this->ec_group->CreateECPoint(client_message.elgamal_g());
+  ECPoint client_y = this->ec_group->CreateECPoint(client_message.elgamal_y());
   // 2. Generate Threshold ElGamal public key from shares, save it to P_1's member variable
-  elgamal::PublicKey client_public_key;
-  elgamal::PublicKey my_public_key;
+  elgamal::PublicKey client_public_key = new elgamal::PublicKey({std::move(client_g), std::move(client_y)});
   std::vector<std::unique_ptr<elgamal::PublicKey>> key_shares;
   key_shares.reserve(2);
   key_shares.push_back(std::move(client_public_key));
-  key_shares.push_back(std::move(my_public_key));
-  elgamal::PublicKey shared_public_key = elgamal::GeneratePublicKeyFromShares(key_shares);
-  this->shared_g_ = shared_public_key->g;
-  this->shared_y_ = shared_public_key->y;
+  key_shares.push_back(std::move(this->elgamal_public_key));
+  auto shared_public_key = std::move(elgamal::GeneratePublicKeyFromShares(key_shares));
+  this->shared_elgamal_public_key = shared_public_key;
   // 3. Generate ServerKeyExchange message using P_1's (g, y)
   PrivateIntersectionSumClientMessage::ServerKeyExchange result;
-  *result.mutable_elgamal_g() = this->g_.ToBytes();
-  *result.mutable_elgamal_y() = this->y_.ToBytes();
+  *result.mutable_elgamal_g() = this->elgamal_public_key->g.ToBytesCompressed();
+  *result.mutable_elgamal_y() = this->elgamal_public_key->y.ToBytesCompressed();
   return result;
 }
 
