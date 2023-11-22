@@ -35,9 +35,9 @@ PrivateIntersectionProtocolPartyOneImpl::
             // Use curve_id and context to create EC_Group for ElGamal
             const int kTestCurveId = NID_X9_62_prime256v1;
             auto ec_group = ECGroup::Create(kTestCurveId, &ctx);
-            this->ec_group = ec_group;
+            this->ec_group = ec_group.value();
             // ElGamal key pairs
-            auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group);
+            auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group).value();
             auto elgamal_public_key_struct = std::move(elgamal_key_pair.first);
             auto elgamal_private_key_struct = std::move(elgamal_key_pair.second);
             this->elgamal_public_key = elgamal_public_key_struct;
@@ -60,16 +60,17 @@ StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
 PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
                         client_message) {
   // 1. Retrieve P_0's (g, y)
-  ECPoint client_g = this->ec_group->CreateECPoint(client_message.elgamal_g());
-  ECPoint client_y = this->ec_group->CreateECPoint(client_message.elgamal_y());
+  ASSIGN_OR_RETURN(ECPoint client_g, this->ec_group->CreateECPoint(client_message.elgamal_g()));
+  ASSIGN_OR_RETURN(ECPoint client_y, this->ec_group->CreateECPoint(client_message.elgamal_y()));
   // 2. Generate Threshold ElGamal public key from shares, save it to P_1's member variable
-  elgamal::PublicKey client_public_key = new elgamal::PublicKey({std::move(client_g), std::move(client_y)});
+  elgamal::PublicKey client_public_key = absl::WrapUnique(new elgamal::PublicKey(
+    {std::move(client_g), std::move(client_y)}));
   std::vector<std::unique_ptr<elgamal::PublicKey>> key_shares;
   key_shares.reserve(2);
   key_shares.push_back(std::move(client_public_key));
-  key_shares.push_back(std::move(this->elgamal_public_key));
-  auto shared_public_key = std::move(elgamal::GeneratePublicKeyFromShares(key_shares));
-  this->shared_elgamal_public_key = shared_public_key;
+  key_shares.push_back(std::move(absl::WrapUnique(this->elgamal_public_key)));
+  ASSIGN_OR_RETURN(auto shared_public_key, elgamal::GeneratePublicKeyFromShares(key_shares));
+  this->shared_elgamal_public_key = std::move(shared_public_key);
   // 3. Generate ServerKeyExchange message using P_1's (g, y)
   PrivateIntersectionSumClientMessage::ServerKeyExchange result;
   *result.mutable_elgamal_g() = this->elgamal_public_key->g.ToBytesCompressed();
