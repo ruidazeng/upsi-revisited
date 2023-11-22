@@ -81,6 +81,14 @@ PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersec
 StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>
 PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersectionClientMessage::ClientRoundOne&
                         client_message) {
+    // Complete server side processing:
+    // 1. Shuffle
+    // 2. Mask with a random exponent
+    BigNum a = this->ec_group_->GeneratePrivateKey();  // generate a random exponent
+    // 3. Partial decryption (ElGamal/Paillier)
+    // 4. Update P0's tree
+    // 5. Update P1's tree
+    // 6. Generate {Path_i}_i
   return null;
 }
 
@@ -104,8 +112,8 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
   ServerMessage server_message;
 
   if (client_message.has_start_protocol_request()) {
-    // Handle a protocol start message.
-    auto maybe_server_key_exchange = ServerKeyExchange();
+    // Handle a protocol start message (with client key exchange).
+    auto maybe_server_key_exchange = ServerKeyExchange(client_message);
     if (!maybe_server_key_exchange.ok()) {
       return maybe_server_key_exchange.status();
     }
