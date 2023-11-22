@@ -113,7 +113,10 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
   if (server_message.private_intersection_server_message().
           .has_server_key_exchange()) {
     // Handle the server key exchange message.           
-  
+    auto maybe_client_key_exchange = ClientKeyExchange(server_message);
+    if (!maybe_server_key_exchange.ok()) {
+      return maybe_server_key_exchange.status();
+    }
   } else if (server_message.private_intersection_server_message()
           .has_server_round_one()) {
     // Handle the server round one message.
