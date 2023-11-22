@@ -35,13 +35,13 @@ PrivateIntersectionProtocolPartyOneImpl::
             // Use curve_id and context to create EC_Group for ElGamal
             const int kTestCurveId = NID_X9_62_prime256v1;
             auto ec_group = ECGroup::Create(kTestCurveId, &ctx);
+            this->ec_group = ec_group;
             // ElGamal key pairs
             auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group);
             auto elgamal_public_key_struct = std::move(elgamal_key_pair.first);
             auto elgamal_private_key_struct = std::move(elgamal_key_pair.second);
-            this->g_ = elgamal_public_key_struct->g;
-            this->y_ = elgamal_public_key_struct->y;
-            this->x_ = elgamal_private_key_struct->x;
+            this->elgamal_public_key = elgamal_public_key_struct;
+            this->elgamal_private_key = elgamal_private_key_struct;
             // Threshold Paillier Key & Object
             // auto threshold_paillier_keys = GenerateThresholdPaillierKeys(&ctx, modulus_length, statistical_param);
             // ThresholdPaillier party_one(&ctx, std::get<1>(keys));
@@ -60,8 +60,12 @@ StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
 PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
                         client_message) {
   // 1. Retrieve P_0's (g, y)
-  BigNum client_g = this->ctx_->CreateBigNum(client_message.elgamal_g());
+  ECPoint client_g = this->ctx_->CreateBigNum(client_message.elgamal_g());
   BigNum client_y = this->ctx_->CreateBigNum(client_message.elgamal_y());
+    ASSIGN_OR_RETURN(ECPoint public_key_struct_g,
+                   ec_group->CreateECPoint(public_key_proto.g()));
+  ASSIGN_OR_RETURN(ECPoint public_key_struct_y,
+                   ec_group->CreateECPoint(public_key_proto.y()));
   // 2. Generate Threshold ElGamal public key from shares, save it to P_1's member variable
   elgamal::PublicKey client_public_key;
   elgamal::PublicKey my_public_key;
