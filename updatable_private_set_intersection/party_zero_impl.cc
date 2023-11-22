@@ -38,6 +38,7 @@ PrivateIntersectionProtocolPartyZeroImpl::
         // Use curve_id and context to create EC_Group for ElGamal
         const int kTestCurveId = NID_X9_62_prime256v1;
         auto ec_group = ECGroup::Create(kTestCurveId, &ctx);
+        this->ec_group = ec_group;
         // ElGamal key pairs
         auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group);
         auto elgamal_public_key_struct = std::move(elgamal_key_pair.first);
@@ -69,8 +70,8 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
     MessageSink<ClientMessage>* client_message_sink) {
   ClientMessage client_message;
   PrivateIntersectionSumClientMessage::StartProtocolRequest start_protocol_request;
-  *start_protocol_request.mutable_elgamal_g() = this->g_.ToBytes();
-  *start_protocol_request.mutable_elgamal_y() = this->y_.ToBytes();
+  *start_protocol_request.mutable_elgamal_g() = this->elgamal_public_key->g.ToBytesCompressed();
+  *start_protocol_request.mutable_elgamal_y() = this->elgamal_public_key->y.ToBytesCompressed();
   *(client_message.mutable_private_intersection_client_message()
         ->mutable_start_protocol_request()) =
       std::move(start_protocol_request.value());

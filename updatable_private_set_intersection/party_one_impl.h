@@ -82,6 +82,8 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
     
     Context* ctx_;  // not owned
+    ECGroup ec_group;
+    
     std::vector<std::string> elements_;
     
     // The ElGamal key pairs
@@ -90,7 +92,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
 
     // The ElGamal shared public key (2-out-of-2 threshold ElGamal encryption scheme)
     elgamal::PublicKey shared_elgamal_public_key; // shared (g, x)
-    
+
     // The Threshold Paillier object
     // ThresholdPaillier threshold_paillier;
 

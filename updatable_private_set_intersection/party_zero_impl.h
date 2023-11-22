@@ -101,6 +101,8 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
 
     Context* ctx_;  // not owned
+    ECGroup ec_group;
+    
     std::vector<std::string> elements_;
     std::vector<BigNum> payloads_;
 
