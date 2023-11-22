@@ -78,8 +78,20 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   return client_message_sink->Send(client_message);
 }
 
-// StatusOr<std::unique_ptr<PublicKey>> GeneratePublicKeyFromShares(
-//     const std::vector<std::unique_ptr<elgamal::PublicKey>>& shares);
+  Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(const PrivateIntersectionClientMessage::ServerKeyExchange&
+                          server_message) {
+  // 1. Retrieve P_1's (g, y)
+  ECPoint server_g = this->ec_group->CreateECPoint(server_message.elgamal_g());
+  ECPoint server_y = this->ec_group->CreateECPoint(server_message.elgamal_y());
+  // 2. Generate Threshold ElGamal public key from shares, save it to P_0's member variable
+  elgamal::PublicKey server_public_key = new elgamal::PublicKey({std::move(server_g), std::move(server_y)});
+  std::vector<std::unique_ptr<elgamal::PublicKey>> key_shares;
+  key_shares.reserve(2);
+  key_shares.push_back(std::move(server_public_key));
+  key_shares.push_back(std::move(this->elgamal_public_key));
+  auto shared_public_key = std::move(elgamal::GeneratePublicKeyFromShares(key_shares));
+  this->shared_elgamal_public_key = shared_public_key;
+}
 
 Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
     const ServerMessage& server_message,
