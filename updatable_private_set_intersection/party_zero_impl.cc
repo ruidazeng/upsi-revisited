@@ -38,9 +38,9 @@ PrivateIntersectionProtocolPartyZeroImpl::
         // Use curve_id and context to create EC_Group for ElGamal
         const int kTestCurveId = NID_X9_62_prime256v1;
         auto ec_group = ECGroup::Create(kTestCurveId, &ctx);
-        this->ec_group = ec_group;
+        this->ec_group = ec_group.value();
         // ElGamal key pairs
-        auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group);
+        auto elgamal_key_pair = elgamal::GenerateKeyPair(ec_group).value();
         auto elgamal_public_key_struct = std::move(elgamal_key_pair.first);
         auto elgamal_private_key_struct = std::move(elgamal_key_pair.second);
         this->elgamal_public_key = elgamal_public_key_struct;
@@ -81,16 +81,17 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(const PrivateIntersectionClientMessage::ServerKeyExchange&
                           server_message) {
   // 1. Retrieve P_1's (g, y)
-  ECPoint server_g = this->ec_group->CreateECPoint(server_message.elgamal_g());
-  ECPoint server_y = this->ec_group->CreateECPoint(server_message.elgamal_y());
+  ASSIGN_OR_RETURN(ECPoint server_g, this->ec_group->CreateECPoint(server_message.elgamal_g()));
+  ASSIGN_OR_RETURN(ECPoint server_y, this->ec_group->CreateECPoint(server_message.elgamal_y()));
   // 2. Generate Threshold ElGamal public key from shares, save it to P_0's member variable
-  elgamal::PublicKey server_public_key = new elgamal::PublicKey({std::move(server_g), std::move(server_y)});
+  elgamal::PublicKey server_public_key = absl::WrapUnique(new elgamal::PublicKey(
+    {std::move(server_g), std::move(server_y)}));
   std::vector<std::unique_ptr<elgamal::PublicKey>> key_shares;
   key_shares.reserve(2);
   key_shares.push_back(std::move(server_public_key));
-  key_shares.push_back(std::move(this->elgamal_public_key));
-  auto shared_public_key = std::move(elgamal::GeneratePublicKeyFromShares(key_shares));
-  this->shared_elgamal_public_key = shared_public_key;
+  key_shares.push_back(std::move(absl::WrapUnique(this->elgamal_public_key)));
+  ASSIGN_OR_RETURN(auto shared_public_key, elgamal::GeneratePublicKeyFromShares(key_shares));
+  this->shared_elgamal_public_key = std::move(shared_public_key);
 }
 
 Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
