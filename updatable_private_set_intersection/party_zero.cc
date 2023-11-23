@@ -127,22 +127,46 @@ int ExecuteProtocol() {
               << start_protocol_status << std::endl;
     return 1;
   }
+  ServerMessage server_key_exchange =
+      invoke_server_handle_message_sink.last_server_response();
+
+  // Execute ClientKeyExchange
+  std::cout
+      << "Client: Received key exchange from the server, generating joint ElGamal public key..."
+      << std::endl;
+  auto client_key_exchange_status =
+      client->Handle(server_key_exchange, &invoke_server_handle_message_sink);
+  if (!client_key_exchange_status.ok()) {
+    std::cerr << "Client::ExecuteProtocol: failed to Client Key Exchange: "
+              << client_key_exchange_status << std::endl;
+    return 1;
+  }
+
+  // Execute ClientPreprocessing (Updatable)
+  // TODO!!!!!!!
+  std::cout << "Client: Sending tree updates to the server."
+            << std::endl
+            << "Client: Waiting for server's tree updates..." << std::endl;
+  auto client_round_one_status =
+      client->Handle(server_key_exchange, &invoke_server_handle_message_sink);
+  if (!client_round_one_status.ok()) {
+    std::cerr << "Client::ExecuteProtocol: failed to Client Proprocessing: "
+              << client_round_one_status << std::endl;
+    return 1; 
+  }
+  
   ServerMessage server_round_one =
       invoke_server_handle_message_sink.last_server_response();
 
-  // Execute ClientRoundOne, and wait for response from ServerRoundTwo.
+  // Receiver ServerRoundOne, execute ClientPostProcessing.
   std::cout
-      << "Client: Received encrypted set from the server, double encrypting..."
+      << "Client: Received tree updates from the server, now doing postprocessing..."
       << std::endl;
-  std::cout << "Client: Sending double encrypted server data and "
-               "single-encrypted client data to the server."
-            << std::endl
-            << "Client: Waiting for encrypted intersection sum..." << std::endl;
-  auto client_round_one_status =
+  auto client_post_processing_status =
       client->Handle(server_round_one, &invoke_server_handle_message_sink);
-  if (!client_round_one_status.ok()) {
+  if (!client_post_processing_status.ok()) {
     std::cerr << "Client::ExecuteProtocol: failed to ReEncryptSet: "
-              << client_round_one_status << std::endl;
+              << client_post_processing_status << std::endl;
     return 1;
   }
 
