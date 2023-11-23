@@ -113,7 +113,7 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
 
   if (client_message.has_start_protocol_request()) {
     // Handle a protocol start message (with client key exchange).
-    auto maybe_server_key_exchange = ServerKeyExchange(client_message);
+    auto maybe_server_key_exchange = ServerKeyExchange(client_message.client_key_exchange());
     if (!maybe_server_key_exchange.ok()) {
       return maybe_server_key_exchange.status();
     }
@@ -122,15 +122,16 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
         std::move(maybe_server_key_exchange.value());
   } else if (client_message.has_client_round_one()) {
     // Handle the client round 1 message.
-    auto maybe_server_round_two =
-        ComputeIntersection(client_message.client_round_one());
-    if (!maybe_server_round_two.ok()) {
+    auto maybe_server_round_one =
+        ServerProcessing(client_message.client_round_one());
+    if (!maybe_server_round_one.ok()) {
       return maybe_server_round_two.status();
     }
     *(server_message.mutable_private_intersection_server_message()
-          ->mutable_server_round_two()) =
-        std::move(maybe_server_round_two.value());
+          ->mutable_server_round_one()) =
+        std::move(maybe_server_round_one.value());
     // Mark the protocol as finished here.
+    // TODO: change protocol_finished condition for updatable
     protocol_finished_ = true;
   } else {
     return InvalidArgumentError(

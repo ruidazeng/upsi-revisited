@@ -113,7 +113,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
   if (server_message.private_intersection_server_message().
           .has_server_key_exchange()) {
     // Handle the server key exchange message.           
-    auto maybe_client_key_exchange = ClientKeyExchange(server_message);
+    auto maybe_client_key_exchange = ClientKeyExchange(server_message.server_key_exchange());
     if (!maybe_server_key_exchange.ok()) {
       return maybe_server_key_exchange.status();
     }
@@ -144,6 +144,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
     std::tie(intersection_size_, intersection_sum_) =
         std::move(maybe_result.value());
     // Mark the protocol as finished here.
+    // TODO: new "protocol_finished" condition based on the number of days n for updatable
     protocol_finished_ = true;
     return OkStatus();
   }
