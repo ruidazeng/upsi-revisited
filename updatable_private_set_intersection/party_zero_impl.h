@@ -81,13 +81,22 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // 2. Generate Threshold ElGamal public key from shares, save it to P_0's member variable
     Status ClientExchange(const PrivateIntersectionClientMessage::ServerKeyExchange&
                            server_message);
+   
+    // Start client side processing (for a new day of UPSI)
+    // 1. Insert into my own tree
+    // 2. Generate {Path_i}_i
+    // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
+    // 4. Generate Client Round One message (Party 0) to send to Party 1
+    StatusOr<PrivateIntersectionClientMessage::ClientRoundOne>
+    ClientPreProcessing(const PrivateIntersectionClientMessage::ServerRoundOne&
+                  server_message);
 
-    // Complete client side processing:
+    // Complete client side processing (for the same day of UPSI)
     // 1. Partial decryption (ElGamal/Paillier)
     // 2. Update P0's tree
     // 3. Update P1's tree
     // 4. Payload Processing
-    Status ClientProcessing(const PrivateIntersectionClientMessage::ServerRoundOne&
+    Status ClientPostProcessing(const PrivateIntersectionClientMessage::ServerRoundOne&
                            server_message);
 
     // Update elements and payloads
