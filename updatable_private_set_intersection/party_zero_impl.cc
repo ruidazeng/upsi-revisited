@@ -78,8 +78,8 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   return client_message_sink->Send(client_message);
 }
 
-  Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(const PrivateIntersectionClientMessage::ServerKeyExchange&
-                          server_message) {
+  Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
+    const PrivateIntersectionClientMessage::ServerKeyExchange&server_message) {
   // 1. Retrieve P_1's (g, y)
   ASSIGN_OR_RETURN(ECPoint server_g, this->ec_group->CreateECPoint(server_message.elgamal_g()));
   ASSIGN_OR_RETURN(ECPoint server_y, this->ec_group->CreateECPoint(server_message.elgamal_y()));
@@ -93,6 +93,29 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   ASSIGN_OR_RETURN(auto shared_public_key, elgamal::GeneratePublicKeyFromShares(key_shares));
   this->shared_elgamal_public_key = std::move(shared_public_key);
 }
+
+  // Start client side processing (for a new day of UPSI)
+  // 1. Insert into my own tree
+  // 2. Generate {Path_i}_i
+  // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
+  // 4. Generate Client Round One message (Party 0) to send to Party 1
+  StatusOr<PrivateIntersectionClientMessage::ClientRoundOne> 
+   PrivateIntersectionProtocolPartyZeroImpl::ClientPreProcessing(std::vector<std::string> elements) {
+      // TODO
+      return NULL;
+  }
+
+  // Complete client side processing (for the same day of UPSI)
+  // 1. Partial decryption (ElGamal/Paillier)
+  // 2. Update P0's tree
+  // 3. Update P1's tree
+  // 4. Payload Processing
+  Status  PrivateInterClientPostProcessing(
+    const PrivateIntersectionClientMessage::ServerRoundOne& server_message) {
+      // TODO
+      return NULL;
+  }
+
 
 Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
     const ServerMessage& server_message,
