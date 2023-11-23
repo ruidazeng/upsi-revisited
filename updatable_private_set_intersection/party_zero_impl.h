@@ -88,8 +88,7 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
     // 4. Generate Client Round One message (Party 0) to send to Party 1
     StatusOr<PrivateIntersectionClientMessage::ClientRoundOne>
-    ClientPreProcessing(const PrivateIntersectionClientMessage::ServerRoundOne&
-                  server_message);
+    ClientPreProcessing(std::vector<std::string> elements);
 
     // Complete client side processing (for the same day of UPSI)
     // 1. Partial decryption (ElGamal/Paillier)
