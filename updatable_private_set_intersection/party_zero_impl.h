@@ -44,7 +44,8 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
  public:
     PrivateIntersectionProtocolPartyZeroImpl(
       Context* ctx, const std::vector<std::string>& elements,
-      const std::vector<BigNum>& payloads, int32_t modulus_size, int32_t statistical_param);
+      const std::vector<BigNum>& payloads, int32_t modulus_size, int32_t statistical_param,
+      int total_days);
 
     ~PrivateIntersectionProtocolPartyZeroImpl() override = default;
 
@@ -53,17 +54,19 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // Sends the Threshold ElGamal public key pairs (g, y) to the server.
     Status StartProtocol(MessageSink<ClientMessage>* client_message_sink) override;
 
+    // Initiate ClientPreprocessing. Every new day, call this function so
+    // P_0 will send ClientRoundOne to server.
+    Status ClientSendRoundOne(MessageSink<ClientMessage>* client_message_sink);
+
     // Executes the next Client round and creates a new server request, which must
     // be sent to the server unless the protocol is finished.
     //
-    // If the ServerMessage is ServerRoundOne, a ClientRoundOne will be sent on
-    // the message sink, containing the encrypted client identifiers and
-    // associated values, and the re-encrypted and shuffled server identifiers.
+    // If the ServerMessage is ServerKeyExchange, nothing will be sent on the message
+    // sink. But P_0 will call ClientExchange to complete the key exchange process.
     //
-    // If the ServerMessage is ServerRoundTwo, nothing will be sent on
-    // the message sink, and the client will internally store the intersection sum
-    // and size. The intersection sum and size can be retrieved either through
-    // accessors, or by calling PrintOutput.
+    // If the ServerMessage is ServerRoundOne, again nothing will be sent on
+    // the message sink, and the client will call ClientPostProcessing to complete
+    // the day worth of UPSI.
     //
     // Fails with InvalidArgument if the message is not a
     // PrivateIntersectionServerMessage of the expected round, or if the
@@ -95,6 +98,7 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // 2. Update P0's tree
     // 3. Update P1's tree
     // 4. Payload Processing
+    // TODO: PRINT RESULTS???
     Status ClientPostProcessing(const PrivateIntersectionClientMessage::ServerRoundOne&
                            server_message);
 
@@ -123,6 +127,10 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
 
     // The Threshold Paillier object
     // ThresholdPaillier threshold_paillier;
+
+    // current day and total days
+    int current_day = 0;
+    int total_days; // must be greater or equal to 1
 
     bool protocol_finished_ = false;
 };

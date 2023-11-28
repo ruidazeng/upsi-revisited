@@ -48,6 +48,9 @@ ABSL_FLAG(
 ABSL_FLAG(
     int32_t, paillier_statistical_param, 100,
     "Paillier statistical parameter.");
+ABSL_FLAG(
+    int, total_days, 5, 
+    "Number of days the protocol will run.");
 
 namespace updatable_private_set_intersection {
 namespace {
@@ -84,20 +87,20 @@ class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
 int ExecuteProtocol() {
   ::updatable_private_set_intersection::Context context;
 
-  std::cout << "Client: Loading data..." << std::endl;
+  std::cout << "Party 0: Loading data..." << std::endl;
   auto maybe_client_identifiers_and_associated_values =
       ::updatable_private_set_intersection::ReadClientDatasetFromFile(
           absl::GetFlag(FLAGS_client_data_file), &context);
   if (!maybe_client_identifiers_and_associated_values.ok()) {
-    std::cerr << "Client::ExecuteProtocol: failed "
+    std::cerr << "Party 0::ExecuteProtocol: failed "
               << maybe_client_identifiers_and_associated_values.status()
               << std::endl;
     return 1;
   }
   auto client_identifiers_and_associated_values =
-      std::move(maybe_client_identifiers_and_associated_values.value());
+      std::move(maybe_client_identifiers_and_associated_values.value());              
 
-  std::cout << "Client: Generating keys..." << std::endl;
+  std::cout << "Party 0: Generating keys..." << std::endl;
   // TODO: Double check dummy data generation
   std::unique_ptr<::updatable_private_set_intersection::ProtocolClient> party_zero =
       std::make_unique<
@@ -105,7 +108,8 @@ int ExecuteProtocol() {
           &context, std::move(client_identifiers_and_associated_values.first),
           std::move(client_identifiers_and_associated_values.second),
           absl::GetFlag(FLAGS_paillier_modulus_size),
-          absl::GetFlag(FLAGS_paillier_statistical_param));
+          absl::GetFlag(FLAGS_paillier_statistical_param),
+          absl::GetFlag(FLAGS_total_days));
 
   // Consider grpc::SslServerCredentials if not running locally.
   std::unique_ptr<UpdatablePrivateSetIntersectionRpc::Stub> stub =
@@ -117,13 +121,13 @@ int ExecuteProtocol() {
 
   // Execute StartProtocol and wait for response from ServerRoundOne.     
   std::cout
-      << "Client: Starting the protocol." << std::endl
-      << "Client: Waiting for response and encrypted set from the server..."
+      << "Party 0: Starting the protocol." << std::endl
+      << "Party 0: Waiting for response and encrypted set from the Party 1..."
       << std::endl;
   auto start_protocol_status =
-      client->StartProtocol(&invoke_server_handle_message_sink);
+      party_zero->StartProtocol(&invoke_server_handle_message_sink);
   if (!start_protocol_status.ok()) {
-    std::cerr << "Client::ExecuteProtocol: failed to StartProtocol: "
+    std::cerr << "Party 0::ExecuteProtocol: failed to StartProtocol: "
               << start_protocol_status << std::endl;
     return 1;
   }
@@ -135,39 +139,59 @@ int ExecuteProtocol() {
       << "Client: Received key exchange from the server, generating joint ElGamal public key..."
       << std::endl;
   auto client_key_exchange_status =
-      client->Handle(server_key_exchange, &invoke_server_handle_message_sink);
+      party_zero->Handle(server_key_exchange, &invoke_server_handle_message_sink);
   if (!client_key_exchange_status.ok()) {
-    std::cerr << "Client::ExecuteProtocol: failed to Client Key Exchange: "
+    std::cerr << "Party 0::ExecuteProtocol: failed to Client Key Exchange: "
               << client_key_exchange_status << std::endl;
     return 1;
   }
 
   // Execute ClientPreprocessing (Updatable)
-  // TODO!!!!!!!
-  std::cout << "Client: Sending tree updates to the server."
-            << std::endl
-            << "Client: Waiting for server's tree updates..." << std::endl;
-  auto client_round_one_status =
-      client->Handle(server_key_exchange, &invoke_server_handle_message_sink);
-  if (!client_round_one_status.ok()) {
-    std::cerr << "Client::ExecuteProtocol: failed to Client Proprocessing: "
+  for (int i = 0; i <= absl::GetFlag(FLAGS_total_days); ++i) {
+    // If not Day 0, load a new day of data
+    if (i != 0) {
+      std::cout << "Party 0: Loading data..." << std::endl;
+      auto maybe_client_identifiers_and_associated_values =
+          ::updatable_private_set_intersection::ReadClientDatasetFromFile(
+              absl::GetFlag(FLAGS_client_data_file), &context);
+      if (!maybe_client_identifiers_and_associated_values.ok()) {
+        std::cerr << "Party 0::ExecuteProtocol: failed "
+                  << maybe_client_identifiers_and_associated_values.status()
+                  << std::endl;
+        return 1;
+      }
+      auto client_identifiers_and_associated_values =
+        std::move(maybe_client_identifiers_and_associated_values.value());
+      // CALL UPDATE ELEMENT AND PAYLOAD
+      party_zero->update_elements(client_identifiers_and_associated_values.first);
+      party_zero->update_payloads(client_identifiers_and_associated_values.second);
+    }
+    // Round One Starting
+    std::cout << "Party 0: Sending tree updates to Party 1."
+              << std::endl
+              << "Party 0: Waiting for Party 1's tree updates..." << std::endl;
+   auto client_round_one_status =
+      party_zero->ClientSendRoundOne(&invoke_server_handle_message_sink);
+    if (!client_round_one_status.ok()) {
+      std::cerr << "Party 0::ExecuteProtocol: failed to Client Proprocessing: "
               << client_round_one_status << std::endl;
-    return 1; 
-  }
+      return 1; 
+    }
   
-  ServerMessage server_round_one =
-      invoke_server_handle_message_sink.last_server_response();
+    ServerMessage server_round_one =
+        invoke_server_handle_message_sink.last_server_response();
 
-  // Receiver ServerRoundOne, execute ClientPostProcessing.
-  std::cout
-      << "Client: Received tree updates from the server, now doing postprocessing..."
+    // Receiver ServerRoundOne, execute ClientPostProcessing.
+    std::cout
+      << "Party 0: Received tree updates from the Party 1, now doing postprocessing..."
       << std::endl;
-  auto client_post_processing_status =
-      client->Handle(server_round_one, &invoke_server_handle_message_sink);
-  if (!client_post_processing_status.ok()) {
-    std::cerr << "Client::ExecuteProtocol: failed to ReEncryptSet: "
-              << client_post_processing_status << std::endl;
-    return 1;
+    auto client_post_processing_status =
+      party_zero->Handle(server_round_one, &invoke_server_handle_message_sink);
+    if (!client_post_processing_status.ok()) {
+      std::cerr << "Party 0::ExecuteProtocol: failed to ReEncryptSet: "
+                << client_post_processing_status << std::endl;
+      return 1;
+    }
   }
 
   return 0;

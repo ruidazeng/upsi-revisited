@@ -59,7 +59,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     // 2. Generate Threshold ElGamal public key from shares, save it to P_1's member variable
     // 3. Generate ServerKeyExchange message using P_1's (g, y)
     StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
-    ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
+    ServerExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
                            client_message);
 
     // Complete server side processing:
@@ -95,7 +95,12 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
 
     // The Threshold Paillier object
     // ThresholdPaillier threshold_paillier;
+   
+    // current day and total days
+    int current_day = 0;
+    int total_days; // must be greater or equal to 1
 
+    bool protocol_finished_ = false;
 
 };
 
