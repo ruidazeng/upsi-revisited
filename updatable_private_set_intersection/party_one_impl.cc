@@ -78,18 +78,61 @@ PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersec
   return result;
 }
 
+// Complete server side processing:
 StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>
 PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersectionClientMessage::ClientRoundOne&
-                        client_message) {
-    // Complete server side processing:
-    // 1. Shuffle
-    // 2. Mask with a random exponent
-    BigNum a = this->ec_group_->GeneratePrivateKey();  // generate a random exponent
-    // 3. Partial decryption (ElGamal/Paillier)
-    // 4. Update P0's tree
-    // 5. Update P1's tree
-    // 6. Generate {Path_i}_i
-  return null;
+                        client_message, std::vector<std::string> server_elements) {
+    // 1. Reconstruct encrypted elements (vector of Enc(m), ECPoint)
+    std::vector<ECPoint> encrypted_element;
+    for (const EncryptedElement& element :
+      client_message.encrypted_set().elements()) {
+      ASSIGN_OR_RETURN(ECPoint enc_element, this->ec_group->CreateECPoint(element.element()));
+      encrypted_element.push_back(enc_element);
+    }
+    // 2. Shuffle
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::shuffle(encrypted_element.begin(), encrypted_element.end(), gen);
+    // 3. Mask with a random exponent
+    std::vector<elgamal::Ciphertext> masked_encrypted_element;
+    for (size_t i = 0; i < encrypted_element.size(); i++) {
+      BigNum a = this->ec_group_->GeneratePrivateKey();  // generate a random exponent
+      ASSIGN_OR_RETURN(elgamal::Ciphertext masked_ct, elgamal::Mul(encrypted_element[i], a));
+      mask_encrypted_element.push_back(masked_ct);
+    }
+    // 4. Partial decryption (ElGamal/Paillier)
+    std::unique_ptr<encrypter> key_ptr(new elgamal::PrivateKey(this->elgamal_private_key));
+    ASSIGN_OR_RETURN(ElGamalEncrypter decrypter, ElGamalDecrypter(this->ec_group, std::move(key_ptr)));
+    std::vector<elgamal::Ciphertext> partially_decrypted_element;
+    for (size_t i = 0; i < masked_encrypted_element.size(); i++) {
+      ASSIGN_OR_RETURN(elgamal::Ciphertext partial_ct, decrypter->PartialDecrypt(masked_encrypted_element[i]));
+      partially_decrypted_element.push_back(partial_ct);
+    }
+    // 5. Update P0's tree
+    this->other_crypto_tree.replace_nodes(encrypted_elements);
+    // 6. Update P1's tree
+    this->my_crypto_tree.insert(server_elements);
+    // 7. Generate {Path_i}_i
+    std::vector<ECPoint> server_encrypted_elements;
+    int cnt = server_elements.size();
+    std::unique_ptr<encrypter> key_ptr(new elgamal::PublicKey(this->shared_elgamal_public_key));
+    ASSIGN_OR_RETURN(ElGamalEncrypter encrypter, ElGamalEncrypter(this->ec_group, std::move(key_ptr)));
+    for (int i = 0; i < cnt; ++i) {
+        absl::string_view str = server_elements[i];
+        ASSIGN_OR_RETURN(ECPoint m, this->ec_group->CreateECPoint(str));
+        ASSIGN_OR_RETURN(ECPoint g_to_m, this->shared_elgamal_public_key.g.Mul(m)); //g^m
+        ASSIGN_OR_RETURN(elgamal::Ciphertext now, encrypter.Encrypt(g_to_m));
+        server_encrypted_elements.push_back(now);
+    }
+    // 4. Generate Client Round One message (Party 0) to send to Party 1
+    PrivateIntersectionSumServerMessage::ServerRoundOne result;
+    for (size_t i = 0; i < server_encrypted_elements.size(); i++) {
+      EncryptedElement* server_element = result.mutable_encrypted_set()->add_elements();
+      StatusOr<std::string> encrypted = server_encrypted_elements[i];
+      *server_element->mutable_element() = encrypted.ToBytesCompressed(); // ECPoint -> Bytes Compressed
+    }
+    // 8. Generate ServerRoundOne back to client
+  return result;
 }
 
 Status PrivateIntersectionProtocolPartyOneImpl::Handle(

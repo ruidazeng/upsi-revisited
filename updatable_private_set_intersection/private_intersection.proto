@@ -38,6 +38,12 @@ message PrivateIntersectionClientMessage {
   // Message containing the client's set encrypted under the client's keys, and
   // the server's set re-encrypted with the client's key, and shuffled.
   message ClientRoundOne {
+    optional EncryptedSet encrypted_set = 1;
+  }
+
+    // Message containing the client's set encrypted under the client's keys, and
+  // the server's set re-encrypted with the client's key, and shuffled.
+  message ClientRoundTwo {
     optional bytes public_key = 1;
     optional EncryptedSet encrypted_set = 2;
     optional EncryptedSet reencrypted_set = 3;

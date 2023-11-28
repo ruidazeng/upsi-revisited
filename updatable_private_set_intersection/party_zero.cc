@@ -115,7 +115,7 @@ int ExecuteProtocol() {
   InvokeServerHandleClientMessageSink invoke_server_handle_message_sink(
       std::move(stub));
 
-  // Execute StartProtocol and wait for response from ServerRoundOne.
+  // Execute StartProtocol and wait for response from ServerRoundOne.     
   std::cout
       << "Client: Starting the protocol." << std::endl
       << "Client: Waiting for response and encrypted set from the server..."
