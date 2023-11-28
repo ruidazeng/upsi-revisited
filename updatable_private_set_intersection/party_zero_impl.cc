@@ -66,6 +66,7 @@ void PrivateIntersectionProtocolPartyZeroImpl::UpdatePayload(std::vector<BigNum>
   this->payloads_.insert(this->payloads_.end(), new_payloads.begin(), new_payloads.end());
 }
 
+
 Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
     MessageSink<ClientMessage>* client_message_sink) {
   ClientMessage client_message;
@@ -95,14 +96,40 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
 }
 
   // Start client side processing (for a new day of UPSI)
-  // 1. Insert into my own tree
-  // 2. Generate {Path_i}_i
-  // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
-  // 4. Generate Client Round One message (Party 0) to send to Party 1
   StatusOr<PrivateIntersectionClientMessage::ClientRoundOne> 
    PrivateIntersectionProtocolPartyZeroImpl::ClientPreProcessing(std::vector<std::string> elements) {
-      // TODO
-      return NULL;
+    // 1. Insert into my own tree
+    this->my_crypto_tree.insert(elements);
+    // 2. Generate {Path_i}_i
+    // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
+    // elements(vector of strings) -> vector of Enc(m)
+    std::vector<ECPoint> encrypted_elements;
+    int cnt = elements.size();
+    std::unique_ptr<encrypter> key_ptr(new elgamal::PublicKey(this->shared_elgamal_public_key));
+    ASSIGN_OR_RETURN(ElGamalEncrypter encrypter, ElGamalEncrypter(this->ec_group, std::move(key_ptr)));
+    for (int i = 0; i < cnt; ++i) {
+        absl::string_view str = elements[i];
+        ASSIGN_OR_RETURN(ECPoint m, this->ec_group->CreateECPoint(str));
+        ASSIGN_OR_RETURN(ECPoint g_to_m, this->shared_elgamal_public_key.g.Mul(m)); //g^m
+        ASSIGN_OR_RETURN(elgamal::Ciphertext now, encrypter.Encrypt(g_to_m));
+        encrypted_elements.push_back(now);
+    }
+    // 4. Generate Client Round One message (Party 0) to send to Party 1
+    PrivateIntersectionSumClientMessage::ClientRoundOne result;
+    for (size_t i = 0; i < encrypted_elements.size(); i++) {
+      EncryptedElement* element = result.mutable_encrypted_set()->add_elements();
+      StatusOr<std::string> encrypted = encrypted_elements[i];
+      *element->mutable_element() = encrypted.ToBytesCompressed(); // ECPoint -> Bytes Compressed
+
+      // TODO: Payload - Paillier
+      // StatusOr<BigNum> value = private_paillier_->Encrypt(values_[i]);
+      // if (!value.ok()) {
+      //   return value.status();
+      // }
+      // *element->mutable_associated_data() = value.value().ToBytes();
+    }
+
+    return result;
   }
 
   // Complete client side processing (for the same day of UPSI)
@@ -110,10 +137,13 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   // 2. Update P0's tree
   // 3. Update P1's tree
   // 4. Payload Processing
-  Status  PrivateInterClientPostProcessing(
+  Status PrivateInterClientPostProcessing(
     const PrivateIntersectionClientMessage::ServerRoundOne& server_message) {
-      // TODO
-      return NULL;
+      // 1. Partial decryption (ElGamal/Paillier)
+      // 2. Update P0's tree
+      // 3. Update P1's tree
+      // 4. Payload Processing - TODO
+      return OkStatus();
   }
 
 
