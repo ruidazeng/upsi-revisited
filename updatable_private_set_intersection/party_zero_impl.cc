@@ -102,8 +102,8 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
     this->my_crypto_tree.insert(elements);
     // 2. Generate {Path_i}_i
     // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
-    // elements(vector of strings) -> vector of Enc(m)
-    std::vector<ECPoint> encrypted_elements;
+    // elements(vector of strings) -> vector of Enc(m) - elgamal Ciphertext instead of ECPoint
+    std::vector<elgamal::Ciphertext> encrypted_elements;
     int cnt = elements.size();
     std::unique_ptr<encrypter> key_ptr(new elgamal::PublicKey(this->shared_elgamal_public_key));
     ASSIGN_OR_RETURN(ElGamalEncrypter encrypter, ElGamalEncrypter(this->ec_group, std::move(key_ptr)));
@@ -118,9 +118,10 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
     PrivateIntersectionSumClientMessage::ClientRoundOne result;
     for (size_t i = 0; i < encrypted_elements.size(); i++) {
       EncryptedElement* element = result.mutable_encrypted_set()->add_elements();
-      StatusOr<std::string> encrypted = encrypted_elements[i];
-      *element->mutable_element() = encrypted.ToBytesCompressed(); // ECPoint -> Bytes Compressed
-
+      elgamal::Ciphertext encrypted = encrypted_elements[i];
+      // Ciphertext -> Bytes Compressed
+      *element->mutable_elgamal_u() = encrypted->u.ToBytesCompressed(); // Ciphertext -> Bytes Compressed
+      *element->mutable_elgamal_e() = encrypted->e.ToBytesCompressed(); 
       // TODO: Payload - Paillier
       // StatusOr<BigNum> value = private_paillier_->Encrypt(values_[i]);
       // if (!value.ok()) {
@@ -139,9 +140,30 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   // 4. Payload Processing
   Status PrivateInterClientPostProcessing(
     const PrivateIntersectionClientMessage::ServerRoundOne& server_message) {
-      // 1. Partial decryption (ElGamal/Paillier)
-      // 2. Update P0's tree
+      // 1. Reconstruct ElGamal ciphertext
+      std::vector<elgamal::Ciphertext> partially_decrypted_element;
+      for (const EncryptedElement& element :
+      server_message.encrypted_set().elements()) {
+        ASSIGN_OR_RETURN(ECPoint u, this->ec_group->CreateECPoint(element.elgamal_u()));
+        ASSIGN_OR_RETURN(ECPoint e, this->ec_group->CreateECPoint(element.elgamal_e()));
+        elgamal::Ciphertext partial_element;
+        partial_element->u = u;
+        partial_element->e = e;
+        partially_decrypted_element.push_back(partial_element);
+      }
+      // 1. Full decryption on a partial decryption (ElGamal/Paillier)
+      std::unique_ptr<encrypter> key_ptr(new elgamal::PrivateKey(this->elgamal_private_key));
+      ASSIGN_OR_RETURN(ElGamalEncrypter decrypter, ElGamalDecrypter(this->ec_group, std::move(key_ptr)));
+      std::vector<ECPoint> decrypted_element;
+      for (size_t i = 0; i < partially_decrypted_element.size(); i++) {
+        ASSIGN_OR_RETURN(ECPoint decrypted_ct, decrypter->Decrypt(partially_decrypted_element));
+        decrypted_element.push_back(partial_ct);
+      }
+      // Check if decrypted_element = 0
+      // 2. Update P0's treet
+      this->my_crypto_tree.insert(decrypted_element);
       // 3. Update P1's tree
+      this->other_crypto_tree.replaceNodes(decrypted_element);
       // 4. Payload Processing - TODO
       return OkStatus();
   }
