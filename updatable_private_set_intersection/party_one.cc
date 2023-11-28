@@ -45,10 +45,13 @@ ABSL_FLAG(
 ABSL_FLAG(
     int32_t, paillier_statistical_param, 100,
     "Paillier statistical parameter.");
+ABSL_FLAG(
+    int, total_days, 5, 
+    "Number of days the protocol will run.");
 
 
 int RunPartyOne() {
-  std::cout << "Server: loading data... " << std::endl;
+  std::cout << "Party 1: loading data... " << std::endl;
   // Note that the server does not handle payload, even in secret shares.
   auto maybe_server_identifiers =
         ::private_join_and_compute::ReadServerDatasetFromFile(
@@ -65,10 +68,11 @@ int RunPartyOne() {
           ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyOneImpl>(
           &context, std::move(server_identifiers.values()),
           absl::GetFlag(FLAGS_paillier_modulus_size),
-          absl::GetFlag(FLAGS_paillier_statistical_param));
+          absl::GetFlag(FLAGS_paillier_statistical_param)
+          absl::GetFlag(FLAGS_total_days));
 
   ::updatable_private_set_intersection::UpdatablePrivateSetIntersectionRpcImpl service(
-      std::move(server));
+      std::move(party_one));
 
   ::grpc::ServerBuilder builder;
   // Consider grpc::SslServerCredentials if not running locally.
@@ -78,10 +82,11 @@ int RunPartyOne() {
   builder.RegisterService(&service);
   std::unique_ptr<::grpc::Server> grpc_server(builder.BuildAndStart());
 
+  // BIG TODO - SERVER NOT UPDATING ELEMENTS AND PAYLOADS???
   // Run the server on a background thread.
   std::thread grpc_server_thread(
       [](::grpc::Server* grpc_server_ptr) {
-        std::cout << "Server: listening on " << absl::GetFlag(FLAGS_port)
+        std::cout << "Party 1: listening on " << absl::GetFlag(FLAGS_port)
                   << std::endl;
         grpc_server_ptr->Wait();
       },
@@ -94,7 +99,7 @@ int RunPartyOne() {
   // Shut down server.
   grpc_server->Shutdown();
   grpc_server_thread.join();
-  std::cout << "Server completed protocol and shut down." << std::endl;
+  std::cout << "Party 1 completed protocol and shut down." << std::endl;
 
   return 0;
 }

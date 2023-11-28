@@ -29,7 +29,8 @@ namespace updatable_private_set_intersection {
 PrivateIntersectionProtocolPartyOneImpl::
     PrivateIntersectionProtocolPartyOneImpl(
         Context* ctx, const std::vector<std::string>& elements,
-        int32_t modulus_size, int32_t statistical_param)  {
+        int32_t modulus_size, int32_t statistical_param,
+        int total_days)  {
             // Assign context
             this->ctx_ = ctx;
             // Use curve_id and context to create EC_Group for ElGamal
@@ -49,6 +50,8 @@ PrivateIntersectionProtocolPartyOneImpl::
             // Elements assignments
             this->elements_ = elements;
             this->new_elements_ = elements;
+            // Total days and current day
+            this->total_days = total_days;
 }
 
 void PrivateIntersectionProtocolPartyOneImpl::UpdateElements(std::vector<std::string> new_elements) {
@@ -56,8 +59,8 @@ void PrivateIntersectionProtocolPartyOneImpl::UpdateElements(std::vector<std::st
   this->elements_.insert(this->elements_.end(), new_elements.begin(), new_elements.end());
 }
 
-StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
-PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
+StatusOr<PrivateIntersectionServerMessage::ServerExchange>
+PrivateIntersectionProtocolPartyOneImpl::ServerExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
                         client_message) {
   // 1. Retrieve P_0's (g, y)
   ASSIGN_OR_RETURN(ECPoint client_g, this->ec_group->CreateECPoint(client_message.elgamal_g()));
@@ -72,7 +75,7 @@ PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersec
   ASSIGN_OR_RETURN(auto shared_public_key, elgamal::GeneratePublicKeyFromShares(key_shares));
   this->shared_elgamal_public_key = std::move(shared_public_key);
   // 3. Generate ServerKeyExchange message using P_1's (g, y)
-  PrivateIntersectionSumClientMessage::ServerKeyExchange result;
+  PrivateIntersectionClientMessage::ServerKeyExchange result;
   *result.mutable_elgamal_g() = this->elgamal_public_key->g.ToBytesCompressed();
   *result.mutable_elgamal_y() = this->elgamal_public_key->y.ToBytesCompressed();
   return result;
@@ -82,6 +85,8 @@ PrivateIntersectionProtocolPartyOneImpl::ServerKeyExchange(const PrivateIntersec
 StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>
 PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersectionClientMessage::ClientRoundOne&
                         client_message, std::vector<std::string> server_elements) {
+    // A NEW DAY - update
+    this->current_day += 1;
     // 1. Reconstruct encrypted elements (vector of Enc(m), ECPoint)
     std::vector<elgamal::Ciphertext> encrypted_element;
     for (const EncryptedElement& element :
@@ -119,7 +124,7 @@ PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersect
     // 7. Generate {Path_i}_i
     // 8. Generate ServerRoundOne back to client
     // Note: maybe need to do the subtraction/comparisions with tree first with input: server_encrypted_element
-    PrivateIntersectionSumServerMessage::ServerRoundOne result;
+    PrivateIntersectionServerMessage::ServerRoundOne result;
     for (size_t i = 0; i < partially_decrypted_element.size(); i++) {
       EncryptedElement* partial_element = result.mutable_encrypted_set()->add_elements();
       elgamal::Ciphertext partially_decrypted = partially_decrypted_elements[i];
@@ -151,7 +156,7 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
 
   if (client_message.has_start_protocol_request()) {
     // Handle a protocol start message (with client key exchange).
-    auto maybe_server_key_exchange = ServerKeyExchange(client_message.client_key_exchange());
+    auto maybe_server_key_exchange = ServerExchange(client_message.client_key_exchange());
     if (!maybe_server_key_exchange.ok()) {
       return maybe_server_key_exchange.status();
     }
@@ -169,8 +174,10 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
           ->mutable_server_round_one()) =
         std::move(maybe_server_round_one.value());
     // Mark the protocol as finished here.
-    // TODO: change protocol_finished condition for updatable
-    protocol_finished_ = true;
+    // change protocol_finished condition for updatable
+    if (current_day >= total_days) {
+      this->protocol_finished_ = true;
+    }
   } else {
     return InvalidArgumentError(
         "PrivateIntersectionProtocolServerImpl: Received a client message "

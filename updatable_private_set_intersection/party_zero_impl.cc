@@ -32,7 +32,8 @@ namespace updatable_private_set_intersection {
 PrivateIntersectionProtocolPartyZeroImpl::
     PrivateIntersectionProtocolPartyZeroImpl(
       Context* ctx, const std::vector<std::string>& elements,
-      const std::vector<BigNum>& payloads, int32_t modulus_size, int32_t statistical_param) {
+      const std::vector<BigNum>& payloads, int32_t modulus_size, int32_t statistical_param,
+      int total_days) {
         // Assign context
         this->ctx_ = ctx;
         // Use curve_id and context to create EC_Group for ElGamal
@@ -54,6 +55,8 @@ PrivateIntersectionProtocolPartyZeroImpl::
         this->new_elements_ = elements;
         this->payloads_ = payloads;
         this->new_payloads_ = payloads;
+        // Total days and current day
+        this->total_days = total_days;
 }
 
 void PrivateIntersectionProtocolPartyZeroImpl::UpdateElements(std::vector<std::string> new_elements) {
@@ -66,11 +69,11 @@ void PrivateIntersectionProtocolPartyZeroImpl::UpdatePayload(std::vector<BigNum>
   this->payloads_.insert(this->payloads_.end(), new_payloads.begin(), new_payloads.end());
 }
 
-
 Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
     MessageSink<ClientMessage>* client_message_sink) {
   ClientMessage client_message;
-  PrivateIntersectionSumClientMessage::StartProtocolRequest start_protocol_request;
+  PrivateIntersectionClientMessage::StartProtocolRequest start_protocol_request;
+  // Put P_0's ElGamal public key (g, y) into a message and send it to P_1
   *start_protocol_request.mutable_elgamal_g() = this->elgamal_public_key->g.ToBytesCompressed();
   *start_protocol_request.mutable_elgamal_y() = this->elgamal_public_key->y.ToBytesCompressed();
   *(client_message.mutable_private_intersection_client_message()
@@ -79,7 +82,20 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   return client_message_sink->Send(client_message);
 }
 
-  Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
+Status PrivateIntersectionProtocolPartyZeroImpl::ClientSendRoundOne(
+  MessageSink<ClientMessage>* client_message_sink) {
+    // A NEW DAY - update
+    this->current_day += 1;
+    ClientMessage client_message;
+    PrivateIntersectionClientMessage::ClientRoundOne client_round_one = ClientPreProcessing(this->elements);
+    if (!client_round_one.ok()) {
+      return client_round_one.status();
+    }
+    return client_message_sink->Send(client_message);
+}
+
+
+Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
     const PrivateIntersectionClientMessage::ServerKeyExchange&server_message) {
   // 1. Retrieve P_1's (g, y)
   ASSIGN_OR_RETURN(ECPoint server_g, this->ec_group->CreateECPoint(server_message.elgamal_g()));
@@ -115,7 +131,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
         encrypted_elements.push_back(now);
     }
     // 4. Generate Client Round One message (Party 0) to send to Party 1
-    PrivateIntersectionSumClientMessage::ClientRoundOne result;
+    PrivateIntersectionClientMessage::ClientRoundOne result;
     for (size_t i = 0; i < encrypted_elements.size(); i++) {
       EncryptedElement* element = result.mutable_encrypted_set()->add_elements();
       elgamal::Ciphertext encrypted = encrypted_elements[i];
@@ -138,7 +154,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
   // 2. Update P0's tree
   // 3. Update P1's tree
   // 4. Payload Processing
-  Status PrivateInterClientPostProcessing(
+  Status PrivateIntersectionProtocolPartyZeroImpl::ClientPostProcessing(
     const PrivateIntersectionClientMessage::ServerRoundOne& server_message) {
       // 1. Reconstruct ElGamal ciphertext
       std::vector<elgamal::Ciphertext> partially_decrypted_element;
@@ -165,6 +181,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::StartProtocol(
       // 3. Update P1's tree
       this->other_crypto_tree.replaceNodes(decrypted_element);
       // 4. Payload Processing - TODO
+      // TODO - PRINT RESULTS????
       return OkStatus();
   }
 
@@ -188,41 +205,25 @@ Status PrivateIntersectionProtocolPartyZeroImpl::Handle(
   if (server_message.private_intersection_server_message().
           .has_server_key_exchange()) {
     // Handle the server key exchange message.           
-    auto maybe_client_key_exchange = ClientKeyExchange(server_message.server_key_exchange());
+    auto maybe_client_key_exchange = ClientExchange(server_message.server_key_exchange());
     if (!maybe_server_key_exchange.ok()) {
       return maybe_server_key_exchange.status();
     }
   } else if (server_message.private_intersection_server_message()
           .has_server_round_one()) {
     // Handle the server round one message.
-    ClientMessage client_message;
-
-    auto maybe_client_round_one =
-        ReEncryptSet(server_message.private_intersection_server_message()
+    auto postprocess_status = ClientPostProcessing(server_message.private_intersection_server_message()
                          .server_round_one());
-    if (!maybe_client_round_one.ok()) {
+    if (!postprocess_status.ok()) {
       return maybe_client_round_one.status();
     }
-    *(client_message.mutable_private_intersection_client_message()
-          ->mutable_client_round_one()) =
-        std::move(maybe_client_round_one.value());
-    return client_message_sink->Send(client_message);
-  } else if (server_message.private_intersection_server_message()
-                 .has_server_round_two()) {
-    // Handle the server round two message.
-    auto maybe_result =
-        DecryptSum(server_message.private_intersection_server_message()
-                       .server_round_two());
-    if (!maybe_result.ok()) {
-      return maybe_result.status();
-    }
-    std::tie(intersection_size_, intersection_sum_) =
-        std::move(maybe_result.value());
-    // Mark the protocol as finished here.
-    // TODO: new "protocol_finished" condition based on the number of days n for updatable
-    protocol_finished_ = true;
-    return OkStatus();
   }
+    // Mark the protocol as finished here.
+    // new "protocol_finished" condition based on the number of days n for updatable
+    if (this->current_day >= this->total_days) {
+      this->protocol_finished_ = true;
+      return OkStatus();
+    }
   // If none of the previous cases matched, we received the wrong kind of
   // message.
   return InvalidArgumentError(
