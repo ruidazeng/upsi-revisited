@@ -64,11 +64,11 @@ class CryptoTree
         
         void extractPathIndices(int* leaf_ind, int cnt, std::vector<int> &ind);
         
-        int* generateRandomPaths(int cnt, std::vector<int> &ind);
+        int* generateRandomPaths(int cnt, std::vector<int> &ind, std::vector<BinaryHash> &hsh);
         
-        std::vector<CryptoNode<T> > insert(std::vector<T> elem);
+        std::vector<CryptoNode<T> > insert(std::vector<T> elem, std::vector<BinaryHash> &hsh);
         
-        void replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes);
+        void replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes, std::vector<BinaryHash> &hsh);
         
 		std::vector<T> getPath(std::string element);
 };

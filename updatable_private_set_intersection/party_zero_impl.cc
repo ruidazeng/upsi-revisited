@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 #include <iterator>
 #include <memory>
 #include <ostream>
@@ -24,6 +25,8 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#include "utils.h"
 
 #include "absl/memory/memory.h"
 
@@ -115,13 +118,41 @@ Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
   StatusOr<PrivateIntersectionClientMessage::ClientRoundOne> 
    PrivateIntersectionProtocolPartyZeroImpl::ClientPreProcessing(std::vector<std::string> elements) {
     // 1. Insert into my own tree
-    this->my_crypto_tree.insert(elements);
+    std::vector<BinaryHash> hsh;
+    std::vector<CryptoNode<std::string> > plaintxt_nodes = this->my_crypto_tree.insert(elements, hsh);
     // 2. Generate {Path_i}_i
     // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
     // elements(vector of strings) -> vector of Enc(m) - elgamal Ciphertext instead of ECPoint
+    std::vector<elgamal::Ciphertext > encrypted_nodes;
+    int node_cnt = plaintxt_nodes.size();
+    std::unique_ptr<elgamal::PublicKey> key_ptr(new elgamal::PublicKey(this->shared_elgamal_public_key));
+    ASSIGN_OR_RETURN(ElGamalEncrypter encrypter, ElGamalEncrypter(this->ec_group, std::move(key_ptr)));
+    for (int i = 0; i < node_cnt; ++i) {
+    	int cur_node_size = plaintxt_nodes[i].nodes.size();
+    	assert(cur_node_size == plaintxt_nodes[i].node_size);
+    	CryptoNode<elgamal::Ciphertext> new_node(cur_node_size);
+    	for (int j = 0; j < cur_node_size; ++j) {
+    		std::string cur_elem = plaintxt_nodes[i].nodes[j];
+    		ASSIGN_OR_RETURN(lgamal::Ciphertext cur_encrypted, 
+    			ElGamal_encrypt(encrypter, this->ec_group, this->shared_elgamal_public_key.g, cur_elem));
+    		new_node.addElement(cur_encrypted);
+    	}
+    	encrypted_nodes.push_back(new_node);
+    }
+    
+    PrivateIntersectionClientMessage::ClientRoundOne result;
+    for (int i = 0; i < node_cnt; ++i) {
+    	strstream ss;
+    	std::string cur_node_string;
+    	ss << encrypted_nodes[i];
+    	ss >> cur_node_string;
+    	result.encrypted_nodes()->add_elements(cur_node_string);
+    }
+    	
+    
     std::vector<elgamal::Ciphertext> encrypted_elements;
     int cnt = elements.size();
-    std::unique_ptr<encrypter> key_ptr(new elgamal::PublicKey(this->shared_elgamal_public_key));
+    std::unique_ptr<elgamal::PublicKey> key_ptr(new elgamal::PublicKey(this->shared_elgamal_public_key));
     ASSIGN_OR_RETURN(ElGamalEncrypter encrypter, ElGamalEncrypter(this->ec_group, std::move(key_ptr)));
     for (int i = 0; i < cnt; ++i) {
         absl::string_view str = elements[i];
@@ -131,7 +162,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
         encrypted_elements.push_back(now);
     }
     // 4. Generate Client Round One message (Party 0) to send to Party 1
-    PrivateIntersectionClientMessage::ClientRoundOne result;
+    //PrivateIntersectionClientMessage::ClientRoundOne result;
     for (size_t i = 0; i < encrypted_elements.size(); i++) {
       EncryptedElement* element = result.mutable_encrypted_set()->add_elements();
       elgamal::Ciphertext encrypted = encrypted_elements[i];
@@ -145,7 +176,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
       // }
       // *element->mutable_associated_data() = value.value().ToBytes();
     }
-
+	
     return result;
   }
 
@@ -168,8 +199,8 @@ Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
         partially_decrypted_element.push_back(partial_element);
       }
       // 1. Full decryption on a partial decryption (ElGamal/Paillier)
-      std::unique_ptr<encrypter> key_ptr(new elgamal::PrivateKey(this->elgamal_private_key));
-      ASSIGN_OR_RETURN(ElGamalEncrypter decrypter, ElGamalDecrypter(this->ec_group, std::move(key_ptr)));
+      std::unique_ptr<elgamal::PrivateKey> key_ptr(new elgamal::PrivateKey(this->elgamal_private_key));
+      ASSIGN_OR_RETURN(ElGamalDecrypter decrypter, ElGamalDecrypter(this->ec_group, std::move(key_ptr)));
       std::vector<ECPoint> decrypted_element;
       for (size_t i = 0; i < partially_decrypted_element.size(); i++) {
         ASSIGN_OR_RETURN(ECPoint decrypted_ct, decrypter->Decrypt(partially_decrypted_element));

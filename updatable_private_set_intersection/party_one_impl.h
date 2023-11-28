@@ -49,7 +49,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
 
     // Executes the next Server round and creates a response.
     Status Handle(const ClientMessage& request,
-                  MessageSink<ServerMessage>* server_message_sink) override
+                  MessageSink<ServerMessage>* server_message_sink) override;
 
     bool protocol_finished() override { return protocol_finished_; }
 

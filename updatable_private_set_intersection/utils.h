@@ -29,7 +29,6 @@ namespace updatable_private_set_intersection {
 	
 	void generateRandomHash(int cnt, std::vector<BinaryHash> &hsh);
 	
-	int find_set_rep(int x, int* f);
 
 }
 

@@ -46,9 +46,12 @@ void generateRandomHash(int cnt, std::vector<BinaryHash> &hsh) {
 	}
 }
 
-// find set representatives for a merge-find set
-int find_set_rep(int x, int* f) { 
-	return x == f[x]? x : f[x] = find_set_rep(f[x], f); // path compression
+StatusOr<elgamal::Ciphertext> ElGamal_encrypt(ElGamalEncrypter& encrypter, ECGroup* ec_group, BigNum& g, std::string elem) {
+    absl::string_view str = elem;
+	ASSIGN_OR_RETURN(ECPoint m, ec_group->CreateECPoint(str));
+    ASSIGN_OR_RETURN(ECPoint g_to_m, g.Mul(m)); //g^m
+    ASSIGN_OR_RETURN(elgamal::Ciphertext now, encrypter.Encrypt(g_to_m));
+    return now;
 }
 
 }

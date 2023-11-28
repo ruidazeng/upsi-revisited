@@ -110,8 +110,8 @@ PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersect
       mask_encrypted_element.push_back(masked_ct);
     }
     // 4. Partial decryption (ElGamal/Paillier)
-    std::unique_ptr<encrypter> key_ptr(new elgamal::PrivateKey(this->elgamal_private_key));
-    ASSIGN_OR_RETURN(ElGamalEncrypter decrypter, ElGamalDecrypter(this->ec_group, std::move(key_ptr)));
+    std::unique_ptr<elgamal::PrivateKey> key_ptr(new elgamal::PrivateKey(this->elgamal_private_key));
+    ASSIGN_OR_RETURN(ElGamalDecrypter decrypter, ElGamalDecrypter(this->ec_group, std::move(key_ptr)));
     std::vector<elgamal::Ciphertext> partially_decrypted_element;
     for (size_t i = 0; i < masked_encrypted_element.size(); i++) {
       ASSIGN_OR_RETURN(elgamal::Ciphertext partial_ct, decrypter->PartialDecrypt(masked_encrypted_element[i]));
