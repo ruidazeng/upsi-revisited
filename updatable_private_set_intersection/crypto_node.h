@@ -12,11 +12,11 @@ Type T can be a tuple for element and payload
 template<typename T>
 class CryptoNode
 {
-    private:
+    public:
         std::vector<T> node;
         int node_size;
 
-    public:
+    
         // Default constructor
         // CryptoNode();
 
@@ -24,7 +24,7 @@ class CryptoNode
         CryptoNode(int node_size = default_node_size);
 
         // Get node size
-        int getNodeSize();
+        //int getNodeSize();
 
         // Get the node vector
         std::vector<T> getNode();

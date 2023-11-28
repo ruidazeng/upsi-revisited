@@ -18,13 +18,14 @@ syntax = "proto2";
 package updatable_private_set_intersection;
 
 // Holds a set of encrypted values.
-message EncryptedSet {
-  repeated EncryptedElement elements = 1;
+message EncryptedNodes {
+  repeated bytes elements = 1;
 }
 
-// Holds an encrypted value and possibly encrypted associated data.
-message EncryptedElement {
+/* Holds an encrypted value and possibly encrypted associated data.
+message EncryptedNode {
   optional bytes elgamal_u = 1; // ElGamal element (u, e)
   optional bytes elgamal_e = 2; 
   optional bytes associated_data = 3;
 }
+*/

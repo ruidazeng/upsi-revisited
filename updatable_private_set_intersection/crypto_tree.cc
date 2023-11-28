@@ -93,10 +93,7 @@ void CryptoTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<
 
 // Generate random paths, return the indices of leaves and nodes(including stash)
 template<typename T> 
-int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind) { //ind: node indices
-	// generate binary hash
-	std::vector<BinaryHash> hsh;
-	generateRandomHash(cnt, hsh);
+int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind, std::vector<BinaryHash> &hsh) { //ind: node indices
 	
 	// compute leaf indices of the paths
 	int *leaf_ind = new int[cnt];
@@ -117,7 +114,7 @@ int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind) { //ind:
 // Return vector of (plaintext) nodes
 // stash: index = 0
 template<typename T> 
-std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
+std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem, std::vector<BinaryHash> &hsh) {
 	int new_elem_cnt = elem.size();
 	
 	// add new layer when tree is full
@@ -126,7 +123,9 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 	
 	// get the node indices in random paths
 	std::vector<int> ind;
-	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind); 
+	// generate binary hash
+	generateRandomHash(new_elem_cnt, hsh);
+	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind, hsh); 
 	
 	/*
 		To compute lca of x , y:
@@ -181,7 +180,7 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem) {
 
 // Update tree (receiver)
 template<typename T> 
-void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes) {
+void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes, std::vector<BinaryHash> &hsh) {
 	
 	int node_cnt = new_nodes.size();
 	
@@ -189,7 +188,7 @@ void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > n
 	while(new_elem_cnt + this->actual_size >= (1 << (this->depth + 1))) addNewLayer();
 
 	std::vector<int> ind;
-	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind);
+	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind, hsh);
 	delete [] leaf_ind;
 	
 	assert(node_cnt == ind.size());
@@ -217,5 +216,6 @@ std::vector<T> CryptoTree<T>::getPath(std::string element) {
 }
 
 template class CryptoTree<std::string>;
+template class CryptoTree<elgamal::Ciphertext>;
 
 } // namespace updatable_private_set_intersection

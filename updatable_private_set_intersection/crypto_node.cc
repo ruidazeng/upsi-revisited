@@ -13,11 +13,11 @@ CryptoNode<T>::CryptoNode(int node_size) {
     this->node_size = node_size;
 }
 
-// Get node size
+/* Get node size
 template<typename T> 
 int CryptoNode<T>::getNodeSize() {
     return this->node_size;
-}
+}*/
 
 // Get the node vector
 template<typename T> 
@@ -49,5 +49,6 @@ bool CryptoNode<T>::addElement(T elem) {
 }
 
 template class CryptoNode<std::string>;
+template class CryptoNode<elgamal::Ciphertext>;
 
 } // namespace updatable_private_set_intersection
