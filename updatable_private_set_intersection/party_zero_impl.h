@@ -113,18 +113,18 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
 
     Context* ctx_;  // not owned
-    ECGroup ec_group;
+    ECGroup* ec_group;
     
     std::vector<std::string> elements_;
     std::vector<BigNum> payloads_;
 
     // The ElGamal key pairs
-    elgamal::PublicKey elgamal_public_key; // (g, y)
-    elgamal::PrivateKey elgamal_private_key; // x
+    std::unique_ptr<elgamal::PublicKey> elgamal_public_key; // (g, y)
+    std::unique_ptr<elgamal::PrivateKey> elgamal_private_key; // x
     //ElGamalEncrypter elgamal_encrypter;
 
     // The ElGamal shared public key (2-out-of-2 threshold ElGamal encryption scheme)
-    elgamal::PublicKey shared_elgamal_public_key; // shared (g, x)
+    std::unique_ptr<elgamal::PublicKey> shared_elgamal_public_key; // shared (g, x)
 
     // The Threshold Paillier object
     // ThresholdPaillier threshold_paillier;

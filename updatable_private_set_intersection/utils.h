@@ -29,7 +29,7 @@ namespace updatable_private_set_intersection {
 	
 	#define default_node_size 4
 
-	std::string Byte2Binary(std::string const &byte_hash);
+	std::string Byte2Binary(const std::string &byte_hash);
 	
 	template<typename T>
 	BinaryHash computeBinaryHash(T &elem);
@@ -40,9 +40,14 @@ namespace updatable_private_set_intersection {
 	
 	BinaryHash generateRandomHash();
 	
-	void generateRandomHash(int cnt, std::vector<BinaryHash> &hsh);
+	void generateRandomHash(int cnt, std::vector<std::string> &hsh);
 	
 	StatusOr<elgamal::Ciphertext> elgamalEncrypt(const ECGroup* ec_group, std::unique_ptr<elgamal::PublicKey> public_key, const BigNum& elem);
+	
+	int64_t NumericString2uint(const std::string &str);
+	
+	
+	std::string GetRandomNumericString(size_t length);
 }
 
 #endif
