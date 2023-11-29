@@ -21,16 +21,16 @@ the Updatable Private Set Intersection library and dependencies using Bazel:
 
 ```bash
 cd upsi-new
-bazel build //updatable_private_set_intersection:all
+bazel build //upsi:all
 ```
 
 
 ## Threshold Paillier
-Two party threshold Paillier is in `updatable_private_set_intersection/crypto/threshold_paillier.h`.
+Two party threshold Paillier is in `upsi/crypto/threshold_paillier.h`.
 
 To run the associated tests:
 ```bash
-bazel test //updatable_private_set_intersection/crypto:threshold_paillier_test
+bazel test //upsi/crypto:threshold_paillier_test
 ```
 It will take around two minutes.
 
@@ -46,17 +46,17 @@ To see how one would use these functions, check the tests in `threshold_paillier
 
 ## UPSI Files (TODO)
 
-updatable_private_set_intersection/crypto_node.h
+upsi/crypto_node.h
 
-updatable_private_set_intersection/crypto_node.cc
+upsi/crypto_node.cc
 
-updatable_private_set_intersection/crypto_tree.h
+upsi/crypto_tree.h
 
-updatable_private_set_intersection/crypto_tree.cc
+upsi/crypto_tree.cc
 
-updatable_private_set_intersection/protocol_party.h
+upsi/protocol_party.h
 
-updatable_private_set_intersection/protocol_party.cc
+upsi/protocol_party.cc
 
 ## Google Library Files (dependencies)
 
