@@ -49,7 +49,7 @@ ABSL_FLAG(
     int32_t, paillier_statistical_param, 100,
     "Paillier statistical parameter.");
 ABSL_FLAG(
-    int, total_days, 5, 
+    int, total_days, 5,
     "Number of days the protocol will run.");
 
 namespace upsi {
@@ -88,25 +88,25 @@ int ExecuteProtocol() {
   ::upsi::Context context;
 
   std::cout << "Party 0: Loading data..." << std::endl;
-  auto maybe_client_identifiers_and_associated_values =
+  auto maybe_dataset =
       ::upsi::ReadClientDatasetFromFile(
           absl::GetFlag(FLAGS_client_data_file), &context);
-  if (!maybe_client_identifiers_and_associated_values.ok()) {
+  if (!maybe_dataset.ok()) {
     std::cerr << "Party 0::ExecuteProtocol: failed "
-              << maybe_client_identifiers_and_associated_values.status()
+              << maybe_dataset.status()
               << std::endl;
     return 1;
   }
-  auto client_identifiers_and_associated_values =
-      std::move(maybe_client_identifiers_and_associated_values.value());              
+  auto dataset =
+      std::move(maybe_dataset.value());
 
   std::cout << "Party 0: Generating keys..." << std::endl;
   // TODO: Double check dummy data generation
-  std::unique_ptr<::upsi::ProtocolClient> party_zero =
+  std::unique_ptr<::upsi::PartyZeroImpl> party_zero =
       std::make_unique<
           ::upsi::PartyZeroImpl>(
-          &context, std::move(client_identifiers_and_associated_values.first),
-          std::move(client_identifiers_and_associated_values.second),
+          &context, std::move(dataset.first),
+          std::move(dataset.second),
           absl::GetFlag(FLAGS_paillier_modulus_size),
           absl::GetFlag(FLAGS_paillier_statistical_param),
           absl::GetFlag(FLAGS_total_days));
@@ -119,7 +119,7 @@ int ExecuteProtocol() {
   InvokeServerHandleClientMessageSink invoke_server_handle_message_sink(
       std::move(stub));
 
-  // Execute StartProtocol and wait for response from ServerRoundOne.     
+  // Execute StartProtocol and wait for response from ServerRoundOne.
   std::cout
       << "Party 0: Starting the protocol." << std::endl
       << "Party 0: Waiting for response and encrypted set from the Party 1..."
@@ -151,20 +151,20 @@ int ExecuteProtocol() {
     // If not Day 0, load a new day of data
     if (i != 0) {
       std::cout << "Party 0: Loading data..." << std::endl;
-      auto maybe_client_identifiers_and_associated_values =
-          ::upsi::ReadClientDatasetFromFile(
-              absl::GetFlag(FLAGS_client_data_file), &context);
-      if (!maybe_client_identifiers_and_associated_values.ok()) {
+      auto maybe_dataset = ::upsi::ReadClientDatasetFromFile(
+          absl::GetFlag(FLAGS_client_data_file),
+          &context
+      );
+      if (!maybe_dataset.ok()) {
         std::cerr << "Party 0::ExecuteProtocol: failed "
-                  << maybe_client_identifiers_and_associated_values.status()
+                  << maybe_dataset.status()
                   << std::endl;
         return 1;
       }
-      auto client_identifiers_and_associated_values =
-        std::move(maybe_client_identifiers_and_associated_values.value());
+      auto dataset = std::move(maybe_dataset.value());
       // CALL UPDATE ELEMENT AND PAYLOAD
-      party_zero->update_elements(client_identifiers_and_associated_values.first);
-      party_zero->update_payloads(client_identifiers_and_associated_values.second);
+      party_zero->UpdateElements(dataset.first);
+      party_zero->UpdatePayloads(dataset.second);
     }
     // Round One Starting
     std::cout << "Party 0: Sending tree updates to Party 1."
@@ -175,9 +175,9 @@ int ExecuteProtocol() {
     if (!client_round_one_status.ok()) {
       std::cerr << "Party 0::ExecuteProtocol: failed to Client Proprocessing: "
               << client_round_one_status << std::endl;
-      return 1; 
+      return 1;
     }
-  
+
     ServerMessage server_round_one =
         invoke_server_handle_message_sink.last_server_response();
 

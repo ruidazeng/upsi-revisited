@@ -69,12 +69,15 @@ class PartyZeroImpl : public ProtocolClient {
     // the day worth of UPSI.
     //
     // Fails with InvalidArgument if the message is not a
-    // PrivateIntersectionServerMessage of the expected round, or if the
+    // PartyOneMessage of the expected round, or if the
     // message is otherwise not as expected. Forwards all other failures
     // encountered.
     Status Handle(const ServerMessage& server_message,
                   MessageSink<ClientMessage>* client_message_sink) override;
 
+
+    void UpdateElements(std::vector<std::string> new_elements);
+    void UpdatePayloads(std::vector<BigNum> new_payloads);
 
     bool protocol_finished() override { return protocol_finished_; }
 
@@ -82,16 +85,17 @@ class PartyZeroImpl : public ProtocolClient {
     // Complete P_0 key exchange:
     // 1. Retrieve P_1's (g, y)
     // 2. Generate Threshold ElGamal public key from shares, save it to P_0's member variable
-    Status ClientExchange(const PrivateIntersectionServerMessage::ServerExchange&
+    Status ClientExchange(const PartyOneMessage::ServerExchange&
                            server_message);
-   
+
     // Start client side processing (for a new day of UPSI)
     // 1. Insert into my own tree
     // 2. Generate {Path_i}_i
-    // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
+    // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads
     // 4. Generate Client Round One message (Party 0) to send to Party 1
-    StatusOr<PrivateIntersectionClientMessage::ClientRoundOne>
-    ClientPreProcessing(std::vector<std::string> elements);
+    StatusOr<PartyZeroMessage::ClientRoundOne> ClientPreProcessing(
+        std::vector<std::string> elements
+    );
 
     // Complete client side processing (for the same day of UPSI)
     // 1. Partial decryption (ElGamal/Paillier)
@@ -99,22 +103,19 @@ class PartyZeroImpl : public ProtocolClient {
     // 3. Update P1's tree
     // 4. Payload Processing
     // TODO: PRINT RESULTS???
-    Status ClientPostProcessing(const PrivateIntersectionServerMessage::ServerRoundOne&
-                           server_message);
+    Status ClientPostProcessing(const PartyOneMessage::ServerRoundOne& server_message);
 
     // Update elements and payloads
     std::vector<std::string> new_elements_;
     std::vector<BigNum> new_payloads_;
-    void UpdateElements(std::vector<std::string> new_elements);
-    void UpdatePayloads(std::vector<BigNum> new_payloads);
-    
+
     // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
     CryptoTree<UPSI_Element> my_crypto_tree;
     CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
 
     Context* ctx_;  // not owned
     ECGroup* ec_group;
-    
+
     std::vector<std::string> elements_;
     std::vector<BigNum> payloads_;
 
