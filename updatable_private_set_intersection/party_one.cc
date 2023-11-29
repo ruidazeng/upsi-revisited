@@ -54,7 +54,7 @@ int RunPartyOne() {
   std::cout << "Party 1: loading data... " << std::endl;
   // Note that the server does not handle payload, even in secret shares.
   auto maybe_server_identifiers =
-        ::private_join_and_compute::ReadServerDatasetFromFile(
+        ::updatable_private_set_intersection::ReadServerDatasetFromFile(
             absl::GetFlag(FLAGS_server_data_file));
     if (!maybe_server_identifiers.ok()) {
       std::cerr << "RunServer: failed " << maybe_server_identifiers.status()
@@ -66,9 +66,9 @@ int RunPartyOne() {
   std::unique_ptr<::updatable_private_set_intersection::ProtocolServer> party_one =
       std::make_unique<
           ::updatable_private_set_intersection::PrivateIntersectionProtocolPartyOneImpl>(
-          &context, std::move(server_identifiers.values()),
+          &context, std::move(maybe_server_identifiers.value()),
           absl::GetFlag(FLAGS_paillier_modulus_size),
-          absl::GetFlag(FLAGS_paillier_statistical_param)
+          absl::GetFlag(FLAGS_paillier_statistical_param),
           absl::GetFlag(FLAGS_total_days));
 
   ::updatable_private_set_intersection::UpdatablePrivateSetIntersectionRpcImpl service(

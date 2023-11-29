@@ -57,7 +57,8 @@ void CryptoTree<T>::addNewLayer() {
 
 // compute leaf index of a binary hash
 template<typename T> 
-int CryptoTree<T>::computeIndex(BinaryHash binary_hash) {
+int CryptoTree<T>::computeIndex(std::string hsh) {
+	BinaryHash binary_hash = Byte2Binary(hsh);
 	int x = 1;
 	for (int i = 0; i < this->depth; ++i) {
         if (binary_hash[i] == '0') x = (x << 1);
@@ -114,7 +115,7 @@ int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind, std::vec
 // Return vector of (plaintext) nodes
 // stash: index = 0
 template<typename T> 
-std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> &elem, std::vector<BinaryHash> &hsh) {
+std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> &elem, std::vector<std::string> &hsh) {
 	int new_elem_cnt = elem.size();
 	
 	// add new layer when tree is full
@@ -180,7 +181,7 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> &elem, std::vec
 
 // Update tree (receiver)
 template<typename T> 
-void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &new_nodes, std::vector<BinaryHash> &hsh) {
+void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &new_nodes, std::vector<std::string> &hsh) {
 	
 	int node_cnt = new_nodes.size();
 	

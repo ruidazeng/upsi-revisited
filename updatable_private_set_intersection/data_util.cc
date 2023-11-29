@@ -36,6 +36,7 @@
 namespace updatable_private_set_intersection {
 namespace {
 
+
 static const char kAlphaNumericCharacters[] =
     "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
 static const size_t kAlphaNumericSize = 62;
@@ -134,6 +135,8 @@ std::string EscapeForCsv(absl::string_view input) {
 
 }  // namespace
 
+
+
 std::vector<std::string> SplitCsvLine(const std::string& line) {
   std::vector<std::string> cols;
   SplitCSVLineWithDelimiterForStrings(line, ',', &cols);
@@ -175,7 +178,7 @@ auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
   common_identifiers.reserve(intersection_size);
   for (int64_t i = 0; i < intersection_size; i++) {
     common_identifiers.push_back(
-        GetRandomAlphaNumericString(kRandomIdentifierLengthBytes));
+        GetRandomNumericString(kRandomIdentifierLengthBytes));
   }
 
   // Generate remaining random identifiers for the server, and shuffle.
@@ -183,7 +186,7 @@ auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
   server_identifiers.reserve(server_data_size);
   for (int64_t i = intersection_size; i < server_data_size; i++) {
     server_identifiers.push_back(
-        GetRandomAlphaNumericString(kRandomIdentifierLengthBytes));
+        GetRandomNumericString(kRandomIdentifierLengthBytes));
   }
   std::shuffle(server_identifiers.begin(), server_identifiers.end(), gen);
 
@@ -192,7 +195,7 @@ auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
   client_identifiers.reserve(client_data_size);
   for (int64_t i = intersection_size; i < client_data_size; i++) {
     client_identifiers.push_back(
-        GetRandomAlphaNumericString(kRandomIdentifierLengthBytes));
+        GetRandomNumericString(kRandomIdentifierLengthBytes));
   }
   std::shuffle(client_identifiers.begin(), client_identifiers.end(), gen);
 

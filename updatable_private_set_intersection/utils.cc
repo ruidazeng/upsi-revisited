@@ -2,8 +2,6 @@
 
 namespace updatable_private_set_intersection {
 
-
-
 //convert byte hash to binary hash
 std::string Byte2Binary(const std::string &byte_hash) {
     std::string binary_hash = "";
@@ -52,16 +50,13 @@ std::string elementCopy(const std::string &elem) {
 // generate random binary hash
 BinaryHash generateRandomHash() {
 	//TODO: should be replaced by PRF
-	// Both parties shared a key and call PRF 
-	// Parties should call PRF in the same order to ensure they get the same random numbers each time
-	// Then there is no need to send the random paths to the other party
 	Context ctx;
 	std::string random_bytes = ctx.GenerateRandomBytes(32); // 32 bytes for SHA256 => obtain random_path as a byte string
-	return Byte2Binary(random_bytes);
+	return random_bytes;
 }
 
 // generate random binary hash for cnt paths
-void generateRandomHash(int cnt, std::vector<BinaryHash> &hsh) {
+void generateRandomHash(int cnt, std::vector<std::string> &hsh) {
 	for (int i = 0; i < cnt; ++i) {
 		hsh.push_back(generateRandomHash());
 	}
@@ -75,6 +70,24 @@ StatusOr<elgamal::Ciphertext> elgamalEncrypt(const ECGroup* ec_group, std::uniqu
     ASSIGN_OR_RETURN(ECPoint g_to_m, std::move(g.Mul(elem))); //g^m
     ASSIGN_OR_RETURN(elgamal::Ciphertext now, std::move(encrypter.Encrypt(g_to_m)));
     return std::move(now);
+}
+
+int64_t NumericString2uint(const std::string &str) { //str should be fixed length
+	int64_t x = 0;
+	int len = str.length();
+	for (int i = 0; i < len; ++i) {
+		x = x * 10 + str[i] - '0';
+	}
+	return x;
+}
+
+std::string GetRandomNumericString(size_t length) {
+	std::string output;
+	for (size_t i = 0; i < length; i++) {
+		std::string next_char(1, rand() % 10 + '0');
+		absl::StrAppend(&output, next_char);
+	}
+	return output;
 }
 
 }

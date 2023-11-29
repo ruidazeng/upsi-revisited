@@ -113,6 +113,7 @@ cc_library(
     hdrs = ["data_util.h"],
     deps = [
         ":match_proto",
+    	":utils",
         "//updatable_private_set_intersection/crypto:bn_util",
         "//updatable_private_set_intersection/util:status_includes",
         "@com_google_absl//absl/container:btree",

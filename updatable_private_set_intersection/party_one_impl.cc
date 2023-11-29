@@ -85,22 +85,21 @@ PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersect
     // A NEW DAY - update
     this->current_day += 1;
     
-    std::vector<BinaryHash> other_hsh;
+    //update P0's tree
+    std::vector<std::string> other_hsh;
     
     for (const std::string& cur_hsh : client_message.hash_set().elements()) {
     	other_hsh.push_back(std::move(cur_hsh));
     }
-    /* TODO
-    std::vector<elgamal::Ciphertext > encrypted_nodes;
-    for (const std::string& cur_node_string : client_message.encrypted_nodes().nodes()) {
-    	std::stringstream ss;
-    	ss << cur_node_string;
-    	CryptoNode<elgamal::Ciphertext> tmp;
-    	ss >> tmp;
-    	encrypted_nodes.push_back(std::move(tmp));   	
+    
+    std::vector<CryptoNode<elgamal::Ciphertext> > new_nodes;
+    for (const std::string& str : client_message.encrypted_nodes().nodes()) {
+    	std::string *cur_node_string = new std::string(str);
+    	CryptoNode<elgamal::Ciphertext> *tmp = static_cast<CryptoNode<elgamal::Ciphertext>* >(static_cast<void*>(cur_node_string));
+    	new_nodes.push_back(std::move(*tmp));   	
     }
-    this->other_crypto_tree.replace_nodes(encrypted_nodes, other_hsh);
-    */
+    this->other_crypto_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
+    
     
     //(x-y) from P0
     
@@ -118,14 +117,17 @@ PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersect
     for (int i = 0; i < new_elements_cnt; ++i) {
     	std::vector<elgamal::Ciphertext> cur_path = this->other_crypto_tree.getPath(server_elements[i]);
     	int cur_cnt = cur_path.size();
-    	BigNum cur_x_num = this->ctx_->CreateBigNum(100); //TODO: -elements[i]
+    	BigNum cur_x_num = this->ctx_->CreateBigNum(NumericString2uint(server_elements[i]));
     	ASSIGN_OR_RETURN(ECPoint g, this->shared_elgamal_public_key->g.Clone());
   		ASSIGN_OR_RETURN(ECPoint y, this->shared_elgamal_public_key->y.Clone());
     	ASSIGN_OR_RETURN(elgamal::Ciphertext cur_x, 
     			elgamalEncrypt(this->ec_group, std::move(absl::WrapUnique(new elgamal::PublicKey{std::move(g), std::move(y)})), cur_x_num));
+    	ASSIGN_OR_RETURN(ECPoint u, cur_x.u.Inverse());
+  		ASSIGN_OR_RETURN(ECPoint e, cur_x.e.Inverse());
+    	elgamal::Ciphertext cur_minus_x = elgamal::Ciphertext{std::move(u), std::move(e)};
     	for (int j = 0; j < cur_cnt; ++j) {
     		elgamal::Ciphertext cur_y = std::move(cur_path[j]);
-    		ASSIGN_OR_RETURN(elgamal::Ciphertext y_minus_x, elgamal::Mul(cur_y, cur_x));
+    		ASSIGN_OR_RETURN(elgamal::Ciphertext y_minus_x, elgamal::Mul(cur_y, cur_minus_x));
     		encrypted_element.push_back(std::move(y_minus_x));
     	}
     }
@@ -139,9 +141,9 @@ PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersect
     // 3. Mask with a random exponent
     std::vector<elgamal::Ciphertext> masked_encrypted_element;
     for (size_t i = 0; i < encrypted_element.size(); i++) {
-      BigNum a = this->ctx_->GenerateRandLessThan(this->ctx_->CreateBigNum(1ull << 63));//this->ec_group_->GeneratePrivateKey();  // generate a random exponent
+      BigNum a = this->ctx_->GenerateRandLessThan(this->ctx_->CreateBigNum(1ull << 32));//this->ec_group_->GeneratePrivateKey();  // generate a random exponent
       ASSIGN_OR_RETURN(elgamal::Ciphertext masked_ct, elgamal::Exp(encrypted_element[i], a));
-      masked_encrypted_element.push_back(masked_ct);
+      masked_encrypted_element.push_back(std::move(masked_ct));
     }
     
     // 4. Partial decryption (ElGamal/Paillier)
@@ -150,45 +152,43 @@ PrivateIntersectionProtocolPartyOneImpl::ServerProcessing(const PrivateIntersect
     std::vector<elgamal::Ciphertext> partially_decrypted_element;
     for (size_t i = 0; i < masked_encrypted_element.size(); i++) {
       ASSIGN_OR_RETURN(elgamal::Ciphertext partial_ct, decrypter.PartialDecrypt(masked_encrypted_element[i]));
-      partially_decrypted_element.push_back(partial_ct);
+      partially_decrypted_element.push_back(std::move(partial_ct));
     }
     // 6. Update P1's tree
-    std::vector<BinaryHash> hsh;
+    std::vector<std::string> hsh;
     std::vector<CryptoNode<std::string> > plaintxt_nodes = this->my_crypto_tree.insert(server_elements, hsh);
     
     std::vector<CryptoNode<elgamal::Ciphertext> > encrypted_nodes;
     int node_cnt = plaintxt_nodes.size();
     for (int i = 0; i < node_cnt; ++i) {
     	int cur_node_size = plaintxt_nodes[i].node.size();
-    	assert(cur_node_size == plaintxt_nodes[i].node_size);
+    	while(cur_node_size < plaintxt_nodes[i].node_size) {
+    		plaintxt_nodes[i].node.push_back(GetRandomNumericString(32));
+    		++cur_node_size;
+    	}
     	CryptoNode<elgamal::Ciphertext> new_node(cur_node_size);
     	for (int j = 0; j < cur_node_size; ++j) {
     		std::string cur_elem = plaintxt_nodes[i].node[j];
-    		BigNum cur_x_num = this->ctx_->CreateBigNum(100);//TODO
+    		BigNum cur_x_num = this->ctx_->CreateBigNum(NumericString2uint(cur_elem));
     		ASSIGN_OR_RETURN(ECPoint g, this->shared_elgamal_public_key->g.Clone());
   			ASSIGN_OR_RETURN(ECPoint y, this->shared_elgamal_public_key->y.Clone());
     		ASSIGN_OR_RETURN(elgamal::Ciphertext cur_encrypted, 
     			elgamalEncrypt(this->ec_group, std::move(absl::WrapUnique(new elgamal::PublicKey{std::move(g), std::move(y)})), cur_x_num));
     		new_node.addElement(cur_encrypted);
     	}
-    	encrypted_nodes.push_back(new_node);
+    	encrypted_nodes.push_back(std::move(new_node));
     }
     
     PrivateIntersectionServerMessage::ServerRoundOne result;
-   	for (const BinaryHash &cur_hsh : hsh) {
+   	for (const std::string &cur_hsh : hsh) {
    		result.mutable_hash_set()->add_elements(cur_hsh);
    	}
    	
-   	/*TODO
     for (int i = 0; i < node_cnt; ++i) {
-    	strstream ss;
-    	std::string cur_node_string;
-    	ss << encrypted_nodes[i];
-    	ss >> cur_node_string;
-    	result.mutable_encrypted_nodes()->add_nodes(cur_node_string);
+    	std::string *cur_node_string = static_cast<std::string*>(static_cast<void*>(&encrypted_nodes[i]));
+    	result.mutable_encrypted_nodes()->add_nodes(*cur_node_string);
     }
-    */
-    
+      
     // 8. Generate ServerRoundOne back to client
     // Note: maybe need to do the subtraction/comparisions with tree first with input: server_encrypted_element
     
@@ -232,10 +232,11 @@ Status PrivateIntersectionProtocolPartyOneImpl::Handle(
         std::move(maybe_server_key_exchange.value());
   } else if (client_message.has_client_round_one()) {
     // Handle the client round 1 message.
+    std::vector<std::string> server_elements;//TODO
     auto maybe_server_round_one =
-        ServerProcessing(client_message.client_round_one()); //TODO
+        ServerProcessing(client_message.client_round_one(), server_elements); 
     if (!maybe_server_round_one.ok()) {
-      return maybe_server_round_two.status();
+      return maybe_server_round_one.status();
     }
     *(server_message.mutable_private_intersection_server_message()
           ->mutable_server_round_one()) =
