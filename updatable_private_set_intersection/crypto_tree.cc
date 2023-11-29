@@ -1,6 +1,6 @@
-#include "updatable_private_set_intersection/utils.h"
+//#include "updatable_private_set_intersection/utils.h"
 #include "updatable_private_set_intersection/crypto_tree.h"
-#include "updatable_private_set_intersection/crypto_node.h"
+//#include "updatable_private_set_intersection/crypto_node.h"
 
 
 /// @brief Tree Construction
@@ -20,8 +20,8 @@ CryptoTree<T>::CryptoTree(int stash_size, int node_size) {
     CryptoNode<T> root = CryptoNode<T>(node_size);
 
     // depth = 0
-    this->crypto_tree.push_back(stash);
-    this->crypto_tree.push_back(root);
+    this->crypto_tree.push_back(std::move(stash));
+    this->crypto_tree.push_back(std::move(root));
     
 }
 
@@ -39,11 +39,11 @@ template<typename T>
 int CryptoTree<T>::getStashSize() {
     return this->stash_size;
 }
-
+/*
 template<typename T> 
 std::vector<CryptoNode<T> > CryptoTree<T>::getTree() {
 	return this->crypto_tree;
-}
+}*/
 
 /// @brief Helper methods
 template<typename T> 
@@ -114,7 +114,7 @@ int* CryptoTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind, std::vec
 // Return vector of (plaintext) nodes
 // stash: index = 0
 template<typename T> 
-std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem, std::vector<BinaryHash> &hsh) {
+std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> &elem, std::vector<BinaryHash> &hsh) {
 	int new_elem_cnt = elem.size();
 	
 	// add new layer when tree is full
@@ -138,14 +138,14 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem, std::vect
 		
 		for (int u = leaf_ind[o]; ; u >>= 1) {
 		
-			std::vector<T> tmp_node = crypto_tree[u].getNode();
-			if(u == 0) tmp_node.push_back(elem[o]);
+			std::vector<T> tmp_node = std::move(crypto_tree[u].node);
+			if(u == 0) tmp_node.push_back(std::move(elem[o]));
 			
 			for (auto it = tmp_node.begin(); it != tmp_node.end(); ++it) {
 				int x = computeIndex( computeBinaryHash(*it) );
 				int steps = 0;
 				if(x != leaf_ind[o]) steps = 32 - __builtin_clz(x ^ leaf_ind[o]);
-				tmp_elem[steps].push_back(*it);
+				tmp_elem[steps].push_back(std::move(*it));
 			}
 			
 			crypto_tree[u].clear();
@@ -157,7 +157,7 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem, std::vect
 		for (int u = leaf_ind[o], steps = 0; ; u >>= 1, ++steps) {
 			while(st <= steps && tmp_elem[st].empty()) ++st;
 			while(st <= steps) {
-				T cur_elem = tmp_elem[st].back();
+				T cur_elem = std::move(tmp_elem[st].back());
 				if(crypto_tree[u].addElement(cur_elem)) tmp_elem[st].pop_back();
 				else break;
 				while(st <= steps && tmp_elem[st].empty()) ++st;
@@ -174,13 +174,13 @@ std::vector<CryptoNode<T> > CryptoTree<T>::insert(std::vector<T> elem, std::vect
 	
 	int node_cnt = ind.size();
 	std::vector<CryptoNode<T> > rs;
-	for (int i = 0; i < node_cnt; ++i) rs.push_back(crypto_tree[ind[i]]);
+	for (int i = 0; i < node_cnt; ++i) rs.push_back(std::move(elementCopy(crypto_tree[ind[i]])));
 	return rs;
 }
 
 // Update tree (receiver)
 template<typename T> 
-void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes, std::vector<BinaryHash> &hsh) {
+void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &new_nodes, std::vector<BinaryHash> &hsh) {
 	
 	int node_cnt = new_nodes.size();
 	
@@ -194,7 +194,7 @@ void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > n
 	assert(node_cnt == ind.size());
 	
 	// replace nodes (including stash)
-	for (int i = 0; i < node_cnt; ++i) crypto_tree[ind[i]] = new_nodes[i];
+	for (int i = 0; i < node_cnt; ++i) crypto_tree[ind[i]] = std::move(new_nodes[i]);
 	
 	// update actual_size
 	this->actual_size += new_elem_cnt;

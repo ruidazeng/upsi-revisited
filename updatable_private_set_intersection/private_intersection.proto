@@ -38,7 +38,9 @@ message PrivateIntersectionClientMessage {
   // Message containing the client's set encrypted under the client's keys, and
   // the server's set re-encrypted with the client's key, and shuffled.
   message ClientRoundOne {
-    optional EncryptedNodes encrypted_nodes = 1;
+    optional HashSet hash_set = 1;
+    optional EncryptedNodes encrypted_nodes = 2;
+    optional EncryptedSet encrypted_set = 3;
   }
 
 }
@@ -47,18 +49,20 @@ message PrivateIntersectionClientMessage {
 
 message PrivateIntersectionServerMessage {
   oneof message_content {
-    ServerKeyExchange server_key_exchange = 1;
+    ServerExchange server_key_exchange = 1;
     ServerRoundOne server_round_one = 2;
   }
 
   // Server key exchange - Threshold ElGamal
-  message ServerKeyExchange {
+  message ServerExchange {
     optional bytes elgamal_p = 1; // modulus of the integer group
     optional bytes elgamal_g = 2;
     optional bytes elgamal_y = 3;
   }
 
   message ServerRoundOne {
-    optional EncryptedSet encrypted_set = 1;
+    optional HashSet hash_set = 1;
+    optional EncryptedNodes encrypted_nodes = 2;
+    optional EncryptedSet encrypted_set = 3;
   }
 }

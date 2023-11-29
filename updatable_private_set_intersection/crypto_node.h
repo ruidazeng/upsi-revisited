@@ -19,6 +19,10 @@ class CryptoNode
     
         // Default constructor
         // CryptoNode();
+        
+        
+		//CryptoNode(const CryptoNode&) = delete;
+		//CryptoNode operator=(const CryptoNode&) = delete;
 
         // Initialize CryptoNode with node size
         CryptoNode(int node_size = default_node_size);
@@ -27,14 +31,14 @@ class CryptoNode
         //int getNodeSize();
 
         // Get the node vector
-        std::vector<T> getNode();
+        //std::vector<T> getNode();
         
         void clear();
         
-        void copyElementsTo(std::vector<T> &elem);
+        void copyElementsTo(const std::vector<T> &elem);
 
         // Add an element to the node vector, return true if success, false if it's already full
-        bool addElement(T elem);
+        bool addElement(T &elem);
 };
 
 } // namespace updatable_private_set_intersection
