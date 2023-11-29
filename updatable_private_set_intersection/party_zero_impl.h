@@ -82,7 +82,7 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // Complete P_0 key exchange:
     // 1. Retrieve P_1's (g, y)
     // 2. Generate Threshold ElGamal public key from shares, save it to P_0's member variable
-    Status ClientExchange(const PrivateIntersectionClientMessage::ServerKeyExchange&
+    Status ClientExchange(const PrivateIntersectionServerMessage::ServerExchange&
                            server_message);
    
     // Start client side processing (for a new day of UPSI)
@@ -99,7 +99,7 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // 3. Update P1's tree
     // 4. Payload Processing
     // TODO: PRINT RESULTS???
-    Status ClientPostProcessing(const PrivateIntersectionClientMessage::ServerRoundOne&
+    Status ClientPostProcessing(const PrivateIntersectionServerMessage::ServerRoundOne&
                            server_message);
 
     // Update elements and payloads
@@ -121,6 +121,7 @@ class PrivateIntersectionProtocolPartyZeroImpl : public ProtocolClient {
     // The ElGamal key pairs
     elgamal::PublicKey elgamal_public_key; // (g, y)
     elgamal::PrivateKey elgamal_private_key; // x
+    //ElGamalEncrypter elgamal_encrypter;
 
     // The ElGamal shared public key (2-out-of-2 threshold ElGamal encryption scheme)
     elgamal::PublicKey shared_elgamal_public_key; // shared (g, x)

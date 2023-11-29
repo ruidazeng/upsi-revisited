@@ -16,11 +16,6 @@
 #ifndef UPDATABLE_PRIVATE_SET_INTERSECTION_PRIVATE_INTERSECTION_PARTYONE_IMPL_H_
 #define UPDATABLE_PRIVATE_SET_INTERSECTION_PRIVATE_INTERSECTION_PARTYONE_IMPL_H_
 
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-
 #include "updatable_private_set_intersection/crypto/context.h"
 #include "updatable_private_set_intersection/crypto/elgamal.h"
 #include "updatable_private_set_intersection/crypto/ec_commutative_cipher.h"
@@ -43,7 +38,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
  public:
     PrivateIntersectionProtocolPartyOneImpl (
       Context* ctx, const std::vector<std::string>& elements,
-      int32_t modulus_size, int32_t statistical_param);
+      int32_t modulus_size, int32_t statistical_param, int total_days);
 
     ~PrivateIntersectionProtocolPartyOneImpl() override = default;
 
@@ -58,7 +53,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     // 1. Retrieve P_0's (g, y)
     // 2. Generate Threshold ElGamal public key from shares, save it to P_1's member variable
     // 3. Generate ServerKeyExchange message using P_1's (g, y)
-    StatusOr<PrivateIntersectionServerMessage::ServerKeyExchange>
+    StatusOr<PrivateIntersectionServerMessage::ServerExchange>
     ServerExchange(const PrivateIntersectionClientMessage::StartProtocolRequest&
                            client_message);
 
@@ -71,7 +66,7 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     // 6. Generate {Path_i}_i
     StatusOr<PrivateIntersectionServerMessage::ServerRoundOne>
     ServerProcessing(const PrivateIntersectionClientMessage::ClientRoundOne&
-                           client_message);
+                           client_message, std::vector<std::string> server_elements);
 
     // Update elements and payloads
     std::vector<std::string> new_elements_;
@@ -82,16 +77,17 @@ class PrivateIntersectionProtocolPartyOneImpl : public ProtocolServer {
     CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
     
     Context* ctx_;  // not owned
-    ECGroup ec_group;
+    ECGroup* ec_group;
     
     std::vector<std::string> elements_;
     
     // The ElGamal key pairs
-    elgamal::PublicKey elgamal_public_key; // (g, y)
-    elgamal::PrivateKey elgamal_private_key; // x
+    std::unique_ptr<elgamal::PublicKey> elgamal_public_key; // (g, y)
+    std::unique_ptr<elgamal::PrivateKey> elgamal_private_key; // x
+    
 
     // The ElGamal shared public key (2-out-of-2 threshold ElGamal encryption scheme)
-    elgamal::PublicKey shared_elgamal_public_key; // shared (g, x)
+    std::unique_ptr<elgamal::PublicKey> shared_elgamal_public_key; // shared (g, x)
 
     // The Threshold Paillier object
     // ThresholdPaillier threshold_paillier;

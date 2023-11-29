@@ -13,15 +13,6 @@ template<typename T>
 class CryptoTree
 {
     private:
-        // Array list representation
-        std::vector<CryptoNode<T> > crypto_tree;
-        /*    0 (stash)
-        	  1 (root)
-           2     3
-          4  5  6  7
-        */
-
-
         // Depth of the tree (empty tree or just root is depth 0)
         int depth = 0;
         
@@ -40,6 +31,14 @@ class CryptoTree
 
 
     public:
+    
+    // Array list representation
+        std::vector<CryptoNode<T> > crypto_tree;
+        /*    0 (stash)
+        	  1 (root)
+           2     3
+          4  5  6  7
+        */
         /// @brief Tree Construction
         CryptoTree();
 
@@ -53,7 +52,7 @@ class CryptoTree
 
         int getStashSize();
         
-        std::vector<CryptoNode<T> > getTree();
+        //std::vector<CryptoNode<T> > getTree();
 
         /// @brief Helper Methods
         // Add a new layer to the tree, expand the size of the vector
@@ -66,9 +65,9 @@ class CryptoTree
         
         int* generateRandomPaths(int cnt, std::vector<int> &ind, std::vector<BinaryHash> &hsh);
         
-        std::vector<CryptoNode<T> > insert(std::vector<T> elem, std::vector<BinaryHash> &hsh);
+        std::vector<CryptoNode<T> > insert(std::vector<T> &elem, std::vector<BinaryHash> &hsh);
         
-        void replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > new_nodes, std::vector<BinaryHash> &hsh);
+        void replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &new_nodes, std::vector<BinaryHash> &hsh);
         
 		std::vector<T> getPath(std::string element);
 };

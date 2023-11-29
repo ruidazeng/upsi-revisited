@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include <sstream>
 #include <iterator>
 #include <memory>
 #include <ostream>
@@ -26,7 +25,7 @@
 #include <utility>
 #include <vector>
 
-#include "utils.h"
+#include "updatable_private_set_intersection/utils.h"
 
 #include "absl/memory/memory.h"
 
@@ -99,7 +98,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::ClientSendRoundOne(
 
 
 Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
-    const PrivateIntersectionClientMessage::ServerKeyExchange&server_message) {
+    const PrivateIntersectionServerMessage::ServerExchange&server_message) {
   // 1. Retrieve P_1's (g, y)
   ASSIGN_OR_RETURN(ECPoint server_g, this->ec_group->CreateECPoint(server_message.elgamal_g()));
   ASSIGN_OR_RETURN(ECPoint server_y, this->ec_group->CreateECPoint(server_message.elgamal_y()));
@@ -112,69 +111,61 @@ Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
   key_shares.push_back(std::move(absl::WrapUnique(this->elgamal_public_key)));
   ASSIGN_OR_RETURN(auto shared_public_key, elgamal::GeneratePublicKeyFromShares(key_shares));
   this->shared_elgamal_public_key = std::move(shared_public_key);
+  
 }
 
   // Start client side processing (for a new day of UPSI)
-  StatusOr<PrivateIntersectionClientMessage::ClientRoundOne> 
+StatusOr<PrivateIntersectionClientMessage::ClientRoundOne> 
    PrivateIntersectionProtocolPartyZeroImpl::ClientPreProcessing(std::vector<std::string> elements) {
     // 1. Insert into my own tree
     std::vector<BinaryHash> hsh;
     std::vector<CryptoNode<std::string> > plaintxt_nodes = this->my_crypto_tree.insert(elements, hsh);
-    // 2. Generate {Path_i}_i
-    // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
-    // elements(vector of strings) -> vector of Enc(m) - elgamal Ciphertext instead of ECPoint
+    
     std::vector<elgamal::Ciphertext > encrypted_nodes;
     int node_cnt = plaintxt_nodes.size();
-    std::unique_ptr<elgamal::PublicKey> key_ptr(new elgamal::PublicKey(this->shared_elgamal_public_key));
-    ASSIGN_OR_RETURN(ElGamalEncrypter encrypter, ElGamalEncrypter(this->ec_group, std::move(key_ptr)));
     for (int i = 0; i < node_cnt; ++i) {
     	int cur_node_size = plaintxt_nodes[i].nodes.size();
     	assert(cur_node_size == plaintxt_nodes[i].node_size);
     	CryptoNode<elgamal::Ciphertext> new_node(cur_node_size);
     	for (int j = 0; j < cur_node_size; ++j) {
     		std::string cur_elem = plaintxt_nodes[i].nodes[j];
-    		ASSIGN_OR_RETURN(lgamal::Ciphertext cur_encrypted, 
-    			ElGamal_encrypt(encrypter, this->ec_group, this->shared_elgamal_public_key.g, cur_elem));
+    		ASSIGN_OR_RETURN(elgamal::Ciphertext cur_encrypted, 
+    			elgamalEncrypt(this->ec_group, this->shared_elgamal_public_key, cur_elem));
     		new_node.addElement(cur_encrypted);
     	}
     	encrypted_nodes.push_back(new_node);
     }
     
     PrivateIntersectionClientMessage::ClientRoundOne result;
+    
+   	for (const BinaryHash &cur_hsh : hsh) {
+   		result.mutable_hash_set().add_elements(hsh[i]);
+   	}
+   	/*TODO
     for (int i = 0; i < node_cnt; ++i) {
     	strstream ss;
     	std::string cur_node_string;
     	ss << encrypted_nodes[i];
     	ss >> cur_node_string;
-    	result.encrypted_nodes()->add_elements(cur_node_string);
+    	result.mutable_encrypted_nodes()->add_nodes(cur_node_string);
     }
-    	
+   	*/
+    // 2. Generate {Path_i}_i
+    // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads 
     
-    std::vector<elgamal::Ciphertext> encrypted_elements;
-    int cnt = elements.size();
-    std::unique_ptr<elgamal::PublicKey> key_ptr(new elgamal::PublicKey(this->shared_elgamal_public_key));
-    ASSIGN_OR_RETURN(ElGamalEncrypter encrypter, ElGamalEncrypter(this->ec_group, std::move(key_ptr)));
-    for (int i = 0; i < cnt; ++i) {
-        absl::string_view str = elements[i];
-        ASSIGN_OR_RETURN(ECPoint m, this->ec_group->CreateECPoint(str));
-        ASSIGN_OR_RETURN(ECPoint g_to_m, this->shared_elgamal_public_key.g.Mul(m)); //g^m
-        ASSIGN_OR_RETURN(elgamal::Ciphertext now, encrypter.Encrypt(g_to_m));
-        encrypted_elements.push_back(now);
-    }
-    // 4. Generate Client Round One message (Party 0) to send to Party 1
-    //PrivateIntersectionClientMessage::ClientRoundOne result;
-    for (size_t i = 0; i < encrypted_elements.size(); i++) {
-      EncryptedElement* element = result.mutable_encrypted_set()->add_elements();
-      elgamal::Ciphertext encrypted = encrypted_elements[i];
-      // Ciphertext -> Bytes Compressed
-      *element->mutable_elgamal_u() = encrypted->u.ToBytesCompressed(); // Ciphertext -> Bytes Compressed
-      *element->mutable_elgamal_e() = encrypted->e.ToBytesCompressed(); 
-      // TODO: Payload - Paillier
-      // StatusOr<BigNum> value = private_paillier_->Encrypt(values_[i]);
-      // if (!value.ok()) {
-      //   return value.status();
-      // }
-      // *element->mutable_associated_data() = value.value().ToBytes();
+    int new_elements_cnt = elements.size();
+    
+    for (int i = 0; i < new_elements_cnt; ++i) {
+    	std::vector<elgamal::Ciphertext> cur_path = std::move(this->other_crypto_tree.getPath(elements[i]));
+    	int cur_cnt = cur_path.size();
+    	BigNum cur_x = CreateBigNum; //TODO: -elements[i]
+    	for (int j = 0; j < cur_cnt; ++j) {
+    		elgamal::Ciphertext cur_y = std::move(cur_path[j]);
+    		ASSIGN_OR_RETURN(elgamal::Ciphertext y_minus_x, elgamal::Mul(cur_y, cur_x)); // TODO
+    		EncryptedElement* element = result.mutable_encrypted_set()->add_elements();
+    		*element->mutable_elgamal_u() = encrypted->u.ToBytesCompressed(); // Ciphertext -> Bytes Compressed
+      		*element->mutable_elgamal_e() = encrypted->e.ToBytesCompressed();
+    	}
     }
 	
     return result;
@@ -185,7 +176,7 @@ Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
   // 2. Update P0's tree
   // 3. Update P1's tree
   // 4. Payload Processing
-  Status PrivateIntersectionProtocolPartyZeroImpl::ClientPostProcessing(
+Status PrivateIntersectionProtocolPartyZeroImpl::ClientPostProcessing(
     const PrivateIntersectionClientMessage::ServerRoundOne& server_message) {
       // 1. Reconstruct ElGamal ciphertext
       std::vector<elgamal::Ciphertext> partially_decrypted_element;
@@ -199,18 +190,32 @@ Status PrivateIntersectionProtocolPartyZeroImpl::ClientExchange(
         partially_decrypted_element.push_back(partial_element);
       }
       // 1. Full decryption on a partial decryption (ElGamal/Paillier)
-      std::unique_ptr<elgamal::PrivateKey> key_ptr(new elgamal::PrivateKey(this->elgamal_private_key));
-      ASSIGN_OR_RETURN(ElGamalDecrypter decrypter, ElGamalDecrypter(this->ec_group, std::move(key_ptr)));
+    std::unique_ptr<elgamal::PrivateKey> key_ptr(absl::WrapUnique(this->elgamal_private_key);
+    ASSIGN_OR_RETURN(ElGamalDecrypter decrypter, ElGamalDecrypter(this->ec_group, std::move(key_ptr)));
       std::vector<ECPoint> decrypted_element;
       for (size_t i = 0; i < partially_decrypted_element.size(); i++) {
         ASSIGN_OR_RETURN(ECPoint decrypted_ct, decrypter->Decrypt(partially_decrypted_element));
-        decrypted_element.push_back(partial_ct);
+        decrypted_element.push_back(decrypted_ct);
       }
       // Check if decrypted_element = 0
-      // 2. Update P0's treet
-      this->my_crypto_tree.insert(decrypted_element);
-      // 3. Update P1's tree
-      this->other_crypto_tree.replaceNodes(decrypted_element);
+      
+    // 3. Update P1's tree
+    std::vector<BinaryHash> other_hsh;
+    
+    for (const std::string& cur_hsh : server_message.hash_set().elements()) {
+    	other_hsh.push_back(std::move(cur_hsh));
+    }
+    /*TODO
+    std::vector<elgamal::Ciphertext > encrypted_nodes;
+    for (const std::string& cur_node_string : server_message.encrypted_nodes().nodes()) {
+    	strstream ss;
+    	ss << cur_node_string;
+    	CryptoNode<elgamal::Ciphertext> tmp;
+    	ss >> tmp;
+    	encrypted_nodes.push_back(std::move(tmp));   	
+    }
+    this->other_crypto_tree.replace_nodes(encrypted_nodes, other_hsh);
+    */
       // 4. Payload Processing - TODO
       // TODO - PRINT RESULTS????
       return OkStatus();

@@ -19,13 +19,21 @@ package updatable_private_set_intersection;
 
 // Holds a set of encrypted values.
 message EncryptedNodes {
+  repeated bytes nodes = 1;
+}
+
+message EncryptedSet {
+  repeated EncryptedElement elements = 1;
+}
+
+message HashSet {
   repeated bytes elements = 1;
 }
 
-/* Holds an encrypted value and possibly encrypted associated data.
-message EncryptedNode {
+// Holds an encrypted value and possibly encrypted associated data.
+message EncryptedElement {
   optional bytes elgamal_u = 1; // ElGamal element (u, e)
   optional bytes elgamal_e = 2; 
   optional bytes associated_data = 3;
 }
-*/
+

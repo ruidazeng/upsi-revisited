@@ -2,6 +2,7 @@
 #define UTILS_HPP
 
 #include "updatable_private_set_intersection/crypto/context.h"
+#include "updatable_private_set_intersection/crypto/elgamal.h"
 #include "updatable_private_set_intersection/crypto/ec_commutative_cipher.h"
 #include "updatable_private_set_intersection/crypto/paillier.h"
 
@@ -9,11 +10,20 @@
 #include <vector>
 #include <cmath>
 #include <set>
+#include <iostream>
+//#include <strstream>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <utility>
+#include <random>
 
 namespace updatable_private_set_intersection {
 
-	typedef std::tuple<std::string, int> Encrypted_UPSI_Element;
-	typedef std::tuple<std::string, int> UPSI_Element;
+	typedef elgamal::Ciphertext Encrypted_UPSI_Element;
+	typedef std::string UPSI_Element;
 
 	typedef std::string BinaryHash;
 	
@@ -22,14 +32,17 @@ namespace updatable_private_set_intersection {
 	std::string Byte2Binary(std::string const &byte_hash);
 	
 	template<typename T>
+	BinaryHash computeBinaryHash(T &elem);
 	
-	BinaryHash computeBinaryHash(T elem);
+	
+	template<typename T>
+	T elementCopy(const T &elem);
 	
 	BinaryHash generateRandomHash();
 	
 	void generateRandomHash(int cnt, std::vector<BinaryHash> &hsh);
 	
-
+	StatusOr<elgamal::Ciphertext> elgamalEncrypt(const ECGroup* ec_group, std::unique_ptr<elgamal::PublicKey> public_key, const BigNum& elem);
 }
 
 #endif

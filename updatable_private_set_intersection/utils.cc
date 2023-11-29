@@ -16,17 +16,38 @@ std::string Byte2Binary(const std::string &byte_hash) {
 // compute binary hash for an element
 // TODO: other types for T
 template<typename T>
-BinaryHash computeBinaryHash(T elem) {
+BinaryHash computeBinaryHash(T &elem) {
 	return elem;
 }
 
 template<>
-BinaryHash computeBinaryHash(std::string elem) {
+BinaryHash computeBinaryHash(std::string &elem) {
 	Context ctx;
     absl::string_view sv_element = elem;
     std::string sha_string = ctx.Sha256String(sv_element);
     return Byte2Binary(sha_string);
 }
+
+template<>
+BinaryHash computeBinaryHash(elgamal::Ciphertext &elem) {
+	assert(0);
+	std::string rs;
+    return rs;
+}
+
+
+template<>
+elgamal::Ciphertext elementCopy(const elgamal::Ciphertext &elem) {
+	elgamal::Ciphertext rs = elgamal::CloneCiphertext(elem).value();
+	return rs;
+}
+
+template<>
+std::string elementCopy(const std::string &elem) {
+	std::string rs = elem;
+	return rs;
+}
+
 
 // generate random binary hash
 BinaryHash generateRandomHash() {
@@ -46,12 +67,14 @@ void generateRandomHash(int cnt, std::vector<BinaryHash> &hsh) {
 	}
 }
 
-StatusOr<elgamal::Ciphertext> ElGamal_encrypt(ElGamalEncrypter& encrypter, ECGroup* ec_group, BigNum& g, std::string elem) {
-    absl::string_view str = elem;
-	ASSIGN_OR_RETURN(ECPoint m, ec_group->CreateECPoint(str));
-    ASSIGN_OR_RETURN(ECPoint g_to_m, g.Mul(m)); //g^m
-    ASSIGN_OR_RETURN(elgamal::Ciphertext now, encrypter.Encrypt(g_to_m));
-    return now;
+StatusOr<elgamal::Ciphertext> elgamalEncrypt(const ECGroup* ec_group, std::unique_ptr<elgamal::PublicKey> public_key, const BigNum& elem) {
+	//std::unique_ptr<elgamal::PublicKey> key_ptr = std::move(absl::WrapUnique(&public_key));
+  	ASSIGN_OR_RETURN(ECPoint g, public_key->g.Clone());
+	ElGamalEncrypter encrypter = ElGamalEncrypter(ec_group, std::move(public_key));
+
+    ASSIGN_OR_RETURN(ECPoint g_to_m, std::move(g.Mul(elem))); //g^m
+    ASSIGN_OR_RETURN(elgamal::Ciphertext now, std::move(encrypter.Encrypt(g_to_m)));
+    return std::move(now);
 }
 
 }
