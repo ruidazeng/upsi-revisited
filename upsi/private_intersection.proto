@@ -21,7 +21,7 @@ import "upsi/match.proto";
 
 // Client Messages
 
-message PrivateIntersectionClientMessage {
+message PartyZeroMessage {
   oneof message_content {
     StartProtocolRequest start_protocol_request = 1;
     ClientRoundOne client_round_one = 2;
@@ -47,7 +47,7 @@ message PrivateIntersectionClientMessage {
 
 // Server Messages.
 
-message PrivateIntersectionServerMessage {
+message PartyOneMessage {
   oneof message_content {
     ServerExchange server_key_exchange = 1;
     ServerRoundOne server_round_one = 2;
