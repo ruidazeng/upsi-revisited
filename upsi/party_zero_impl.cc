@@ -15,15 +15,6 @@
 
 #include "upsi/party_zero_impl.h"
 
-#include <algorithm>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <ostream>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 
 #include "absl/memory/memory.h"
 
@@ -107,9 +98,11 @@ StatusOr<PartyZeroMessage::ClientRoundOne> PartyZeroImpl::ClientPreProcessing(
     std::vector<std::string> elements
 ) {
     // 1. Insert into my own tree
+    if(DEBUG) std::cerr<< "P0: Insert into my own tree\n";
     std::vector<std::string> hsh;
     std::vector<CryptoNode<std::string> > plaintxt_nodes = this->my_crypto_tree.insert(elements, hsh);
-
+	
+	
     std::vector<CryptoNode<Ciphertext> > encrypted_nodes;
     int node_cnt = plaintxt_nodes.size();
     for (int i = 0; i < node_cnt; ++i) {
@@ -128,20 +121,28 @@ StatusOr<PartyZeroMessage::ClientRoundOne> PartyZeroImpl::ClientPreProcessing(
         encrypted_nodes.push_back(std::move(new_node));
     }
 
-
+	
+    if(DEBUG) std::cerr<< "P0: tree updates\n";
     PartyZeroMessage::ClientRoundOne result;
 
     for (const std::string &cur_hsh : hsh) {
         result.mutable_hash_set()->add_elements(cur_hsh);
     }
-
+    
     for (int i = 0; i < node_cnt; ++i) {
-        std::string *cur_node_string = static_cast<std::string*>(static_cast<void*>(&encrypted_nodes[i]));
-        result.mutable_encrypted_nodes()->add_nodes(*cur_node_string);
+        OneNode* cur_node = result.mutable_encrypted_nodes()->add_nodes();
+        *(cur_node->mutable_node_size()) = std::to_string(encrypted_nodes[i].node_size);
+        for (int j = 0; j < encrypted_nodes[i].node_size; ++j) {
+        	EncryptedElement* cur_element = cur_node->add_node_content();
+            ASSIGN_OR_RETURN(*cur_element->mutable_elgamal_u(), (encrypted_nodes[i].node[j]).u.ToBytesCompressed());
+            ASSIGN_OR_RETURN(*cur_element->mutable_elgamal_e(), (encrypted_nodes[i].node[j]).e.ToBytesCompressed());
+    	}
     }
 
     // 2. Generate {Path_i}_i
     // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads
+    
+    if(DEBUG) std::cerr<< "P0: compute (y - x) \n";
 
     int new_elements_cnt = elements.size();
 
@@ -204,11 +205,16 @@ Status PartyZeroImpl::ClientPostProcessing(const PartyOneMessage::ServerRoundOne
         other_hsh.push_back(std::move(cur_hsh));
     }
 
-    std::vector<CryptoNode<Ciphertext> > new_nodes;
-    for (const std::string& str : server_message.encrypted_nodes().nodes()) {
-        std::string *cur_node_string = new std::string(str);
-        CryptoNode<Ciphertext> *tmp = static_cast<CryptoNode<Ciphertext>* >(static_cast<void*>(cur_node_string));
-        new_nodes.push_back(std::move(*tmp));
+     std::vector<CryptoNode<elgamal::Ciphertext> > new_nodes;
+    for (const OneNode& cur_node : server_message.encrypted_nodes().nodes()) {
+        CryptoNode<elgamal::Ciphertext> *cur_new_node = new CryptoNode<elgamal::Ciphertext>(std::stoi(cur_node.node_size()));
+        for (const EncryptedElement& element : cur_node.node_content()) {
+        ASSIGN_OR_RETURN(ECPoint u, this->group->CreateECPoint(element.elgamal_u()));
+        ASSIGN_OR_RETURN(ECPoint e, this->group->CreateECPoint(element.elgamal_e()));
+        auto ciphertxt = elgamal::Ciphertext{std::move(u), std::move(e)};
+        cur_new_node->addElement(ciphertxt);
+    }
+        new_nodes.push_back(std::move(*cur_new_node));
     }
     this->other_crypto_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
 

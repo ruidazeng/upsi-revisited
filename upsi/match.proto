@@ -17,11 +17,16 @@ syntax = "proto2";
 
 package upsi;
 
-// Holds a set of encrypted values.
 message EncryptedNodes {
-  repeated bytes nodes = 1;
+	repeated OneNode nodes = 1;
 }
 
+message OneNode{
+  optional bytes node_size = 1;
+  repeated EncryptedElement node_content = 2;
+}
+
+// Holds a set of encrypted values.
 message EncryptedSet {
   repeated EncryptedElement elements = 1;
 }

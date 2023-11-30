@@ -86,10 +86,15 @@ StatusOr<PartyOneMessage::ServerRoundOne> PartyOneImpl::ServerProcessing(
     }
 
     std::vector<CryptoNode<elgamal::Ciphertext> > new_nodes;
-    for (const std::string& str : client_message.encrypted_nodes().nodes()) {
-        std::string *cur_node_string = new std::string(str);
-        CryptoNode<elgamal::Ciphertext> *tmp = static_cast<CryptoNode<elgamal::Ciphertext>* >(static_cast<void*>(cur_node_string));
-        new_nodes.push_back(std::move(*tmp));
+    for (const OneNode& cur_node : client_message.encrypted_nodes().nodes()) {
+        CryptoNode<elgamal::Ciphertext> *cur_new_node = new CryptoNode<elgamal::Ciphertext>(std::stoi(cur_node.node_size()));
+        for (const EncryptedElement& element : cur_node.node_content()) {
+        ASSIGN_OR_RETURN(ECPoint u, this->group->CreateECPoint(element.elgamal_u()));
+        ASSIGN_OR_RETURN(ECPoint e, this->group->CreateECPoint(element.elgamal_e()));
+        auto ciphertxt = elgamal::Ciphertext{std::move(u), std::move(e)};
+        cur_new_node->addElement(ciphertxt);
+    }
+        new_nodes.push_back(std::move(*cur_new_node));
     }
     this->other_crypto_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
 
@@ -98,7 +103,7 @@ StatusOr<PartyOneMessage::ServerRoundOne> PartyOneImpl::ServerProcessing(
 
     std::vector<elgamal::Ciphertext> encrypted_element;
     for (const EncryptedElement& element :
-            client_message.encrypted_set().elements()) {
+        client_message.encrypted_set().elements()) {
         ASSIGN_OR_RETURN(ECPoint u, this->group->CreateECPoint(element.elgamal_u()));
         ASSIGN_OR_RETURN(ECPoint e, this->group->CreateECPoint(element.elgamal_e()));
         encrypted_element.push_back(elgamal::Ciphertext{std::move(u), std::move(e)});
@@ -171,8 +176,13 @@ StatusOr<PartyOneMessage::ServerRoundOne> PartyOneImpl::ServerProcessing(
     }
 
     for (int i = 0; i < node_cnt; ++i) {
-        std::string *cur_node_string = static_cast<std::string*>(static_cast<void*>(&encrypted_nodes[i]));
-        result.mutable_encrypted_nodes()->add_nodes(*cur_node_string);
+        OneNode* cur_node = result.mutable_encrypted_nodes()->add_nodes();
+        *(cur_node->mutable_node_size()) = std::to_string(encrypted_nodes[i].node_size);
+        for (int j = 0; j < encrypted_nodes[i].node_size; ++j) {
+        	EncryptedElement* cur_element = cur_node->add_node_content();
+            ASSIGN_OR_RETURN(*cur_element->mutable_elgamal_u(), (encrypted_nodes[i].node[j]).u.ToBytesCompressed());
+            ASSIGN_OR_RETURN(*cur_element->mutable_elgamal_e(), (encrypted_nodes[i].node[j]).e.ToBytesCompressed());
+    	}
     }
 
     // 8. Generate ServerRoundOne back to client
