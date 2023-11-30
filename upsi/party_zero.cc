@@ -143,10 +143,12 @@ int RunPartyZero() {
         }
         // Round One Starting
         std::cout << "Party 0: Sending tree updates to Party 1."
-            << std::endl
-            << "Party 0: Waiting for Party 1's tree updates..." << std::endl;
+            << std::endl;
         auto client_round_one_status =
             party_zero->ClientSendRoundOne(&sink);
+            
+        
+        std::cout << "Party 0: Waiting for Party 1's tree updates..." << std::endl;
         if (!client_round_one_status.ok()) {
             std::cerr << "Party 0::RunPartyZero: failed to Client Proprocessing: "
                 << client_round_one_status << std::endl;
