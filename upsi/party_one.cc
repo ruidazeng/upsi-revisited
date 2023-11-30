@@ -36,11 +36,10 @@
 
 using namespace upsi;
 
-ABSL_FLAG(std::string, port, "0.0.0.0:10501", "listening port");
-ABSL_FLAG(std::string, server_data_file, "", "filename for the server database");
-
-ABSL_FLAG(std::string, pk_fn, "shared.pub", "filename for shared elgamal public key");
-ABSL_FLAG(std::string, sk_fn, "party_zero.key", "filename for elgamal secret key");
+ABSL_FLAG(std::string, port,    "0.0.0.0:10501", "listening port");
+ABSL_FLAG(std::string, dataset, "party_one.csv", "filename for the dataset");
+ABSL_FLAG(std::string, sk_fn,   "party_one.key", "filename for elgamal secret key");
+ABSL_FLAG(std::string, pk_fn,   "shared.pub",    "filename for shared elgamal public key");
 
 ABSL_FLAG(
     int32_t,
@@ -60,9 +59,7 @@ int RunPartyOne() {
 
     // read in dataset
     std::cout << "[PartyOne] loading data" << std::endl;
-    auto maybe_dataset = ReadServerDatasetFromFile(
-        absl::GetFlag(FLAGS_server_data_file)
-    );
+    auto maybe_dataset = ReadServerDatasetFromFile(absl::GetFlag(FLAGS_dataset));
     if (!maybe_dataset.ok()) {
         std::cerr << "[PartyOne] failed to read dataset " << std::endl;
         std::cerr << maybe_dataset.status() << std::endl;
