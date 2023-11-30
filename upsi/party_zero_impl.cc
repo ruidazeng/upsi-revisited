@@ -30,8 +30,7 @@ PartyZeroImpl::PartyZeroImpl(
     Context* ctx,
     const std::string pk_fn,
     const std::string sk_fn,
-    const std::vector<std::string>& elements,
-    const std::vector<BigNum>& payloads,
+    const std::vector<PartyZeroDataset>& elements,
     int32_t modulus_size,
     int32_t statistical_param,
     int total_days
@@ -39,10 +38,6 @@ PartyZeroImpl::PartyZeroImpl(
     this->ctx_ = ctx;
 
     this->elements_ = elements;
-    this->new_elements_ = elements;
-
-    this->payloads_ = payloads;
-    this->new_payloads_ = payloads;
 
     this->total_days = total_days;
 
@@ -71,21 +66,12 @@ PartyZeroImpl::PartyZeroImpl(
 
 }
 
-void PartyZeroImpl::UpdateElements(std::vector<std::string> new_elements) {
-    this->new_elements_ = new_elements;
-    this->elements_.insert(this->elements_.end(), new_elements.begin(), new_elements.end());
-}
-
-void PartyZeroImpl::UpdatePayloads(std::vector<BigNum> new_payloads) {
-    this->new_payloads_ = new_payloads;
-    this->payloads_.insert(this->payloads_.end(), new_payloads.begin(), new_payloads.end());
-}
-
 Status PartyZeroImpl::ClientSendRoundOne(MessageSink<ClientMessage>* sink) {
     // A NEW DAY - update
     this->current_day += 1;
     ClientMessage client_message;
-    auto client_round_one = ClientPreProcessing(this->elements_);
+
+    auto client_round_one = ClientPreProcessing(this->elements_[current_day].first);
     if (!client_round_one.ok()) {
         return client_round_one.status();
     }
@@ -101,8 +87,8 @@ StatusOr<PartyZeroMessage::ClientRoundOne> PartyZeroImpl::ClientPreProcessing(
     if(DEBUG) std::cerr<< "P0: Insert into my own tree\n";
     std::vector<std::string> hsh;
     std::vector<CryptoNode<std::string> > plaintxt_nodes = this->my_crypto_tree.insert(elements, hsh);
-	
-	
+
+
     std::vector<CryptoNode<Ciphertext> > encrypted_nodes;
     int node_cnt = plaintxt_nodes.size();
     for (int i = 0; i < node_cnt; ++i) {
@@ -121,14 +107,14 @@ StatusOr<PartyZeroMessage::ClientRoundOne> PartyZeroImpl::ClientPreProcessing(
         encrypted_nodes.push_back(std::move(new_node));
     }
 
-	
+
     if(DEBUG) std::cerr<< "P0: tree updates\n";
     PartyZeroMessage::ClientRoundOne result;
 
     for (const std::string &cur_hsh : hsh) {
         result.mutable_hash_set()->add_elements(cur_hsh);
     }
-    
+
     for (int i = 0; i < node_cnt; ++i) {
         OneNode* cur_node = result.mutable_encrypted_nodes()->add_nodes();
         *(cur_node->mutable_node_size()) = std::to_string(encrypted_nodes[i].node_size);
@@ -141,7 +127,7 @@ StatusOr<PartyZeroMessage::ClientRoundOne> PartyZeroImpl::ClientPreProcessing(
 
     // 2. Generate {Path_i}_i
     // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads
-    
+
     if(DEBUG) std::cerr<< "P0: compute (y - x) \n";
 
     int new_elements_cnt = elements.size();

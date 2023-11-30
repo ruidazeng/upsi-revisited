@@ -8,43 +8,97 @@
 
 using namespace upsi;
 
+ABSL_FLAG(std::string, dir, "data/", "name of directory for dataset files");
 ABSL_FLAG(std::string, p0_fn, "party_zero", "prefix for party one's files");
 ABSL_FLAG(std::string, p1_fn, "party_one", "prefix for party zero's files");
 ABSL_FLAG(std::string, shared_fn, "shared", "prefix for shared key file");
+ABSL_FLAG(int64_t, days, 10, "number of days the protocol is running for");
 ABSL_FLAG(int64_t, p0_size, 250, "total elements in party one's set across all days");
 ABSL_FLAG(int64_t, p1_size, 250, "total elements in party zero's set across all days");
 ABSL_FLAG(int64_t, shared_size, 100, "total elements in intersection across all days");
 ABSL_FLAG(int64_t, max_value, 1000, "maximum number for UPSI-SUM values");
 
-Status GenerateData() {
+Status GenerateDailyData(int day, int64_t p0_size, int64_t p1_size, int64_t shared_size) {
     ASSIGN_OR_RETURN(
         auto datasets,
-        GenerateRandomDatabases(
-            absl::GetFlag(FLAGS_p1_size),
-            absl::GetFlag(FLAGS_p0_size),
-            absl::GetFlag(FLAGS_shared_size),
-            absl::GetFlag(FLAGS_max_value)
-        )
+        GenerateRandomDatabases(p1_size, p0_size, shared_size, absl::GetFlag(FLAGS_max_value))
     );
 
     RETURN_IF_ERROR(
         WriteClientDatasetToFile(
             std::get<1>(datasets).first,
             std::get<1>(datasets).second,
-            absl::GetFlag(FLAGS_p0_fn) + ".csv"
+            (
+                absl::GetFlag(FLAGS_dir) + absl::GetFlag(FLAGS_p0_fn)
+                + "_" + std::to_string(day) + ".csv"
+            )
         )
     );
 
     RETURN_IF_ERROR(
         WriteServerDatasetToFile(
             std::get<0>(datasets),
-            absl::GetFlag(FLAGS_p1_fn) + ".csv"
+            (
+                absl::GetFlag(FLAGS_dir) + absl::GetFlag(FLAGS_p1_fn)
+                + "_" + std::to_string(day) + ".csv"
+            )
         )
     );
+    return OkStatus();
+}
 
-    std::cout << "[Setup] mock data generated: ";
-    std::cout << absl::GetFlag(FLAGS_p0_fn) << ".csv, ";
-    std::cout << absl::GetFlag(FLAGS_p1_fn) << ".csv" << std::endl;
+Status GenerateData() {
+    Context ctx;
+    auto days = absl::GetFlag(FLAGS_days);
+
+    // randomly choose how many elements are in each day
+    std::vector<int64_t> p0_daily_sizes(days);
+    std::vector<int64_t> p1_daily_sizes(days);
+
+    for (int day = 0; day < days - 1; day++) {
+        p0_daily_sizes[day] = ctx.GenerateRandLessThan(
+            ctx.CreateBigNum(absl::GetFlag(FLAGS_p0_size))
+        ).ToIntValue().value();
+
+        p1_daily_sizes[day] = ctx.GenerateRandLessThan(
+            ctx.CreateBigNum(absl::GetFlag(FLAGS_p1_size))
+        ).ToIntValue().value();
+    }
+
+    // the last day should always be the total
+    p0_daily_sizes[days - 1] = absl::GetFlag(FLAGS_p0_size);
+    p1_daily_sizes[days - 1] = absl::GetFlag(FLAGS_p1_size);
+
+    std::sort(p0_daily_sizes.begin(), p0_daily_sizes.end());
+    std::sort(p1_daily_sizes.begin(), p1_daily_sizes.end());
+
+    // generate each day's data
+    int64_t p0_total = 0, p1_total = 0, overlap_total = 0;
+    for (int day = 0; day < days; day++) {
+        auto p0_today = p0_daily_sizes[day] - p0_total;
+        auto p1_today = p1_daily_sizes[day] - p1_total;
+
+        // choose a random intersection size each day
+        int64_t overlap;
+        if (std::min(p0_today, p1_today) == 0) {
+            overlap = 0;
+        } else {
+            overlap = ctx.GenerateRandLessThan(
+                ctx.CreateBigNum(std::min(p0_today, p1_today))
+            ).ToIntValue().value();
+        }
+
+        RETURN_IF_ERROR(GenerateDailyData(day + 1, p0_today, p1_today, overlap));
+
+        p0_total += p0_today;
+        p1_total += p1_today;
+        overlap_total += overlap;
+    }
+
+    std::cout << "[Setup] mock data generated in " << absl::GetFlag(FLAGS_dir) << std::endl;
+    std::cout << "        P0's total elements   : " << p0_total << std::endl;
+    std::cout << "        P1's total elements   : " << p1_total << std::endl;
+    std::cout << "        shared total elements : " << overlap_total << std::endl;
     return OkStatus();
 }
 

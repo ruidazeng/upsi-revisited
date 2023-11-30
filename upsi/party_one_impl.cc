@@ -29,7 +29,7 @@ PartyOneImpl::PartyOneImpl(
     Context* ctx,
     std::string pk_fn,
     std::string sk_fn,
-    const std::vector<std::string>& elements,
+    const std::vector<PartyOneDataset>& elements,
     int32_t modulus_size,
     int32_t statistical_param,
     int total_days
@@ -37,7 +37,6 @@ PartyOneImpl::PartyOneImpl(
     this->ctx_ = ctx;
 
     this->elements_ = elements;
-    this->new_elements_ = elements;
 
     this->total_days = total_days;
 
@@ -63,11 +62,6 @@ PartyOneImpl::PartyOneImpl(
     decrypter = std::make_unique<ElGamalDecrypter>(
         elgamal_proto_util::DeserializePrivateKey(ctx_, sk.value()).value()
     );
-}
-
-void PartyOneImpl::UpdateElements(std::vector<std::string> new_elements) {
-    this->new_elements_ = new_elements;
-    this->elements_.insert(this->elements_.end(), new_elements.begin(), new_elements.end());
 }
 
 // Complete server side processing:
