@@ -36,11 +36,10 @@
 #include "upsi/protocol_client.h"
 #include "upsi/util/status.inc"
 
-ABSL_FLAG(std::string, port, "0.0.0.0:10501", "Port on which to contact server");
-ABSL_FLAG(std::string, client_data_file, "", "The file from which to read the client database.");
-
-ABSL_FLAG(std::string, pk_fn, "shared.pub", "filename for shared elgamal public key");
-ABSL_FLAG(std::string, sk_fn, "party_zero.key", "filename for elgamal secret key");
+ABSL_FLAG(std::string, port,    "0.0.0.0:10501",  "port to connect to server");
+ABSL_FLAG(std::string, dataset, "party_zero.csv", "filename for the dataset");
+ABSL_FLAG(std::string, sk_fn,   "party_zero.key", "filename for elgamal secret key");
+ABSL_FLAG(std::string, pk_fn,   "shared.pub",     "filename for shared elgamal public key");
 
 ABSL_FLAG(
     int32_t,
@@ -91,7 +90,7 @@ int RunPartyZero() {
     // read in dataset
     std::cout << "[PartyZero] loading data" << std::endl;
     auto maybe_dataset = ::upsi::ReadClientDatasetFromFile(
-        absl::GetFlag(FLAGS_client_data_file),
+        absl::GetFlag(FLAGS_dataset),
         &context
     );
     if (!maybe_dataset.ok()) {
@@ -127,7 +126,7 @@ int RunPartyZero() {
         if (i != 0) {
             std::cout << "Party 0: Loading data..." << std::endl;
             auto maybe_dataset = ::upsi::ReadClientDatasetFromFile(
-                    absl::GetFlag(FLAGS_client_data_file),
+                    absl::GetFlag(FLAGS_dataset),
                     &context
                     );
             if (!maybe_dataset.ok()) {

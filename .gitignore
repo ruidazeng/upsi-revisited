@@ -6,3 +6,4 @@ bazel-*
 # key files
 *.key
 *.pub
+*.csv
