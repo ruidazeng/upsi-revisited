@@ -73,6 +73,12 @@ StatusOr<elgamal::Ciphertext> Exp(const elgamal::Ciphertext& ciphertext,
   return {{std::move(u), std::move(e)}};
 }
 
+StatusOr<Ciphertext> Invert(const Ciphertext& ciphertext) {
+  ASSIGN_OR_RETURN(ECPoint u, ciphertext.u.Inverse());
+  ASSIGN_OR_RETURN(ECPoint e, ciphertext.e.Inverse());
+  return {{std::move(u), std::move(e)}};
+}
+
 StatusOr<Ciphertext> GetZero(const ECGroup* group) {
   ASSIGN_OR_RETURN(ECPoint u, group->GetPointAtInfinity());
   ASSIGN_OR_RETURN(ECPoint e, group->GetPointAtInfinity());
@@ -109,6 +115,12 @@ StatusOr<elgamal::Ciphertext> ElGamalEncrypter::Encrypt(
   ASSIGN_OR_RETURN(ECPoint y_to_r, public_key_->y.Mul(r));
   ASSIGN_OR_RETURN(ECPoint e, message.Add(y_to_r));
   return {{std::move(u), std::move(e)}};
+}
+
+StatusOr<elgamal::Ciphertext> ElGamalEncrypter::Encrypt(const BigNum& m) const {
+    ASSIGN_OR_RETURN(ECPoint g, ec_group_->GetPointAtInfinity());
+    ASSIGN_OR_RETURN(ECPoint point, g.Mul(m));
+    return Encrypt(point);
 }
 
 StatusOr<elgamal::Ciphertext> ElGamalEncrypter::ReRandomize(

@@ -86,6 +86,9 @@ StatusOr<elgamal::Ciphertext> Mul(const elgamal::Ciphertext& ciphertext1,
 StatusOr<elgamal::Ciphertext> Exp(const elgamal::Ciphertext& ciphertext,
                                   const BigNum& scalar);
 
+// Homomorphically exponentiate a ciphertext by -1
+StatusOr<Ciphertext> Invert(const Ciphertext& ciphertext);
+
 // Returns a ciphertext encrypting the point at infinity, using fixed randomness
 // "0". This is a multiplicative identity for ElGamal ciphertexts.
 StatusOr<Ciphertext> GetZero(const ECGroup* group);
@@ -116,6 +119,9 @@ class ElGamalEncrypter {
 
   // Encrypts a message m, that has already been mapped onto the curve.
   StatusOr<elgamal::Ciphertext> Encrypt(const ECPoint& message) const;
+
+  // Encrypts an exponential message m
+  StatusOr<elgamal::Ciphertext> Encrypt(const BigNum& message) const;
 
   // Re-randomizes a ciphertext. After the re-randomization, the new ciphertext
   // is an encryption of the same message as before.

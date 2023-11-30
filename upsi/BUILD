@@ -70,9 +70,11 @@ cc_library(
         ":upsi_proto",
         ":protocol_client",
         "//upsi/crypto:bn_util",
-        "//upsi/crypto:elgamal",
         "//upsi/crypto:ec_commutative_cipher",
+        "//upsi/crypto:ec_point_util",
+        "//upsi/crypto:elgamal",
         "//upsi/crypto:paillier",
+        "//upsi/util:elgamal_key_util",
         "//upsi/util:status_includes",
     ],
 )
@@ -100,9 +102,11 @@ cc_library(
         ":upsi_proto",
         ":protocol_server",
         "//upsi/crypto:bn_util",
-        "//upsi/crypto:elgamal",
         "//upsi/crypto:ec_commutative_cipher",
+        "//upsi/crypto:ec_point_util",
+        "//upsi/crypto:elgamal",
         "//upsi/crypto:paillier",
+        "//upsi/util:elgamal_key_util",
         "//upsi/util:status_includes",
     ],
 )
@@ -227,5 +231,19 @@ cc_library(
         ":utils",
         "//upsi/crypto:ec_commutative_cipher",
         "//upsi/crypto:paillier",
+    ],
+)
+
+cc_binary(
+    name = "setup",
+    srcs = ["setup.cc"],
+    deps = [
+        ":utils",
+        "//upsi/crypto:elgamal",
+        "//upsi/util:elgamal_key_util",
+        "//upsi/util:proto_util",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
     ],
 )

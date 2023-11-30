@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef UPDATABLE_PRIVATE_SET_INTERSECTION_PRIVATE_INTERSECTION_PARTYONE_IMPL_H_
-#define UPDATABLE_PRIVATE_SET_INTERSECTION_PRIVATE_INTERSECTION_PARTYONE_IMPL_H_
+#ifndef PARTYONE_IMPL_H_
+#define PARTYONE_IMPL_H_
 
 #include "upsi/crypto/context.h"
 #include "upsi/crypto/elgamal.h"
@@ -38,6 +38,8 @@ class PartyOneImpl : public ProtocolServer {
     public:
         PartyOneImpl(
             Context* ctx,
+            std::string pk_fn,
+            std::string sk_fn,
             const std::vector<std::string>& elements,
             int32_t modulus_size,
             int32_t statistical_param,
@@ -55,14 +57,6 @@ class PartyOneImpl : public ProtocolServer {
         bool protocol_finished() override { return protocol_finished_; }
 
     private:
-        // Complete P_1 key exchange:
-        // 1. Retrieve P_0's (g, y)
-        // 2. Generate Threshold ElGamal public key from shares, save it to P_1's member variable
-        // 3. Generate ServerKeyExchange message using P_1's (g, y)
-        StatusOr<PartyOneMessage::ServerExchange> ServerExchange(
-            const PartyZeroMessage::StartProtocolRequest& client_message
-        );
-
         // Complete server side processing:
         // 1. Shuffle
         // 2. Mask with a random exponent
@@ -84,20 +78,13 @@ class PartyOneImpl : public ProtocolServer {
         CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
 
         Context* ctx_;  // not owned
-        ECGroup* ec_group;
+        ECGroup* group;
 
         std::vector<std::string> elements_;
 
-        // The ElGamal key pairs
-        std::unique_ptr<elgamal::PublicKey> elgamal_public_key; // (g, y)
-        std::unique_ptr<elgamal::PrivateKey> elgamal_private_key; // x
-
-
-        // The ElGamal shared public key (2-out-of-2 threshold ElGamal encryption scheme)
-        std::unique_ptr<elgamal::PublicKey> shared_elgamal_public_key; // shared (g, x)
-
-        // The Threshold Paillier object
-        // ThresholdPaillier threshold_paillier;
+        // el gamal encryption tools
+        std::unique_ptr<ElGamalEncrypter> encrypter;
+        std::unique_ptr<ElGamalDecrypter> decrypter;
 
         // current day and total days
         int current_day = 0;
@@ -108,4 +95,4 @@ class PartyOneImpl : public ProtocolServer {
 
 }  // namespace upsi
 
-#endif  // UPDATABLE_PRIVATE_SET_INTERSECTION_PRIVATE_INTERSECTION_PARTYONE_IMPL_H_
+#endif  // PARTYONE_IMPL_H_

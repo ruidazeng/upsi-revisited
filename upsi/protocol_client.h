@@ -27,10 +27,12 @@ class ProtocolClient {
  public:
   virtual ~ProtocolClient() = default;
 
+  /*
   // All subclasses should send the starting client message(s) to the message
   // sink.
   virtual Status StartProtocol(
       MessageSink<ClientMessage>* client_message_sink) = 0;
+  */
 
   // All subclasses should check that the server response is the right type,
   // and, if so, execute the next round of the client, which may involve sending

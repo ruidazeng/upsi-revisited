@@ -23,17 +23,13 @@ import "upsi/match.proto";
 
 message PartyZeroMessage {
   oneof message_content {
-    StartProtocolRequest start_protocol_request = 1;
+    StartProtocolRequest start = 1;
     ClientRoundOne client_round_one = 2;
   }
 
   // For initiating the protocol.
   // Client key exchange - Threshold ElGamal
-  message StartProtocolRequest {
-    optional bytes elgamal_p = 1; // modulus of the integer group
-    optional bytes elgamal_g = 2;
-    optional bytes elgamal_y = 3;
-  }
+  message StartProtocolRequest { }
 
   // Message containing the client's set encrypted under the client's keys, and
   // the server's set re-encrypted with the client's key, and shuffled.
@@ -54,11 +50,7 @@ message PartyOneMessage {
   }
 
   // Server key exchange - Threshold ElGamal
-  message ServerExchange {
-    optional bytes elgamal_p = 1; // modulus of the integer group
-    optional bytes elgamal_g = 2;
-    optional bytes elgamal_y = 3;
-  }
+  message ServerExchange { }
 
   message ServerRoundOne {
     optional HashSet hash_set = 1;

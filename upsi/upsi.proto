@@ -22,14 +22,14 @@ import "upsi/private_intersection.proto";
 message ClientMessage {
   oneof client_message_oneof {
     PartyZeroMessage
-        private_intersection_client_message = 1;
+        party_zero_msg = 1;
   }
 }
 
 message ServerMessage {
   oneof server_message_oneof {
     PartyOneMessage
-        private_intersection_server_message = 1;
+        party_one_msg = 1;
   }
 }
 
