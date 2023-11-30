@@ -37,9 +37,11 @@
 #include "upsi/util/status.inc"
 
 ABSL_FLAG(std::string, port,    "0.0.0.0:10501",  "port to connect to server");
-ABSL_FLAG(std::string, dataset, "party_zero.csv", "filename for the dataset");
 ABSL_FLAG(std::string, sk_fn,   "party_zero.key", "filename for elgamal secret key");
 ABSL_FLAG(std::string, pk_fn,   "shared.pub",     "filename for shared elgamal public key");
+
+ABSL_FLAG(std::string, dir, "data/", "name of directory for dataset files");
+ABSL_FLAG(std::string, prefix, "party_zero", "prefix for dataset files");
 
 ABSL_FLAG(
     int32_t,
@@ -51,7 +53,7 @@ ABSL_FLAG(
 
 ABSL_FLAG(int32_t, paillier_statistical_param, 100, "Paillier statistical parameter.");
 
-ABSL_FLAG(int, total_days, 5, "Number of days the protocol will run.");
+ABSL_FLAG(int, days, 10, "total days the protocol will run for");
 
 namespace upsi {
 namespace {
@@ -89,26 +91,26 @@ int RunPartyZero() {
 
     // read in dataset
     std::cout << "[PartyZero] loading data" << std::endl;
-    auto maybe_dataset = ::upsi::ReadClientDatasetFromFile(
-        absl::GetFlag(FLAGS_dataset),
+    auto dataset = ReadPartyZeroDataset(
+        absl::GetFlag(FLAGS_dir),
+        absl::GetFlag(FLAGS_prefix),
+        absl::GetFlag(FLAGS_days),
         &context
     );
-    if (!maybe_dataset.ok()) {
-        std::cerr << "Party 0::RunPartyZero: failed " << maybe_dataset.status() << std::endl;
+    if (!dataset.ok()) {
+        std::cerr << "[PartyZero] failed to read dataset " << std::endl;
+        std::cerr << dataset.status() << std::endl;
         return 1;
     }
-    auto dataset = std::move(maybe_dataset.value());
 
-    // TODO: Double check dummy data generation
-    std::unique_ptr<::upsi::PartyZeroImpl> party_zero = std::make_unique<::upsi::PartyZeroImpl>(
+    std::unique_ptr<PartyZeroImpl> party_zero = std::make_unique<PartyZeroImpl>(
         &context,
         absl::GetFlag(FLAGS_pk_fn),
         absl::GetFlag(FLAGS_sk_fn),
-        std::move(dataset.first),
-        std::move(dataset.second),
+        std::move(dataset.value()),
         absl::GetFlag(FLAGS_paillier_modulus_size),
         absl::GetFlag(FLAGS_paillier_statistical_param),
-        absl::GetFlag(FLAGS_total_days)
+        absl::GetFlag(FLAGS_days)
     );
 
     // setup connection with other party
@@ -121,48 +123,22 @@ int RunPartyZero() {
     InvokeServerHandleClientMessageSink sink(std::move(stub));
 
     // execute ClientPreprocessing (Updatable)
-    for (int i = 0; i <= absl::GetFlag(FLAGS_total_days); ++i) {
-        // If not Day 0, load a new day of data
-        if (i != 0) {
-            std::cout << "Party 0: Loading data..." << std::endl;
-            auto maybe_dataset = ::upsi::ReadClientDatasetFromFile(
-                    absl::GetFlag(FLAGS_dataset),
-                    &context
-                    );
-            if (!maybe_dataset.ok()) {
-                std::cerr << "Party 0::RunPartyZero: failed "
-                    << maybe_dataset.status()
-                    << std::endl;
-                return 1;
-            }
-            auto dataset = std::move(maybe_dataset.value());
-            // CALL UPDATE ELEMENT AND PAYLOAD
-            party_zero->UpdateElements(dataset.first);
-            party_zero->UpdatePayloads(dataset.second);
-        }
-        // Round One Starting
-        std::cout << "Party 0: Sending tree updates to Party 1."
-            << std::endl;
-        auto client_round_one_status =
-            party_zero->ClientSendRoundOne(&sink);
-            
-        
-        std::cout << "Party 0: Waiting for Party 1's tree updates..." << std::endl;
+    for (int i = 0; i <= absl::GetFlag(FLAGS_days); ++i) {
+
+        std::cout << "[PartyZero] sending tree updates" << std::endl;
+        auto client_round_one_status = party_zero->ClientSendRoundOne(&sink);
+
         if (!client_round_one_status.ok()) {
-            std::cerr << "Party 0::RunPartyZero: failed to Client Proprocessing: "
-                << client_round_one_status << std::endl;
+            std::cerr << "[PartyZero] failed client proprocessing" << std::endl;
+            std::cerr << client_round_one_status << std::endl;
             return 1;
         }
 
-        ServerMessage server_round_one =
-            sink.last_server_response();
+        std::cout << "[PartyZero] waiting for party one's tree updates...";
+        ServerMessage server_round_one = sink.last_server_response();
+        std::cout << "[PartyZero] done." << std::endl;
 
-        // Receiver ServerRoundOne, execute ClientPostProcessing.
-        std::cout
-            << "Party 0: Received tree updates from the Party 1, now doing postprocessing..."
-            << std::endl;
-        auto client_post_processing_status =
-            party_zero->Handle(server_round_one, &sink);
+        auto client_post_processing_status = party_zero->Handle(server_round_one, &sink);
         if (!client_post_processing_status.ok()) {
             std::cerr << "Party 0::RunPartyZero: failed to ReEncryptSet: "
                 << client_post_processing_status << std::endl;

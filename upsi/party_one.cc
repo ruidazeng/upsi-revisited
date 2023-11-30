@@ -37,9 +37,11 @@
 using namespace upsi;
 
 ABSL_FLAG(std::string, port,    "0.0.0.0:10501", "listening port");
-ABSL_FLAG(std::string, dataset, "party_one.csv", "filename for the dataset");
 ABSL_FLAG(std::string, sk_fn,   "party_one.key", "filename for elgamal secret key");
 ABSL_FLAG(std::string, pk_fn,   "shared.pub",    "filename for shared elgamal public key");
+
+ABSL_FLAG(std::string, dir, "data/", "name of directory for dataset files");
+ABSL_FLAG(std::string, prefix, "party_one", "prefix for dataset files");
 
 ABSL_FLAG(
     int32_t,
@@ -51,20 +53,25 @@ ABSL_FLAG(
 
 ABSL_FLAG(int32_t, paillier_statistical_param, 100, "Paillier statistical parameter.");
 
-ABSL_FLAG(int, total_days, 5, "Number of days the protocol will run.");
+ABSL_FLAG(int, days, 10, "total days the protocol will run for");
 
 
 int RunPartyOne() {
     Context context;
 
     // read in dataset
-    std::cout << "[PartyOne] loading data" << std::endl;
-    auto maybe_dataset = ReadServerDatasetFromFile(absl::GetFlag(FLAGS_dataset));
+    std::cout << "[PartyOne] loading data... " << std::endl;
+    auto maybe_dataset = ReadPartyOneDataset(
+        absl::GetFlag(FLAGS_dir),
+        absl::GetFlag(FLAGS_prefix),
+        absl::GetFlag(FLAGS_days)
+    );
     if (!maybe_dataset.ok()) {
-        std::cerr << "[PartyOne] failed to read dataset " << std::endl;
+        std::cerr << "[PartyOne] failed to read datasets " << std::endl;
         std::cerr << maybe_dataset.status() << std::endl;
         return 1;
     }
+    std::cout << "done." << std::endl;
 
     std::unique_ptr<ProtocolServer> party_one = std::make_unique<PartyOneImpl>(
         &context,
@@ -73,7 +80,7 @@ int RunPartyOne() {
         std::move(maybe_dataset.value()),
         absl::GetFlag(FLAGS_paillier_modulus_size),
         absl::GetFlag(FLAGS_paillier_statistical_param),
-        absl::GetFlag(FLAGS_total_days)
+        absl::GetFlag(FLAGS_days)
     );
 
     // setup connection

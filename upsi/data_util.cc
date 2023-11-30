@@ -390,4 +390,44 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
                         std::move(client_associated_values));
 }
 
+StatusOr<std::vector<PartyZeroDataset>> ReadPartyZeroDataset(
+    std::string dir,
+    std::string prefix,
+    int days,
+    Context* ctx
+) {
+    std::vector<PartyZeroDataset> datasets(days);
+
+    for (int day = 1; day <= days; day++) {
+        ASSIGN_OR_RETURN(
+            datasets[day - 1],
+            ReadClientDatasetFromFile(dir + prefix + "_" + std::to_string(day) + ".csv", ctx)
+        );
+    }
+
+    return datasets;
+}
+
+
+StatusOr<std::vector<PartyOneDataset>> ReadPartyOneDataset(
+    std::string dir,
+    std::string prefix,
+    int days
+) {
+    std::vector<std::vector<std::string>> datasets(days);
+
+
+    for (int day = 1; day <= days; day++) {
+        std::cout << "[DataUtil] reading ";
+        std::cout << dir + prefix + "_" + std::to_string(day) + ".csv" << std::endl;
+
+        ASSIGN_OR_RETURN(
+            datasets[day - 1],
+            ReadServerDatasetFromFile(dir + prefix + "_" + std::to_string(day) + ".csv")
+        );
+    }
+
+    return datasets;
+}
+
 }  // namespace upsi

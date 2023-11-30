@@ -22,18 +22,19 @@
 #include <vector>
 
 #include "upsi/crypto/context.h"
-#include "upsi/crypto/elgamal.h"
 #include "upsi/crypto/ec_commutative_cipher.h"
+#include "upsi/crypto/elgamal.h"
 #include "upsi/crypto/paillier.h"
 #include "upsi/crypto/threshold_paillier.h"
 #include "upsi/crypto_tree.h"
+#include "upsi/data_util.h"
 #include "upsi/match.pb.h"
 #include "upsi/message_sink.h"
 #include "upsi/private_intersection.pb.h"
-#include "upsi/upsi.pb.h"
 #include "upsi/protocol_client.h"
-#include "upsi/utils.h"
+#include "upsi/upsi.pb.h"
 #include "upsi/util/status.inc"
+#include "upsi/utils.h"
 
 namespace upsi {
 
@@ -46,8 +47,7 @@ class PartyZeroImpl : public ProtocolClient {
             Context* ctx,
             std::string pk_fn,
             std::string sk_fn,
-            const std::vector<std::string>& elements,
-            const std::vector<BigNum>& payloads,
+            const std::vector<PartyZeroDataset>& elements,
             int32_t modulus_size,
             int32_t statistical_param,
             int total_days
@@ -72,10 +72,6 @@ class PartyZeroImpl : public ProtocolClient {
         // encountered.
         Status Handle(const ServerMessage& response, MessageSink<ClientMessage>* sink) override;
 
-
-        void UpdateElements(std::vector<std::string> new_elements);
-        void UpdatePayloads(std::vector<BigNum> new_payloads);
-
         bool protocol_finished() override { return protocol_finished_; }
 
     private:
@@ -96,10 +92,6 @@ class PartyZeroImpl : public ProtocolClient {
         // TODO: PRINT RESULTS???
         Status ClientPostProcessing(const PartyOneMessage::ServerRoundOne& server_message);
 
-        // Update elements and payloads
-        std::vector<std::string> new_elements_;
-        std::vector<BigNum> new_payloads_;
-
         // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
         CryptoTree<UPSI_Element> my_crypto_tree;
         CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
@@ -107,8 +99,7 @@ class PartyZeroImpl : public ProtocolClient {
         Context* ctx_;  // not owned
         ECGroup* group;
 
-        std::vector<std::string> elements_;
-        std::vector<BigNum> payloads_;
+        std::vector<PartyZeroDataset> elements_;
 
         // el gamal encryption tools
         std::unique_ptr<ElGamalEncrypter> encrypter;
