@@ -23,8 +23,8 @@ import "upsi/match.proto";
 
 message PartyZeroMessage {
   oneof message_content {
-    StartProtocolRequest start = 1;
-    ClientRoundOne client_round_one = 2;
+    //StartProtocolRequest start = 1;
+    ClientRoundOne client_round_one = 1;
   }
 
   // For initiating the protocol.
@@ -45,8 +45,8 @@ message PartyZeroMessage {
 
 message PartyOneMessage {
   oneof message_content {
-    ServerExchange server_key_exchange = 1;
-    ServerRoundOne server_round_one = 2;
+    //ServerExchange server_key_exchange = 1;
+    ServerRoundOne server_round_one = 1;
   }
 
   // Server key exchange - Threshold ElGamal
