@@ -34,78 +34,82 @@
 #include "upsi/protocol_server.h"
 #include "upsi/party_one_impl.h"
 
-ABSL_FLAG(std::string, port, "0.0.0.0:10501", "Port on which to listen");
-ABSL_FLAG(std::string, server_data_file, "",
-          "The file from which to read the server database.");
+using namespace upsi;
+
+ABSL_FLAG(std::string, port, "0.0.0.0:10501", "listening port");
+ABSL_FLAG(std::string, server_data_file, "", "filename for the server database");
+
+ABSL_FLAG(std::string, pk_fn, "shared.pub", "filename for shared elgamal public key");
+ABSL_FLAG(std::string, sk_fn, "party_zero.key", "filename for elgamal secret key");
+
 ABSL_FLAG(
-    int32_t, paillier_modulus_size, 1536,
+    int32_t,
+    paillier_modulus_size,
+    1536,
     "The bit-length of the modulus to use for Paillier encryption. The modulus "
-    "will be the product of two safe primes, each of size "
-    "paillier_modulus_size/2.");
-ABSL_FLAG(
-    int32_t, paillier_statistical_param, 100,
-    "Paillier statistical parameter.");
-ABSL_FLAG(
-    int, total_days, 5, 
-    "Number of days the protocol will run.");
+    "will be the product of two safe primes, each of size paillier_modulus_size/2."
+);
+
+ABSL_FLAG(int32_t, paillier_statistical_param, 100, "Paillier statistical parameter.");
+
+ABSL_FLAG(int, total_days, 5, "Number of days the protocol will run.");
 
 
 int RunPartyOne() {
-  std::cout << "Party 1: loading data... " << std::endl;
-  // Note that the server does not handle payload, even in secret shares.
-  auto maybe_server_identifiers =
-        ::upsi::ReadServerDatasetFromFile(
-            absl::GetFlag(FLAGS_server_data_file));
-    if (!maybe_server_identifiers.ok()) {
-      std::cerr << "RunServer: failed " << maybe_server_identifiers.status()
-                << std::endl;
-      return 1;
+    Context context;
+
+    // read in dataset
+    std::cout << "[PartyOne] loading data" << std::endl;
+    auto maybe_dataset = ReadServerDatasetFromFile(
+        absl::GetFlag(FLAGS_server_data_file)
+    );
+    if (!maybe_dataset.ok()) {
+        std::cerr << "[PartyOne] failed to read dataset " << std::endl;
+        std::cerr << maybe_dataset.status() << std::endl;
+        return 1;
     }
 
-  ::upsi::Context context;
-  std::unique_ptr<::upsi::ProtocolServer> party_one =
-      std::make_unique<
-          ::upsi::PartyOneImpl>(
-          &context, std::move(maybe_server_identifiers.value()),
-          absl::GetFlag(FLAGS_paillier_modulus_size),
-          absl::GetFlag(FLAGS_paillier_statistical_param),
-          absl::GetFlag(FLAGS_total_days));
+    std::unique_ptr<ProtocolServer> party_one = std::make_unique<PartyOneImpl>(
+        &context,
+        absl::GetFlag(FLAGS_pk_fn),
+        absl::GetFlag(FLAGS_sk_fn),
+        std::move(maybe_dataset.value()),
+        absl::GetFlag(FLAGS_paillier_modulus_size),
+        absl::GetFlag(FLAGS_paillier_statistical_param),
+        absl::GetFlag(FLAGS_total_days)
+    );
 
-  ::upsi::UPSIRpcImpl service(
-      std::move(party_one));
+    // setup connection
+    UPSIRpcImpl service(std::move(party_one));
+    ::grpc::ServerBuilder builder;
+    builder.AddListeningPort(
+        absl::GetFlag(FLAGS_port),
+        ::grpc::experimental::LocalServerCredentials(
+            grpc_local_connect_type::LOCAL_TCP
+        )
+    );
+    builder.RegisterService(&service);
+    std::unique_ptr<::grpc::Server> grpc_server(builder.BuildAndStart());
 
-  ::grpc::ServerBuilder builder;
-  // Consider grpc::SslServerCredentials if not running locally.
-  builder.AddListeningPort(absl::GetFlag(FLAGS_port),
-                           ::grpc::experimental::LocalServerCredentials(
-                               grpc_local_connect_type::LOCAL_TCP));
-  builder.RegisterService(&service);
-  std::unique_ptr<::grpc::Server> grpc_server(builder.BuildAndStart());
-
-  // BIG TODO - SERVER NOT UPDATING ELEMENTS AND PAYLOADS???
-  // Run the server on a background thread.
-  std::thread grpc_server_thread(
-      [](::grpc::Server* grpc_server_ptr) {
-        std::cout << "Party 1: listening on " << absl::GetFlag(FLAGS_port)
-                  << std::endl;
+    // BIG TODO - SERVER NOT UPDATING ELEMENTS AND PAYLOADS???
+    // Run the server on a background thread.
+    std::thread grpc_server_thread([](::grpc::Server* grpc_server_ptr) {
+        std::cout << "[PartyOne] listening on " << absl::GetFlag(FLAGS_port) << std::endl;
         grpc_server_ptr->Wait();
-      },
-      grpc_server.get());
+    }, grpc_server.get());
 
-  while (!service.protocol_finished()) {
-    // Wait for the server to be done, and then shut the server down.
-  }
+    while (!service.protocol_finished()) { }
 
-  // Shut down server.
-  grpc_server->Shutdown();
-  grpc_server_thread.join();
-  std::cout << "Party 1 completed protocol and shut down." << std::endl;
+    // shut down server
+    grpc_server->Shutdown();
+    grpc_server_thread.join();
+    std::cout << "[PartyOne] completed protocol and shut down" << std::endl;
 
-  return 0;
+    return 0;
 }
 
 int main(int argc, char** argv) {
-  absl::ParseCommandLine(argc, argv);
+    absl::ParseCommandLine(argc, argv);
 
-  return RunPartyOne();
+    return RunPartyOne();
 }

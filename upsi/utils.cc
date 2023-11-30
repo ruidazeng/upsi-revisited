@@ -2,6 +2,11 @@
 
 namespace upsi {
 
+StatusOr<ECPoint> exponentiate(ECGroup* group, const BigNum& m) {
+    ASSIGN_OR_RETURN(ECPoint generator, group->GetPointAtInfinity());
+    return generator.Mul(m);
+}
+
 //convert byte hash to binary hash
 std::string Byte2Binary(const std::string &byte_hash) {
     std::string binary_hash = "";

@@ -24,6 +24,7 @@ cd upsi-new
 bazel build //upsi:all
 ```
 
+Before running the protocol, first run the `setup` binary to generate encryption keys for the parties.
 
 ## Threshold Paillier
 Two party threshold Paillier is in `upsi/crypto/threshold_paillier.h`.
@@ -42,28 +43,3 @@ There are only four functions of note:
 Essentially of the elements involved are `BigNum`s (e.g., message, ciphertext, key components).
 
 To see how one would use these functions, check the tests in `threshold_paillier_test.cc`.
-
-
-## UPSI Files (TODO)
-
-upsi/crypto_node.h
-
-upsi/crypto_node.cc
-
-upsi/crypto_tree.h
-
-upsi/crypto_tree.cc
-
-upsi/protocol_party.h
-
-upsi/protocol_party.cc
-
-## Google Library Files (dependencies)
-
-crypto/bignum.h
-
-crypto/context.h
-
-crypto/ec_commutative_cipher.h
-
-crypto/paillier.h

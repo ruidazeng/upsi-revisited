@@ -36,172 +36,147 @@
 #include "upsi/protocol_client.h"
 #include "upsi/util/status.inc"
 
-ABSL_FLAG(std::string, port, "0.0.0.0:10501",
-          "Port on which to contact server");
-ABSL_FLAG(std::string, client_data_file, "",
-          "The file from which to read the client database.");
+ABSL_FLAG(std::string, port, "0.0.0.0:10501", "Port on which to contact server");
+ABSL_FLAG(std::string, client_data_file, "", "The file from which to read the client database.");
+
+ABSL_FLAG(std::string, pk_fn, "shared.pub", "filename for shared elgamal public key");
+ABSL_FLAG(std::string, sk_fn, "party_zero.key", "filename for elgamal secret key");
+
 ABSL_FLAG(
-    int32_t, paillier_modulus_size, 1536,
+    int32_t,
+    paillier_modulus_size,
+    1536,
     "The bit-length of the modulus to use for Paillier encryption. The modulus "
-    "will be the product of two safe primes, each of size "
-    "paillier_modulus_size/2.");
-ABSL_FLAG(
-    int32_t, paillier_statistical_param, 100,
-    "Paillier statistical parameter.");
-ABSL_FLAG(
-    int, total_days, 5,
-    "Number of days the protocol will run.");
+    "will be the product of two safe primes, each of size paillier_modulus_size/2."
+);
+
+ABSL_FLAG(int32_t, paillier_statistical_param, 100, "Paillier statistical parameter.");
+
+ABSL_FLAG(int, total_days, 5, "Number of days the protocol will run.");
 
 namespace upsi {
 namespace {
 
 class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
- public:
-  explicit InvokeServerHandleClientMessageSink(
-      std::unique_ptr<UPSIRpc::Stub> stub)
-      : stub_(std::move(stub)) {}
+    public:
+        explicit InvokeServerHandleClientMessageSink(std::unique_ptr<UPSIRpc::Stub> stub)
+            : stub_(std::move(stub)) {}
 
-  ~InvokeServerHandleClientMessageSink() override = default;
+        ~InvokeServerHandleClientMessageSink() override = default;
 
-  Status Send(const ClientMessage& message) override {
-    ::grpc::ClientContext client_context;
-    ::grpc::Status grpc_status =
-        stub_->Handle(&client_context, message, &last_server_response_);
-    if (grpc_status.ok()) {
-      return OkStatus();
-    } else {
-      return InternalError(absl::StrCat(
-          "GrpcClientMessageSink: Failed to send message, error code: ",
-          grpc_status.error_code(),
-          ", error_message: ", grpc_status.error_message()));
-    }
-  }
+        Status Send(const ClientMessage& message) override {
+            ::grpc::ClientContext client_context;
+            ::grpc::Status grpc_status =
+                stub_->Handle(&client_context, message, &last_server_response_);
+            if (grpc_status.ok()) {
+                return OkStatus();
+            } else {
+                return InternalError(absl::StrCat(
+                            "GrpcClientMessageSink: Failed to send message, error code: ",
+                            grpc_status.error_code(),
+                            ", error_message: ", grpc_status.error_message()));
+            }
+        }
 
-  const ServerMessage& last_server_response() { return last_server_response_; }
+        const ServerMessage& last_server_response() { return last_server_response_; }
 
- private:
-  std::unique_ptr<UPSIRpc::Stub> stub_;
-  ServerMessage last_server_response_;
+    private:
+        std::unique_ptr<UPSIRpc::Stub> stub_;
+        ServerMessage last_server_response_;
 };
 
-int ExecuteProtocol() {
-  ::upsi::Context context;
+int RunPartyZero() {
+    Context context;
 
-  std::cout << "Party 0: Loading data..." << std::endl;
-  auto maybe_dataset =
-      ::upsi::ReadClientDatasetFromFile(
-          absl::GetFlag(FLAGS_client_data_file), &context);
-  if (!maybe_dataset.ok()) {
-    std::cerr << "Party 0::ExecuteProtocol: failed "
-              << maybe_dataset.status()
-              << std::endl;
-    return 1;
-  }
-  auto dataset =
-      std::move(maybe_dataset.value());
-
-  std::cout << "Party 0: Generating keys..." << std::endl;
-  // TODO: Double check dummy data generation
-  std::unique_ptr<::upsi::PartyZeroImpl> party_zero =
-      std::make_unique<
-          ::upsi::PartyZeroImpl>(
-          &context, std::move(dataset.first),
-          std::move(dataset.second),
-          absl::GetFlag(FLAGS_paillier_modulus_size),
-          absl::GetFlag(FLAGS_paillier_statistical_param),
-          absl::GetFlag(FLAGS_total_days));
-
-  // Consider grpc::SslServerCredentials if not running locally.
-  std::unique_ptr<UPSIRpc::Stub> stub =
-      UPSIRpc::NewStub(::grpc::CreateChannel(
-          absl::GetFlag(FLAGS_port), ::grpc::experimental::LocalCredentials(
-                                         grpc_local_connect_type::LOCAL_TCP)));
-  InvokeServerHandleClientMessageSink invoke_server_handle_message_sink(
-      std::move(stub));
-
-  // Execute StartProtocol and wait for response from ServerRoundOne.
-  std::cout
-      << "Party 0: Starting the protocol." << std::endl
-      << "Party 0: Waiting for response and encrypted set from the Party 1..."
-      << std::endl;
-  auto start_protocol_status =
-      party_zero->StartProtocol(&invoke_server_handle_message_sink);
-  if (!start_protocol_status.ok()) {
-    std::cerr << "Party 0::ExecuteProtocol: failed to StartProtocol: "
-              << start_protocol_status << std::endl;
-    return 1;
-  }
-  ServerMessage server_key_exchange =
-      invoke_server_handle_message_sink.last_server_response();
-
-  // Execute ClientKeyExchange
-  std::cout
-      << "Client: Received key exchange from the server, generating joint ElGamal public key..."
-      << std::endl;
-  auto client_key_exchange_status =
-      party_zero->Handle(server_key_exchange, &invoke_server_handle_message_sink);
-  if (!client_key_exchange_status.ok()) {
-    std::cerr << "Party 0::ExecuteProtocol: failed to Client Key Exchange: "
-              << client_key_exchange_status << std::endl;
-    return 1;
-  }
-
-  // Execute ClientPreprocessing (Updatable)
-  for (int i = 0; i <= absl::GetFlag(FLAGS_total_days); ++i) {
-    // If not Day 0, load a new day of data
-    if (i != 0) {
-      std::cout << "Party 0: Loading data..." << std::endl;
-      auto maybe_dataset = ::upsi::ReadClientDatasetFromFile(
-          absl::GetFlag(FLAGS_client_data_file),
-          &context
-      );
-      if (!maybe_dataset.ok()) {
-        std::cerr << "Party 0::ExecuteProtocol: failed "
-                  << maybe_dataset.status()
-                  << std::endl;
+    // read in dataset
+    std::cout << "[PartyZero] loading data" << std::endl;
+    auto maybe_dataset = ::upsi::ReadClientDatasetFromFile(
+        absl::GetFlag(FLAGS_client_data_file),
+        &context
+    );
+    if (!maybe_dataset.ok()) {
+        std::cerr << "Party 0::RunPartyZero: failed " << maybe_dataset.status() << std::endl;
         return 1;
-      }
-      auto dataset = std::move(maybe_dataset.value());
-      // CALL UPDATE ELEMENT AND PAYLOAD
-      party_zero->UpdateElements(dataset.first);
-      party_zero->UpdatePayloads(dataset.second);
     }
-    // Round One Starting
-    std::cout << "Party 0: Sending tree updates to Party 1."
-              << std::endl
-              << "Party 0: Waiting for Party 1's tree updates..." << std::endl;
-   auto client_round_one_status =
-      party_zero->ClientSendRoundOne(&invoke_server_handle_message_sink);
-    if (!client_round_one_status.ok()) {
-      std::cerr << "Party 0::ExecuteProtocol: failed to Client Proprocessing: "
-              << client_round_one_status << std::endl;
-      return 1;
-    }
+    auto dataset = std::move(maybe_dataset.value());
 
-    ServerMessage server_round_one =
-        invoke_server_handle_message_sink.last_server_response();
+    // TODO: Double check dummy data generation
+    std::unique_ptr<::upsi::PartyZeroImpl> party_zero = std::make_unique<::upsi::PartyZeroImpl>(
+        &context,
+        absl::GetFlag(FLAGS_pk_fn),
+        absl::GetFlag(FLAGS_sk_fn),
+        std::move(dataset.first),
+        std::move(dataset.second),
+        absl::GetFlag(FLAGS_paillier_modulus_size),
+        absl::GetFlag(FLAGS_paillier_statistical_param),
+        absl::GetFlag(FLAGS_total_days)
+    );
 
-    // Receiver ServerRoundOne, execute ClientPostProcessing.
-    std::cout
-      << "Party 0: Received tree updates from the Party 1, now doing postprocessing..."
-      << std::endl;
-    auto client_post_processing_status =
-      party_zero->Handle(server_round_one, &invoke_server_handle_message_sink);
-    if (!client_post_processing_status.ok()) {
-      std::cerr << "Party 0::ExecuteProtocol: failed to ReEncryptSet: "
+    // setup connection with other party
+    std::unique_ptr<UPSIRpc::Stub> stub = UPSIRpc::NewStub(::grpc::CreateChannel(
+        absl::GetFlag(FLAGS_port),
+        ::grpc::experimental::LocalCredentials(
+            grpc_local_connect_type::LOCAL_TCP
+        )
+    ));
+    InvokeServerHandleClientMessageSink sink(std::move(stub));
+
+    // execute ClientPreprocessing (Updatable)
+    for (int i = 0; i <= absl::GetFlag(FLAGS_total_days); ++i) {
+        // If not Day 0, load a new day of data
+        if (i != 0) {
+            std::cout << "Party 0: Loading data..." << std::endl;
+            auto maybe_dataset = ::upsi::ReadClientDatasetFromFile(
+                    absl::GetFlag(FLAGS_client_data_file),
+                    &context
+                    );
+            if (!maybe_dataset.ok()) {
+                std::cerr << "Party 0::RunPartyZero: failed "
+                    << maybe_dataset.status()
+                    << std::endl;
+                return 1;
+            }
+            auto dataset = std::move(maybe_dataset.value());
+            // CALL UPDATE ELEMENT AND PAYLOAD
+            party_zero->UpdateElements(dataset.first);
+            party_zero->UpdatePayloads(dataset.second);
+        }
+        // Round One Starting
+        std::cout << "Party 0: Sending tree updates to Party 1."
+            << std::endl
+            << "Party 0: Waiting for Party 1's tree updates..." << std::endl;
+        auto client_round_one_status =
+            party_zero->ClientSendRoundOne(&sink);
+        if (!client_round_one_status.ok()) {
+            std::cerr << "Party 0::RunPartyZero: failed to Client Proprocessing: "
+                << client_round_one_status << std::endl;
+            return 1;
+        }
+
+        ServerMessage server_round_one =
+            sink.last_server_response();
+
+        // Receiver ServerRoundOne, execute ClientPostProcessing.
+        std::cout
+            << "Party 0: Received tree updates from the Party 1, now doing postprocessing..."
+            << std::endl;
+        auto client_post_processing_status =
+            party_zero->Handle(server_round_one, &sink);
+        if (!client_post_processing_status.ok()) {
+            std::cerr << "Party 0::RunPartyZero: failed to ReEncryptSet: "
                 << client_post_processing_status << std::endl;
-      return 1;
+            return 1;
+        }
     }
-  }
 
-  return 0;
+    return 0;
 }
 
 }  // namespace
 }  // namespace upsi
 
 int main(int argc, char** argv) {
-  absl::ParseCommandLine(argc, argv);
+    absl::ParseCommandLine(argc, argv);
 
-  return upsi::ExecuteProtocol();
+    return upsi::RunPartyZero();
 }

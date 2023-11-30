@@ -2,3 +2,7 @@
 bazel-*
 # Mac files
 .DS_Store
+
+# key files
+*.key
+*.pub
