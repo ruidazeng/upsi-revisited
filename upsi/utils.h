@@ -27,6 +27,8 @@ namespace upsi {
     #define CURVE_ID NID_X9_62_prime256v1
 	#define DEFAULT_NODE_SIZE 4
 
+    #define ELEMENT_STR_LENGTH 32
+
 	#define DEBUG 1
 
 	typedef elgamal::Ciphertext Encrypted_UPSI_Element;
@@ -60,7 +62,9 @@ namespace upsi {
 	int64_t NumericString2uint(const std::string &str);
 
 
-	std::string GetRandomNumericString(size_t length);
+	std::string GetRandomNumericString(size_t length, bool padding);
+    std::string GetRandomSetElement();
+    std::string GetRandomPadElement();
 }
 
 #endif

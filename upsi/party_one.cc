@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -102,6 +103,7 @@ Status RunPartyOne() {
 
     while (!service.protocol_finished()) { }
 
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     // shut down server
     grpc_server->Shutdown();
     grpc_server_thread.join();
