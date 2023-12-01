@@ -207,6 +207,7 @@ cc_library(
     hdrs = ["crypto_node.h"],
     deps = [
         ":utils",
+        ":match_proto",
         "//upsi/crypto:ec_commutative_cipher",
         "//upsi/crypto:paillier",
     ],

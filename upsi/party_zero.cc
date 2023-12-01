@@ -86,28 +86,26 @@ class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
         ServerMessage last_server_response_;
 };
 
-int RunPartyZero() {
+Status RunPartyZero() {
     Context context;
 
     // read in dataset
     std::cout << "[PartyZero] loading data" << std::endl;
-    auto dataset = ReadPartyZeroDataset(
-        absl::GetFlag(FLAGS_dir),
-        absl::GetFlag(FLAGS_prefix),
-        absl::GetFlag(FLAGS_days),
-        &context
+    ASSIGN_OR_RETURN(
+        auto dataset,
+        ReadPartyZeroDataset(
+            absl::GetFlag(FLAGS_dir),
+            absl::GetFlag(FLAGS_prefix),
+            absl::GetFlag(FLAGS_days),
+            &context
+        )
     );
-    if (!dataset.ok()) {
-        std::cerr << "[PartyZero] failed to read dataset " << std::endl;
-        std::cerr << dataset.status() << std::endl;
-        return 1;
-    }
 
     std::unique_ptr<PartyZeroImpl> party_zero = std::make_unique<PartyZeroImpl>(
         &context,
         absl::GetFlag(FLAGS_pk_fn),
         absl::GetFlag(FLAGS_sk_fn),
-        std::move(dataset.value()),
+        std::move(dataset),
         absl::GetFlag(FLAGS_paillier_modulus_size),
         absl::GetFlag(FLAGS_paillier_statistical_param),
         absl::GetFlag(FLAGS_days)
@@ -122,31 +120,19 @@ int RunPartyZero() {
     ));
     InvokeServerHandleClientMessageSink sink(std::move(stub));
 
-    // execute ClientPreprocessing (Updatable)
-    for (int i = 0; i <= absl::GetFlag(FLAGS_days); ++i) {
+    for (int i = 0; i < absl::GetFlag(FLAGS_days); i++) {
+        std::cout << "[PartyZero] sending request" << std::endl;
+        RETURN_IF_ERROR(party_zero->SendMessageI(&sink));
 
-        std::cout << "[PartyZero] sending tree updates" << std::endl;
-        auto client_round_one_status = party_zero->ClientSendRoundOne(&sink);
+        std::cout << "[PartyZero] waiting for response... ";
+        ServerMessage message_ii = sink.last_server_response();
+        std::cout << "done." << std::endl;
 
-        if (!client_round_one_status.ok()) {
-            std::cerr << "[PartyZero] failed client proprocessing" << std::endl;
-            std::cerr << client_round_one_status << std::endl;
-            return 1;
-        }
-
-        std::cout << "[PartyZero] waiting for party one's tree updates...";
-        ServerMessage server_round_one = sink.last_server_response();
-        std::cout << "[PartyZero] done." << std::endl;
-
-        auto client_post_processing_status = party_zero->Handle(server_round_one, &sink);
-        if (!client_post_processing_status.ok()) {
-            std::cerr << "Party 0::RunPartyZero: failed to ReEncryptSet: "
-                << client_post_processing_status << std::endl;
-            return 1;
-        }
+        std::cout << "[PartyZero] processing response" << std::endl;
+        RETURN_IF_ERROR(party_zero->Handle(message_ii, &sink));
     }
 
-    return 0;
+    return OkStatus();
 }
 
 }  // namespace
@@ -155,5 +141,17 @@ int RunPartyZero() {
 int main(int argc, char** argv) {
     absl::ParseCommandLine(argc, argv);
 
-    return upsi::RunPartyZero();
+    if (!DEBUG) { std::clog.setstate(std::ios_base::failbit); }
+
+    auto status = upsi::RunPartyZero();
+
+    std::clog.clear();
+
+    if (!status.ok()) {
+        std::cerr << "[PartyZero] failure " << std::endl;
+        std::cerr << status << std::endl;
+        return 1;
+    }
+
+    return 0;
 }

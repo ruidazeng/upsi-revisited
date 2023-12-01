@@ -20,7 +20,7 @@ class CryptoTree
         // int size = 0;
 
         // The node and stash size of the tree
-        int node_size;
+        size_t node_size;
         int stash_size;
 
         // The number of set elements in the tree (= size of set)
@@ -42,13 +42,13 @@ class CryptoTree
         /// @brief Tree Construction
         CryptoTree();
 
-        CryptoTree(int stash_size, int node_size = default_node_size);
+        CryptoTree(int stash_size, size_t node_size = DEFAULT_NODE_SIZE);
 
         int getDepth();
 
         // int getSize();
 
-        int getNodeSize();
+        size_t getNodeSize();
 
         int getStashSize();
 

@@ -65,14 +65,14 @@ class PartyOneImpl : public ProtocolServer {
         // 4. Update P0's tree
         // 5. Update P1's tree
         // 6. Generate {Path_i}_i
-        StatusOr<PartyOneMessage::ServerRoundOne> ServerProcessing(
-            const PartyZeroMessage::ClientRoundOne& client_message,
-            std::vector<std::string> server_elements
+        StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
+            const PartyZeroMessage::MessageI& msg,
+            std::vector<std::string> elements
         );
 
         // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
-        CryptoTree<UPSI_Element> my_crypto_tree;
-        CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
+        CryptoTree<UPSI_Element> my_tree;
+        CryptoTree<Encrypted_UPSI_Element> other_tree;
 
         Context* ctx_;  // not owned
         ECGroup* group;

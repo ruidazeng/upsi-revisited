@@ -22,8 +22,7 @@ message EncryptedNodes {
 }
 
 message OneNode{
-  optional bytes node_size = 1;
-  repeated EncryptedElement node_content = 2;
+  repeated EncryptedElement elements = 2;
 }
 
 // Holds a set of encrypted values.
@@ -38,7 +37,7 @@ message HashSet {
 // Holds an encrypted value and possibly encrypted associated data.
 message EncryptedElement {
   optional bytes elgamal_u = 1; // ElGamal element (u, e)
-  optional bytes elgamal_e = 2; 
+  optional bytes elgamal_e = 2;
   optional bytes associated_data = 3;
 }
 

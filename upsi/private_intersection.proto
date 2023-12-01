@@ -24,7 +24,7 @@ import "upsi/match.proto";
 message PartyZeroMessage {
   oneof message_content {
     //StartProtocolRequest start = 1;
-    ClientRoundOne client_round_one = 1;
+    MessageI message_i = 1;
   }
 
   // For initiating the protocol.
@@ -33,7 +33,7 @@ message PartyZeroMessage {
 
   // Message containing the client's set encrypted under the client's keys, and
   // the server's set re-encrypted with the client's key, and shuffled.
-  message ClientRoundOne {
+  message MessageI {
     optional HashSet hash_set = 1;
     optional EncryptedNodes encrypted_nodes = 2;
     optional EncryptedSet encrypted_set = 3;
@@ -46,13 +46,13 @@ message PartyZeroMessage {
 message PartyOneMessage {
   oneof message_content {
     //ServerExchange server_key_exchange = 1;
-    ServerRoundOne server_round_one = 1;
+    MessageII message_ii = 1;
   }
 
   // Server key exchange - Threshold ElGamal
   message ServerExchange { }
 
-  message ServerRoundOne {
+  message MessageII {
     optional HashSet hash_set = 1;
     optional EncryptedNodes encrypted_nodes = 2;
     optional EncryptedSet encrypted_set = 3;

@@ -134,6 +134,22 @@ StatusOr<elgamal::Ciphertext> ElGamalEncrypter::ReRandomize(
   return {{std::move(u), std::move(e)}};
 }
 
+Status ElGamalEncrypter::Serialize(const elgamal::Ciphertext& ciphertext, EncryptedElement* ee) {
+    *ee->mutable_elgamal_u() = ciphertext.u.ToBytesCompressed().value();
+    *ee->mutable_elgamal_e() = ciphertext.e.ToBytesCompressed().value();
+    return OkStatus();
+}
+
+StatusOr<elgamal::Ciphertext> ElGamalEncrypter::Deserialize(const EncryptedElement ee) {
+    ASSIGN_OR_RETURN(ECPoint u, ec_group_->CreateECPoint(ee.elgamal_u()));
+    ASSIGN_OR_RETURN(ECPoint e, ec_group_->CreateECPoint(ee.elgamal_e()));
+    return elgamal::Ciphertext{std::move(u), std::move(e)};
+}
+
+BigNum ElGamalEncrypter::CreateRandomMask() const {
+    return ec_group_->GeneratePrivateKey();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // PRIVATE ELGAMAL
 ////////////////////////////////////////////////////////////////////////////////
