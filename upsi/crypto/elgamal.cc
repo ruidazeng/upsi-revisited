@@ -118,8 +118,8 @@ StatusOr<elgamal::Ciphertext> ElGamalEncrypter::Encrypt(
 }
 
 StatusOr<elgamal::Ciphertext> ElGamalEncrypter::Encrypt(const BigNum& m) const {
-    ASSIGN_OR_RETURN(ECPoint g, ec_group_->GetPointAtInfinity());
-    ASSIGN_OR_RETURN(ECPoint point, g.Mul(m));
+    //ASSIGN_OR_RETURN(ECPoint g, ec_group_->GetPointAtInfinity());
+    ASSIGN_OR_RETURN(ECPoint point, this->public_key_->g.Mul(m));
     return Encrypt(point);
 }
 
