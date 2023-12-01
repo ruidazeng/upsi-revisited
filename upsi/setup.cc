@@ -12,10 +12,10 @@ ABSL_FLAG(std::string, dir, "data/", "name of directory for dataset files");
 ABSL_FLAG(std::string, p0_fn, "party_zero", "prefix for party one's files");
 ABSL_FLAG(std::string, p1_fn, "party_one", "prefix for party zero's files");
 ABSL_FLAG(std::string, shared_fn, "shared", "prefix for shared key file");
-ABSL_FLAG(int64_t, days, 10, "number of days the protocol is running for");
-ABSL_FLAG(int64_t, p0_size, 250, "total elements in party one's set across all days");
-ABSL_FLAG(int64_t, p1_size, 250, "total elements in party zero's set across all days");
-ABSL_FLAG(int64_t, shared_size, 100, "total elements in intersection across all days");
+ABSL_FLAG(int64_t, days, 1, "number of days the protocol is running for");
+ABSL_FLAG(int64_t, p0_size, 10, "total elements in party one's set across all days");
+ABSL_FLAG(int64_t, p1_size, 10, "total elements in party zero's set across all days");
+ABSL_FLAG(int64_t, shared_size, 10, "total elements in intersection across all days");
 ABSL_FLAG(int64_t, max_value, 1000, "maximum number for UPSI-SUM values");
 
 Status GenerateDailyData(int day, int64_t p0_size, int64_t p1_size, int64_t shared_size) {
@@ -123,7 +123,7 @@ Status GenerateKeys() {
         elgamal_key_util::ComputeJointElGamalPublicKey(
             CURVE_ID,
             {
-                absl::GetFlag(FLAGS_p1_fn) + ".pub",
+                absl::GetFlag(FLAGS_p0_fn) + ".pub",
                 absl::GetFlag(FLAGS_p1_fn) + ".pub"
             },
             absl::GetFlag(FLAGS_shared_fn) + ".pub"

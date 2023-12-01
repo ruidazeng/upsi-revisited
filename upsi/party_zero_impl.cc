@@ -81,6 +81,7 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroImpl::GenerateMessageI(
     std::vector<std::string> elements
 ) {
     PartyZeroMessage::MessageI msg;
+    
 
     std::clog << "[PartyZeroImpl] inserting our into tree" << std::endl;
     std::vector<std::string> hsh;
@@ -110,7 +111,9 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroImpl::GenerateMessageI(
     std::clog << "[PartyZeroImpl] computing (y - x)" << std::endl;
 
     for (size_t i = 0; i < elements.size(); ++i) {
+        //std::cerr<< "path...\n";
         std::vector<Ciphertext> path = this->other_tree.getPath(elements[i]);
+        //std::cerr<< "path got\n";
         BigNum asnumber = this->ctx_->CreateBigNum(NumericString2uint(elements[i]));
         ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(asnumber));
         ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
@@ -139,21 +142,24 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroImpl::GenerateMessageI(
 // 4. Payload Processing
 Status PartyZeroImpl::ClientPostProcessing(const PartyOneMessage::MessageII& server_message) {
     // 1. Reconstruct ElGamal ciphertext
-    std::vector<Ciphertext> encrypted_element;
-    for (const EncryptedElement& element :
-            server_message.encrypted_set().elements()) {
-        ASSIGN_OR_RETURN(ECPoint u, this->group->CreateECPoint(element.elgamal_u()));
-        ASSIGN_OR_RETURN(ECPoint e, this->group->CreateECPoint(element.elgamal_e()));
-        encrypted_element.push_back(Ciphertext{std::move(u), std::move(e)});
+    std::vector<elgamal::Ciphertext> candidates;
+    for (const EncryptedElement& element : server_message.encrypted_set().elements()) {
+        ASSIGN_OR_RETURN(Ciphertext ciphertext, encrypter->Deserialize(element));
+        candidates.push_back(std::move(ciphertext));
     }
+    
+    //std::cerr << "candidates count: " << candidates.size() << std::endl;
 
     int ans = 0;
     // 1. Full decryption on a partial decryption (ElGamal/Paillier)
     std::vector<Ciphertext> decrypted_element;
-    for (size_t i = 0; i < encrypted_element.size(); i++) {
-        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(encrypted_element[i]));
+    for (size_t i = 0; i < candidates.size(); i++) {
+        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i]));
         // Check the plaintext
-        if (plaintext.IsPointAtInfinity()) ++ans;
+        if (plaintext.IsPointAtInfinity()) {
+        	//std::cerr << i << std::endl;
+        	++ans;
+        }
     }
 
     std::cout<< ans << std::endl;
@@ -166,19 +172,20 @@ Status PartyZeroImpl::ClientPostProcessing(const PartyOneMessage::MessageII& ser
         other_hsh.push_back(std::move(cur_hsh));
     }
 
-     std::vector<CryptoNode<elgamal::Ciphertext> > new_nodes;
+    std::vector<CryptoNode<elgamal::Ciphertext>> new_nodes;
     for (const OneNode& cur_node : server_message.encrypted_nodes().nodes()) {
-        CryptoNode<elgamal::Ciphertext> *cur_new_node = new CryptoNode<elgamal::Ciphertext>(DEFAULT_NODE_SIZE);
+        auto* node = new CryptoNode<elgamal::Ciphertext>(DEFAULT_NODE_SIZE);
         for (const EncryptedElement& element : cur_node.elements()) {
-        ASSIGN_OR_RETURN(ECPoint u, this->group->CreateECPoint(element.elgamal_u()));
-        ASSIGN_OR_RETURN(ECPoint e, this->group->CreateECPoint(element.elgamal_e()));
-        auto ciphertxt = elgamal::Ciphertext{std::move(u), std::move(e)};
-        cur_new_node->addElement(ciphertxt);
-    }
-        new_nodes.push_back(std::move(*cur_new_node));
+            ASSIGN_OR_RETURN(
+                auto ciphertext,
+                this->encrypter->Deserialize(element)
+            );
+            node->addElement(ciphertext);
+        }
+        new_nodes.push_back(std::move(*node));
     }
     this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
-
+    
     // 4. Payload Processing - TODO
     // TODO - PRINT RESULTS????
     return OkStatus();
