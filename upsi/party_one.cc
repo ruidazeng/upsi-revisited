@@ -56,28 +56,26 @@ ABSL_FLAG(int32_t, paillier_statistical_param, 100, "Paillier statistical parame
 ABSL_FLAG(int, days, 10, "total days the protocol will run for");
 
 
-int RunPartyOne() {
+Status RunPartyOne() {
     Context context;
 
     // read in dataset
     std::cout << "[PartyOne] loading data... " << std::endl;
-    auto maybe_dataset = ReadPartyOneDataset(
-        absl::GetFlag(FLAGS_dir),
-        absl::GetFlag(FLAGS_prefix),
-        absl::GetFlag(FLAGS_days)
+    ASSIGN_OR_RETURN(
+        auto dataset,
+        ReadPartyOneDataset(
+            absl::GetFlag(FLAGS_dir),
+            absl::GetFlag(FLAGS_prefix),
+            absl::GetFlag(FLAGS_days)
+        )
     );
-    if (!maybe_dataset.ok()) {
-        std::cerr << "[PartyOne] failed to read datasets " << std::endl;
-        std::cerr << maybe_dataset.status() << std::endl;
-        return 1;
-    }
     std::cout << "done." << std::endl;
 
     std::unique_ptr<ProtocolServer> party_one = std::make_unique<PartyOneImpl>(
         &context,
         absl::GetFlag(FLAGS_pk_fn),
         absl::GetFlag(FLAGS_sk_fn),
-        std::move(maybe_dataset.value()),
+        std::move(dataset),
         absl::GetFlag(FLAGS_paillier_modulus_size),
         absl::GetFlag(FLAGS_paillier_statistical_param),
         absl::GetFlag(FLAGS_days)
@@ -109,11 +107,23 @@ int RunPartyOne() {
     grpc_server_thread.join();
     std::cout << "[PartyOne] completed protocol and shut down" << std::endl;
 
-    return 0;
+    return OkStatus();
 }
 
 int main(int argc, char** argv) {
     absl::ParseCommandLine(argc, argv);
 
-    return RunPartyOne();
+    if (!DEBUG) { std::clog.setstate(std::ios_base::failbit); }
+
+    auto status = RunPartyOne();
+
+    std::clog.clear();
+
+    if (!status.ok()) {
+        std::cerr << "[PartyOne] failure " << std::endl;
+        std::cerr << status << std::endl;
+        return 1;
+    }
+
+    return 0;
 }

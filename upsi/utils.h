@@ -25,8 +25,8 @@
 namespace upsi {
 
     #define CURVE_ID NID_X9_62_prime256v1
-	#define default_node_size 4
-	
+	#define DEFAULT_NODE_SIZE 4
+
 	#define DEBUG 1
 
 	typedef elgamal::Ciphertext Encrypted_UPSI_Element;

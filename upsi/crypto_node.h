@@ -1,50 +1,54 @@
 #ifndef CryptoNode_H
 #define CryptoNode_H
 
+#include "upsi/match.pb.h"
 #include "upsi/utils.h"
 
 namespace upsi {
 
 /*
-Type T can be a tuple for element and payload
-	or be one type for element only when there's no payload
-*/
+   Type T can be a tuple for element and payload
+   or be one type for element only when there's no payload
+   */
 template<typename T>
-class CryptoNode
-{
-    public:
-        std::vector<T> node;
-        int node_size;
+    class CryptoNode
+    {
+        public:
+            std::vector<T> node;
+            size_t node_size;
 
+            CryptoNode(size_t node_size = DEFAULT_NODE_SIZE);
 
-        // Default constructor
-        // CryptoNode();
+            // Get node size
+            //int getNodeSize();
 
+            // Get the node vector
+            //std::vector<T> getNode();
 
-		//CryptoNode(const CryptoNode&) = delete;
-		//CryptoNode operator=(const CryptoNode&) = delete;
+            void clear();
 
-        // Initialize CryptoNode with node size
-        CryptoNode(int node_size = default_node_size);
+            /**
+             * create a copy of this node
+             */
+            CryptoNode<T> copy();
 
-        // Get node size
-        //int getNodeSize();
+            void copyElementsTo(const std::vector<T> &elem);
 
-        // Get the node vector
-        //std::vector<T> getNode();
+            // Add an element to the node vector, return true if success, false if it's already full
+            bool addElement(T &elem);
 
-        void clear();
+            // pad with padding elements to the node_size
+            void pad();
 
-        /**
-         * create a copy of this node
-         */
-        CryptoNode<T> copy();
+            // create a node with the elements in this node but encrypted
+            StatusOr<CryptoNode<elgamal::Ciphertext>> encrypt(
+                Context* ctx,
+                ElGamalEncrypter* encrypter
+            );
 
-        void copyElementsTo(const std::vector<T> &elem);
-
-        // Add an element to the node vector, return true if success, false if it's already full
-        bool addElement(T &elem);
-};
+            // serialize the node to be sent over the network
+            Status serialize(OneNode* obj);
+    };
 
 } // namespace upsi
 

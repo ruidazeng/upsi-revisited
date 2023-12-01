@@ -11,7 +11,7 @@ template<typename T>
 CryptoTree<T>::CryptoTree() {};
 
 template<typename T>
-CryptoTree<T>::CryptoTree(int stash_size, int node_size) {
+CryptoTree<T>::CryptoTree(int stash_size, size_t node_size) {
     this->node_size = node_size;
     this->stash_size = stash_size;
 
@@ -31,7 +31,7 @@ int CryptoTree<T>::getDepth() {
 }
 
 template<typename T>
-int CryptoTree<T>::getNodeSize() {
+size_t CryptoTree<T>::getNodeSize() {
     return this->node_size;
 }
 

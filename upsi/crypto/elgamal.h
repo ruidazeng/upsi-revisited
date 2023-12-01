@@ -42,6 +42,7 @@
 
 #include "upsi/crypto/ec_group.h"
 #include "upsi/crypto/ec_point.h"
+#include "upsi/match.pb.h"
 #include "upsi/util/status.inc"
 
 namespace upsi {
@@ -127,6 +128,15 @@ class ElGamalEncrypter {
   // is an encryption of the same message as before.
   StatusOr<elgamal::Ciphertext> ReRandomize(
       const elgamal::Ciphertext& elgamal_ciphertext) const;
+
+  // serialize the ciphertext to be sent over the network
+  Status Serialize(const elgamal::Ciphertext& ciphertext, EncryptedElement* ee);
+
+  // deserialize the ciphertext that was sent over the network
+  StatusOr<elgamal::Ciphertext> Deserialize(const EncryptedElement ee);
+
+  // generate random mask
+  BigNum CreateRandomMask() const;
 
   // Returns a pointer to the owned ElGamal public key
   const elgamal::PublicKey* getPublicKey() const { return public_key_.get(); }

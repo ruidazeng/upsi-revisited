@@ -55,14 +55,15 @@ class PartyZeroImpl : public ProtocolClient {
 
         ~PartyZeroImpl() override = default;
 
-        // Initiate ClientPreprocessing. Every new day, call this function so
-        // P_0 will send ClientRoundOne to server.
-        Status ClientSendRoundOne(MessageSink<ClientMessage>* client_message_sink);
+        /**
+         * send the first message of the day
+         */
+        Status SendMessageI(MessageSink<ClientMessage>* sink);
 
         // Executes the next Client round and creates a new server request, which must
         // be sent to the server unless the protocol is finished.
         //
-        // If the ServerMessage is ServerRoundOne, again nothing will be sent on
+        // If the ServerMessage is MessageII, again nothing will be sent on
         // the message sink, and the client will call ClientPostProcessing to complete
         // the day worth of UPSI.
         //
@@ -80,9 +81,9 @@ class PartyZeroImpl : public ProtocolClient {
         // 2. Generate {Path_i}_i
         // 3. ElGamal Encryptor for elements, Threshold Paillier Encryptor for payloads
         // 4. Generate Client Round One message (Party 0) to send to Party 1
-        StatusOr<PartyZeroMessage::ClientRoundOne> ClientPreProcessing(
-                std::vector<std::string> elements
-                );
+        StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
+            std::vector<std::string> elements
+        );
 
         // Complete client side processing (for the same day of UPSI)
         // 1. Partial decryption (ElGamal/Paillier)
@@ -90,11 +91,11 @@ class PartyZeroImpl : public ProtocolClient {
         // 3. Update P1's tree
         // 4. Payload Processing
         // TODO: PRINT RESULTS???
-        Status ClientPostProcessing(const PartyOneMessage::ServerRoundOne& server_message);
+        Status ClientPostProcessing(const PartyOneMessage::MessageII& server_message);
 
         // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
-        CryptoTree<UPSI_Element> my_crypto_tree;
-        CryptoTree<Encrypted_UPSI_Element> other_crypto_tree;
+        CryptoTree<UPSI_Element> my_tree;
+        CryptoTree<Encrypted_UPSI_Element> other_tree;
 
         Context* ctx_;  // not owned
         ECGroup* group;
