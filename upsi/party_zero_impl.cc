@@ -81,7 +81,7 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroImpl::GenerateMessageI(
     std::vector<std::string> elements
 ) {
     PartyZeroMessage::MessageI msg;
-    
+
 
     std::clog << "[PartyZeroImpl] inserting our into tree" << std::endl;
     std::vector<std::string> hsh;
@@ -147,7 +147,7 @@ Status PartyZeroImpl::ClientPostProcessing(const PartyOneMessage::MessageII& ser
         ASSIGN_OR_RETURN(Ciphertext ciphertext, encrypter->Deserialize(element));
         candidates.push_back(std::move(ciphertext));
     }
-    
+
     //std::cerr << "candidates count: " << candidates.size() << std::endl;
 
     int ans = 0;
@@ -185,7 +185,7 @@ Status PartyZeroImpl::ClientPostProcessing(const PartyOneMessage::MessageII& ser
         new_nodes.push_back(std::move(*node));
     }
     this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
-    
+
     // 4. Payload Processing - TODO
     // TODO - PRINT RESULTS????
     return OkStatus();
@@ -209,16 +209,15 @@ Status PartyZeroImpl::Handle(const ServerMessage& response, MessageSink<ClientMe
         if (!postprocess_status.ok()) {
             return postprocess_status;
         }
+    } else {
+        return InvalidArgumentError(
+            "[PartyZeroImpl] received a party one message of unknown type"
+        );
     }
 
-    // Mark the protocol as finished here.
-    // new "protocol_finished" condition based on the number of days n for updatable
-    if (this->current_day >= this->total_days) {
-        this->protocol_finished_ = true;
-        return OkStatus();
-    }
+    protocol_finished_ = (this->current_day == this->total_days);
 
-    return InvalidArgumentError("[PartyZeroImpl] received a party one message of unknown type");
+    return OkStatus();
 }
 
 }  // namespace upsi

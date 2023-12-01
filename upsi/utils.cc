@@ -86,13 +86,26 @@ int64_t NumericString2uint(const std::string &str) { //str should be fixed lengt
 	return x;
 }
 
-std::string GetRandomNumericString(size_t length) {
+std::string GetRandomNumericString(size_t length, bool padding) {
 	std::string output;
-	for (size_t i = 0; i < length; i++) {
+    if (padding) {
+		absl::StrAppend(&output, "1");
+    } else {
+		absl::StrAppend(&output, "0");
+    }
+	for (size_t i = 1; i < length; i++) {
 		std::string next_char(1, rand() % 10 + '0');
 		absl::StrAppend(&output, next_char);
 	}
 	return output;
+}
+
+std::string GetRandomSetElement() {
+    return GetRandomNumericString(ELEMENT_STR_LENGTH, false);
+}
+
+std::string GetRandomPadElement() {
+    return GetRandomNumericString(ELEMENT_STR_LENGTH, true);
 }
 
 }

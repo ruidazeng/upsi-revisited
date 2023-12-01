@@ -64,7 +64,7 @@ bool CryptoNode<T>::addElement(T &elem) {
 template<>
 void CryptoNode<std::string>::pad() {
     while (node.size() < node_size) {
-        node.push_back(GetRandomNumericString(32));
+        node.push_back(GetRandomPadElement());
     }
 }
 
