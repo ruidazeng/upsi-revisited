@@ -93,7 +93,6 @@ StatusOr<PartyOneMessage::MessageII> PartyOneImpl::GenerateMessageII(
     }
     this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
 
-
     std::clog << "[PartyOneImpl] combining candidates" << std::endl;
     std::vector<elgamal::Ciphertext> candidates;
     for (const EncryptedElement& element : request.encrypted_set().elements()) {
@@ -117,7 +116,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOneImpl::GenerateMessageII(
     std::clog << "[PartyOneImpl] shuffling candidates" << std::endl;
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::shuffle(candidates.begin(), candidates.end(), gen);
+    std::shuffle(candidates.begin(), candidates.end(), gen); 
 
     std::clog << "[PartyOneImpl] masking candidates with random element" << std::endl;
     for (size_t i = 0; i < candidates.size(); i++) {

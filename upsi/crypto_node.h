@@ -32,7 +32,7 @@ template<typename T>
              */
             CryptoNode<T> copy();
 
-            void copyElementsTo(const std::vector<T> &elem);
+            void copyElementsTo(std::vector<T> &elem);
 
             // Add an element to the node vector, return true if success, false if it's already full
             bool addElement(T &elem);

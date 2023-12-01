@@ -32,16 +32,16 @@ void CryptoNode<T>::clear() {
 
 template<typename T>
 CryptoNode<T> CryptoNode<T>::copy() {
-    CryptoNode<T> copy;
+    CryptoNode<T> copy(this->node_size);
     copyElementsTo(copy.node);
     return copy;
 }
 
 template<typename T>
-void CryptoNode<T>::copyElementsTo(const std::vector<T> &elem) {
-	int now_cnt = elem.size();
+void CryptoNode<T>::copyElementsTo(std::vector<T> &elem) {
+	int now_cnt = this->node.size();
 	for (int i = 0; i < now_cnt; ++i) {
-		node.push_back(std::move(elementCopy(elem[i])));
+		elem.push_back(elementCopy(this->node[i]));
 	}
 	//elem.insert(elem.end(), node.begin(), node.end());
 }
@@ -54,7 +54,7 @@ bool CryptoNode<T>::addElement(T &elem) {
         return false;
     }
     else {
-        this->node.push_back(std::move(elem));
+        this->node.push_back(std::move(elementCopy(elem)));
         return true;
     }
 }
