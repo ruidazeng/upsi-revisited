@@ -1,5 +1,8 @@
 #include "utils.h"
 
+#include <chrono>
+#include <iomanip>
+
 namespace upsi {
 
 StatusOr<ECPoint> exponentiate(ECGroup* group, const BigNum& m) {
@@ -106,6 +109,18 @@ std::string GetRandomSetElement() {
 
 std::string GetRandomPadElement() {
     return GetRandomNumericString(ELEMENT_STR_LENGTH, true);
+}
+
+Timer::Timer(std::string msg, std::string color) : message(msg), color(color) {
+    start = std::chrono::high_resolution_clock::now();
+}
+
+void Timer::stop() {
+    auto stop = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = stop - start;
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << color << message << " (s)\t: ";
+    std::cout << elapsed.count() << RESET << std::endl;
 }
 
 }

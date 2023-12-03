@@ -61,7 +61,7 @@ Status RunPartyOne() {
     Context context;
 
     // read in dataset
-    std::cout << "[PartyOne] loading data... " << std::endl;
+    std::clog << "[PartyOne] loading data... " << std::endl;
     ASSIGN_OR_RETURN(
         auto dataset,
         ReadPartyOneDataset(
@@ -70,7 +70,7 @@ Status RunPartyOne() {
             absl::GetFlag(FLAGS_days)
         )
     );
-    std::cout << "done." << std::endl;
+    std::clog << "done." << std::endl;
 
     std::unique_ptr<ProtocolServer> party_one = std::make_unique<PartyOneImpl>(
         &context,
@@ -85,6 +85,9 @@ Status RunPartyOne() {
     // setup connection
     UPSIRpcImpl service(std::move(party_one));
     ::grpc::ServerBuilder builder;
+    builder.SetMaxSendMessageSize(1024 * 1024 * 1024);
+    builder.SetMaxMessageSize(1024 * 1024 * 1024);
+    builder.SetMaxReceiveMessageSize(1024 * 1024 * 1024);
     builder.AddListeningPort(
         absl::GetFlag(FLAGS_port),
         ::grpc::experimental::LocalServerCredentials(
