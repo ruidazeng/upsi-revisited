@@ -26,6 +26,26 @@ bazel build //upsi:all
 
 Before running the protocol, first run the `setup` binary to generate encryption keys for the parties.
 
+Make sure the directory has a folder named `data` which holds all the generated dummy data.
+
+```bash
+mkdir data
+./bazel-bin/upsi/setup
+```
+
+To run the protocol, have two instances (terminals) open. First we initialize Party 1 using:
+
+```bash
+./bazel-bin/upsi/party_one
+```
+
+Then we initialize Party 0 using:
+```bash
+./bazel-bin/upsi/party_zero
+```
+
+Note that the parameters (such as the number of days) for the experiments can be edited in `party_zero.cc` and `party_one.cc`.
+
 ## Threshold Paillier
 Two party threshold Paillier is in `upsi/crypto/threshold_paillier.h`.
 
