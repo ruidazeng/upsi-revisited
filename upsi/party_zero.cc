@@ -67,70 +67,86 @@ class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
 
         Status Send(const ClientMessage& message) override {
             ::grpc::ClientContext client_context;
-            ::grpc::Status grpc_status =
-                stub_->Handle(&client_context, message, &last_server_response_);
+            client_context.set_deadline(std::chrono::system_clock::time_point::max());
+
+            ::grpc::Status grpc_status = stub_->Handle(
+                &client_context,
+                message,
+                &last_server_response_
+            );
             if (grpc_status.ok()) {
                 return OkStatus();
             } else {
-                return InternalError(absl::StrCat(
-                            "GrpcClientMessageSink: Failed to send message, error code: ",
-                            grpc_status.error_code(),
-                            ", error_message: ", grpc_status.error_message()));
+                return InternalError(
+                    absl::StrCat(
+                        "[ClientMessageSink] failed to send message, error code: ",
+                        grpc_status.error_code(),
+                        ", error_message: \n", grpc_status.error_message()
+                    )
+                );
             }
         }
 
         const ServerMessage& last_server_response() { return last_server_response_; }
 
-    private:
-        std::unique_ptr<UPSIRpc::Stub> stub_;
-        ServerMessage last_server_response_;
-};
+        private:
+            std::unique_ptr<UPSIRpc::Stub> stub_;
+            ServerMessage last_server_response_;
+    };
 
-Status RunPartyZero() {
-    Context context;
+    Status RunPartyZero() {
+        Context context;
 
-    // read in dataset
-    std::cout << "[PartyZero] loading data" << std::endl;
-    ASSIGN_OR_RETURN(
-        auto dataset,
-        ReadPartyZeroDataset(
-            absl::GetFlag(FLAGS_dir),
-            absl::GetFlag(FLAGS_prefix),
-            absl::GetFlag(FLAGS_days),
-            &context
-        )
-    );
+        // read in dataset
+        std::cout << "[PartyZero] loading data" << std::endl;
+        ASSIGN_OR_RETURN(
+            auto dataset,
+            ReadPartyZeroDataset(
+                absl::GetFlag(FLAGS_dir),
+                absl::GetFlag(FLAGS_prefix),
+                absl::GetFlag(FLAGS_days),
+                &context
+            )
+        );
 
-    std::unique_ptr<PartyZeroImpl> party_zero = std::make_unique<PartyZeroImpl>(
-        &context,
-        absl::GetFlag(FLAGS_pk_fn),
-        absl::GetFlag(FLAGS_sk_fn),
-        std::move(dataset),
-        absl::GetFlag(FLAGS_paillier_modulus_size),
-        absl::GetFlag(FLAGS_paillier_statistical_param),
-        absl::GetFlag(FLAGS_days)
-    );
+        std::unique_ptr<PartyZeroImpl> party_zero = std::make_unique<PartyZeroImpl>(
+            &context,
+            absl::GetFlag(FLAGS_pk_fn),
+            absl::GetFlag(FLAGS_sk_fn),
+            std::move(dataset),
+            absl::GetFlag(FLAGS_paillier_modulus_size),
+            absl::GetFlag(FLAGS_paillier_statistical_param),
+            absl::GetFlag(FLAGS_days)
+        );
 
-    // setup connection with other party
-    std::unique_ptr<UPSIRpc::Stub> stub = UPSIRpc::NewStub(::grpc::CreateChannel(
-        absl::GetFlag(FLAGS_port),
-        ::grpc::experimental::LocalCredentials(
-            grpc_local_connect_type::LOCAL_TCP
-        )
-    ));
-    InvokeServerHandleClientMessageSink sink(std::move(stub));
+        ::grpc::ChannelArguments args;
+        args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, 1024 * 1024 * 1024);
 
-    for (int i = 0; i < absl::GetFlag(FLAGS_days); i++) {
-        std::cout << "[PartyZero] sending request" << std::endl;
-        RETURN_IF_ERROR(party_zero->SendMessageI(&sink));
+        // setup connection with other party
+        std::unique_ptr<UPSIRpc::Stub> stub = UPSIRpc::NewStub(::grpc::CreateCustomChannel(
+            absl::GetFlag(FLAGS_port),
+            ::grpc::experimental::LocalCredentials(
+                grpc_local_connect_type::LOCAL_TCP
+            ),
+            args
+        ));
+        InvokeServerHandleClientMessageSink sink(std::move(stub));
 
-        std::cout << "[PartyZero] waiting for response... ";
-        ServerMessage message_ii = sink.last_server_response();
-        std::cout << "done." << std::endl;
+        Timer timer("[PartyZero] total runtime");
+        for (int i = 0; i < absl::GetFlag(FLAGS_days); i++) {
+            std::clog << "[PartyZero] sending request" << std::endl;
+            RETURN_IF_ERROR(party_zero->SendMessageI(&sink));
 
-        std::cout << "[PartyZero] processing response" << std::endl;
-        RETURN_IF_ERROR(party_zero->Handle(message_ii, &sink));
+            std::clog << "[PartyZero] waiting for response... ";
+            ServerMessage message_ii = sink.last_server_response();
+            std::clog << "done." << std::endl;
+
+            std::clog << "[PartyZero] processing response" << std::endl;
+            RETURN_IF_ERROR(party_zero->Handle(message_ii, &sink));
     }
+    timer.stop();
+
+    std::cout << "[PartyZero] cardinality = " << party_zero->cardinality << std::endl;
 
     return OkStatus();
 }

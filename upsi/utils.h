@@ -6,21 +6,30 @@
 #include "upsi/crypto/ec_commutative_cipher.h"
 #include "upsi/crypto/paillier.h"
 
-#include <bitset>
-#include <vector>
-#include <cmath>
-#include <set>
-#include <iostream>
-//#include <strstream>
-#include <sstream>
 #include <algorithm>
+#include <bitset>
+#include <chrono>
+#include <cmath>
+#include <iostream>
 #include <iterator>
 #include <memory>
-#include <string>
-#include <utility>
-#include <random>
 #include <ostream>
+#include <random>
+#include <set>
+#include <sstream>
+#include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
+
+// for printing to the command line in colors
+#define RED    "\033[0;31m"
+#define GREEN  "\033[0;32m"
+#define YELLOW "\033[0;33m"
+#define BLUE   "\033[0;34m"
+#define CYAN   "\033[0;36m"
+#define WHITE  "\033[0;37m"
+#define RESET  "\033[0m"
 
 namespace upsi {
 
@@ -65,6 +74,19 @@ namespace upsi {
 	std::string GetRandomNumericString(size_t length, bool padding);
     std::string GetRandomSetElement();
     std::string GetRandomPadElement();
+
+    /**
+     * class to unify time benchmarking
+     */
+    class Timer {
+        public:
+            Timer(std::string msg, std::string color = WHITE);
+            void stop();
+        private:
+            std::string message;
+            std::string color;
+            std::chrono::time_point<std::chrono::high_resolution_clock> start;
+    };
 }
 
 #endif

@@ -75,6 +75,8 @@ class PartyZeroImpl : public ProtocolClient {
 
         bool protocol_finished() override { return protocol_finished_; }
 
+        int64_t cardinality = 0;
+
     private:
         // Start client side processing (for a new day of UPSI)
         // 1. Insert into my own tree

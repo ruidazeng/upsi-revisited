@@ -80,10 +80,11 @@ Status PartyZeroImpl::SendMessageI(MessageSink<ClientMessage>* sink) {
 StatusOr<PartyZeroMessage::MessageI> PartyZeroImpl::GenerateMessageI(
     std::vector<std::string> elements
 ) {
+    Timer timer("[Timer] generate MessageI" );
     PartyZeroMessage::MessageI msg;
 
-
     std::clog << "[PartyZeroImpl] inserting our into tree" << std::endl;
+    Timer insert("[Timer] our tree update");
     std::vector<std::string> hsh;
     std::vector<CryptoNode<std::string>> plaintext_nodes = this->my_tree.insert(elements, hsh);
     std::vector<CryptoNode<Ciphertext>> encrypted_nodes(plaintext_nodes.size());
@@ -107,8 +108,10 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroImpl::GenerateMessageI(
         OneNode* onenode = msg.mutable_encrypted_nodes()->add_nodes();
         RETURN_IF_ERROR(enode.serialize(onenode));
     }
+    insert.stop();
 
     std::clog << "[PartyZeroImpl] computing (y - x)" << std::endl;
+    Timer compute("[Timer] computing (y - x)");
 
     for (size_t i = 0; i < elements.size(); ++i) {
         //std::cerr<< "path...\n";
@@ -132,6 +135,8 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroImpl::GenerateMessageI(
         }
     }
 
+    compute.stop();
+    timer.stop();
     return msg;
 }
 
@@ -141,6 +146,9 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroImpl::GenerateMessageI(
 // 3. Update P1's tree
 // 4. Payload Processing
 Status PartyZeroImpl::ClientPostProcessing(const PartyOneMessage::MessageII& server_message) {
+    Timer timer("[Timer] process MessageII" );
+
+    Timer results("[Timer] get cardinality");
     // 1. Reconstruct ElGamal ciphertext
     std::vector<elgamal::Ciphertext> candidates;
     for (const EncryptedElement& element : server_message.encrypted_set().elements()) {
@@ -148,22 +156,12 @@ Status PartyZeroImpl::ClientPostProcessing(const PartyOneMessage::MessageII& ser
         candidates.push_back(std::move(ciphertext));
     }
 
-    //std::cerr << "candidates count: " << candidates.size() << std::endl;
-
-    int ans = 0;
-    // 1. Full decryption on a partial decryption (ElGamal/Paillier)
-    std::vector<Ciphertext> decrypted_element;
     for (size_t i = 0; i < candidates.size(); i++) {
         ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i]));
-        // Check the plaintext
-        if (plaintext.IsPointAtInfinity()) {
-        	//std::cerr << i << std::endl;
-        	++ans;
-        }
+        if (plaintext.IsPointAtInfinity()) { this->cardinality++; }
     }
-
-    std::cout<< ans << std::endl;
-
+    results.stop();
+    Timer update("[Timer] their tree update");
 
     // 3. Update P1's tree
     std::vector<std::string> other_hsh;
@@ -185,6 +183,9 @@ Status PartyZeroImpl::ClientPostProcessing(const PartyOneMessage::MessageII& ser
         new_nodes.push_back(std::move(*node));
     }
     this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
+
+    update.stop();
+    timer.stop();
 
     // 4. Payload Processing - TODO
     // TODO - PRINT RESULTS????

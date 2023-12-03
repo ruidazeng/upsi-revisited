@@ -69,10 +69,12 @@ StatusOr<PartyOneMessage::MessageII> PartyOneImpl::GenerateMessageII(
     const PartyZeroMessage::MessageI& request,
     std::vector<std::string> elements
 ) {
+    Timer timer("[Timer] generate MessageII");
     PartyOneMessage::MessageII response;
     this->current_day += 1;
 
     std::clog << "[PartyOneImpl] updating other party's tree" << std::endl;
+    Timer update("[Timer] their tree update");
     std::vector<std::string> other_hsh;
 
     for (const std::string& cur_hsh : request.hash_set().elements()) {
@@ -92,8 +94,10 @@ StatusOr<PartyOneMessage::MessageII> PartyOneImpl::GenerateMessageII(
         new_nodes.push_back(std::move(*node));
     }
     this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
+    update.stop();
 
     std::clog << "[PartyOneImpl] combining candidates" << std::endl;
+    Timer cand("[Timer] compute candidates");
     std::vector<elgamal::Ciphertext> candidates;
     for (const EncryptedElement& element : request.encrypted_set().elements()) {
         ASSIGN_OR_RETURN(Ciphertext ciphertext, encrypter->Deserialize(element));
@@ -112,27 +116,35 @@ StatusOr<PartyOneMessage::MessageII> PartyOneImpl::GenerateMessageII(
             candidates.push_back(std::move(y_minus_x));
         }
     }
+    cand.stop();
 
     std::clog << "[PartyOneImpl] shuffling candidates" << std::endl;
+    Timer shuffle("[Timer] shuffle candidates");
     std::random_device rd;
     std::mt19937 gen(rd());
     std::shuffle(candidates.begin(), candidates.end(), gen);
+    shuffle.stop();
 
     std::clog << "[PartyOneImpl] masking candidates with random element" << std::endl;
+    Timer masking("[Timer] mask candidates");
     for (size_t i = 0; i < candidates.size(); i++) {
         BigNum mask = this->encrypter->CreateRandomMask();
         ASSIGN_OR_RETURN(candidates[i], elgamal::Exp(candidates[i], mask));
     }
+    masking.stop();
 
     std::clog << "[PartyOneImpl] partially decrypting candidates" << std::endl;
+    Timer partial("[Timer] part decrypting");
     for (size_t i = 0; i < candidates.size(); i++) {
         ASSIGN_OR_RETURN(candidates[i], decrypter->PartialDecrypt(candidates[i]));
         RETURN_IF_ERROR(
             encrypter->Serialize(candidates[i], response.mutable_encrypted_set()->add_elements())
         );
     }
+    partial.stop();
 
     std::clog << "[PartyOneImpl] inserting our elements into tree" << std::endl;
+    Timer ourupdate("[Timer] our tree update");
     std::vector<std::string> hsh;
     auto plaintext_nodes = this->my_tree.insert(elements, hsh);
     std::vector<CryptoNode<elgamal::Ciphertext>> encrypted_nodes(plaintext_nodes.size());
@@ -155,7 +167,9 @@ StatusOr<PartyOneMessage::MessageII> PartyOneImpl::GenerateMessageII(
         OneNode* onenode = response.mutable_encrypted_nodes()->add_nodes();
         RETURN_IF_ERROR(enode.serialize(onenode));
     }
+    ourupdate.stop();
 
+    timer.stop();
     return response;
 }
 
