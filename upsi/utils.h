@@ -40,13 +40,29 @@ namespace upsi {
 
 	#define DEBUG 1
 
-	typedef elgamal::Ciphertext Encrypted_UPSI_Element;
-	typedef std::string UPSI_Element;
+    // type of elements in each party's sets
+	typedef BigNum Element;
+
+    // type of elements after encryption (i.e., just Ciphertext)
+    using elgamal::Ciphertext;
+
+    // type of an element with its associated payload
+    typedef std::pair<Element, BigNum> ElementAndPayload;
+
+    // type of an encrypted element with its (also encrypted) associated payload
+    typedef std::pair<Ciphertext, BigNum> CiphertextAndPayload;
+
+    // protocol functionality options
+    enum Functionality { PSI, CA, SUM, SS };
+
 
 	typedef std::string BinaryHash;
 
-
-    using elgamal::Ciphertext;
+    StatusOr<std::vector<CiphertextAndPayload>> DeserializeCandidates(
+        const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
+        Context* ctx,
+        ECGroup* group
+    );
 
     /**
      * for a group with generator g, gives g^m
@@ -70,10 +86,9 @@ namespace upsi {
 
 	int64_t NumericString2uint(const std::string &str);
 
-
 	std::string GetRandomNumericString(size_t length, bool padding);
     std::string GetRandomSetElement();
-    std::string GetRandomPadElement();
+    Element GetRandomPadElement(Context* ctx);
 
     /**
      * class to unify time benchmarking

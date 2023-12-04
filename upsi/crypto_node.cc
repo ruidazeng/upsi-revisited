@@ -1,3 +1,4 @@
+#include "upsi/util/elgamal_proto_util.h"
 #include "upsi/crypto_node.h"
 
 namespace upsi {
@@ -59,58 +60,107 @@ bool CryptoNode<T>::addElement(T &elem) {
     }
 }
 
-
-// TODO: do we want padding elements to be distinct from real ones?
+////////////////////////////////////////////////////////////////////////////////
+// CRYPTONODE::PAD()
+////////////////////////////////////////////////////////////////////////////////
 template<>
-void CryptoNode<std::string>::pad() {
+void CryptoNode<Element>::pad(Context* ctx) {
     while (node.size() < node_size) {
-        node.push_back(GetRandomPadElement());
+        node.push_back(GetRandomPadElement(ctx));
     }
 }
 
 template<>
-void CryptoNode<elgamal::Ciphertext>::pad() {
+void CryptoNode<ElementAndPayload>::pad(Context* ctx) {
+    while (node.size() < node_size) {
+        node.push_back(std::make_pair(GetRandomPadElement(ctx), ctx->Zero()));
+    }
+}
+
+template<>
+void CryptoNode<Ciphertext>::pad(Context* ctx) {
     throw std::runtime_error("not implemented (yet)");
 }
 
 template<>
-StatusOr<CryptoNode<elgamal::Ciphertext>> CryptoNode<std::string>::encrypt(
+void CryptoNode<CiphertextAndPayload>::pad(Context* ctx) {
+    throw std::runtime_error("not implemented (yet)");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CRYPTONODE::ENCRYPT()
+////////////////////////////////////////////////////////////////////////////////
+StatusOr<CryptoNode<Ciphertext>> EncryptNode(
     Context* ctx,
-    ElGamalEncrypter* encrypter
+    ElGamalEncrypter* encrypter,
+    const CryptoNode<Element>& node
 ) {
-    CryptoNode<elgamal::Ciphertext> encrypted(node_size);
-    for (size_t i = 0; i < node.size(); i++) {
-        BigNum elem = ctx->CreateBigNum(NumericString2uint(node[i]));
-        ASSIGN_OR_RETURN(Ciphertext ciphertext, encrypter->Encrypt(elem));
+    CryptoNode<Ciphertext> encrypted(node.node_size);
+    for (size_t i = 0; i < node.node.size(); i++) {
+        ASSIGN_OR_RETURN(Ciphertext ciphertext, encrypter->Encrypt(node.node[i]));
         encrypted.addElement(ciphertext);
     }
     return encrypted;
 }
 
-template<>
-StatusOr<CryptoNode<elgamal::Ciphertext>> CryptoNode<elgamal::Ciphertext>::encrypt(
+StatusOr<CryptoNode<CiphertextAndPayload>> EncryptNode(
     Context* ctx,
-    ElGamalEncrypter* encrypter
+    ElGamalEncrypter* elgamal,
+    ThresholdPaillier* paillier,
+    const CryptoNode<ElementAndPayload>& node
 ) {
-    throw std::runtime_error("[CryptoNode] trying to encrypt an encrypted node");
+    CryptoNode<CiphertextAndPayload> encrypted(node.node_size);
+    for (size_t i = 0; i < node.node.size(); i++) {
+        ASSIGN_OR_RETURN(Ciphertext ciphertext, elgamal->Encrypt(std::get<0>(node.node[i])));
+        ASSIGN_OR_RETURN(BigNum payload, paillier->Encrypt(std::get<1>(node.node[i])));
+        CiphertextAndPayload pair = std::make_pair(std::move(ciphertext), std::move(payload));
+        encrypted.addElement(pair);
+    }
+    return encrypted;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// CRYPTONODE::SERIALIZE()
+////////////////////////////////////////////////////////////////////////////////
+template<>
+Status CryptoNode<Element>::serialize(TreeNode* obj) {
+    throw std::runtime_error("[CryptoNode<Element>] not implemented");
 }
 
 template<>
-Status CryptoNode<std::string>::serialize(OneNode* obj) {
-    throw std::runtime_error("[CryptoNode] not implemented");
+Status CryptoNode<ElementAndPayload>::serialize(TreeNode* obj) {
+    throw std::runtime_error("[CryptoNode<ElementAndPayload>] not implemented");
 }
 
 template<>
-Status CryptoNode<elgamal::Ciphertext>::serialize(OneNode* onenode) {
-    for (const elgamal::Ciphertext& elem : node) {
-        EncryptedElement* ee = onenode->add_elements();
-        ASSIGN_OR_RETURN(*ee->mutable_elgamal_u(), elem.u.ToBytesCompressed());
-        ASSIGN_OR_RETURN(*ee->mutable_elgamal_e(), elem.e.ToBytesCompressed());
+Status CryptoNode<Ciphertext>::serialize(TreeNode* obj) {
+    for (const Ciphertext& elem : node) {
+        EncryptedElement* ee = obj->add_elements();
+        ASSIGN_OR_RETURN(
+            *ee->mutable_element(), 
+            elgamal_proto_util::SerializeCiphertext(elem)
+        );
     }
     return OkStatus();
 }
 
-template class CryptoNode<std::string>;
-template class CryptoNode<elgamal::Ciphertext>;
+template<>
+Status CryptoNode<CiphertextAndPayload>::serialize(TreeNode* obj) {
+    for (const CiphertextAndPayload& elem : node) {
+        EncryptedElement* ee = obj->add_elements();
+        ASSIGN_OR_RETURN(
+            *ee->mutable_element(), 
+            elgamal_proto_util::SerializeCiphertext(std::get<0>(elem))
+        );
+
+        *ee->mutable_payload() = std::get<1>(elem).ToBytes();
+    }
+    return OkStatus();
+}
+
+template class CryptoNode<Element>;
+template class CryptoNode<Ciphertext>;
+template class CryptoNode<ElementAndPayload>;
+template class CryptoNode<CiphertextAndPayload>;
 
 } // namespace upsi

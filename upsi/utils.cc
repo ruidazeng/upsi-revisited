@@ -3,7 +3,31 @@
 #include <chrono>
 #include <iomanip>
 
+#include "upsi/util/elgamal_proto_util.h"
+
+
 namespace upsi {
+
+StatusOr<std::vector<CiphertextAndPayload>> DeserializeCandidates(
+    const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
+    Context* ctx,
+    ECGroup* group
+) {
+    std::vector<CiphertextAndPayload> candidates;
+    for (const EncryptedElement& element : serialized) {
+        ASSIGN_OR_RETURN(
+            Ciphertext ciphertext,
+            elgamal_proto_util::DeserializeCiphertext(group, element.element())
+        );
+        candidates.push_back(
+            std::make_pair(
+                std::move(ciphertext),
+                ctx->CreateBigNum(element.payload())
+            )
+        );
+    }
+    return candidates;
+}
 
 StatusOr<ECPoint> exponentiate(ECGroup* group, const BigNum& m) {
     ASSIGN_OR_RETURN(ECPoint generator, group->GetPointAtInfinity());
@@ -19,41 +43,60 @@ std::string Byte2Binary(const std::string &byte_hash) {
     return binary_hash;
 }
 
-// compute binary hash for an element
-// TODO: other types for T
+////////////////////////////////////////////////////////////////////////////////
+// COMPUTE BINARY HASH
+////////////////////////////////////////////////////////////////////////////////
 template<typename T>
 BinaryHash computeBinaryHash(T &elem) {
 	return elem;
 }
 
 template<>
-BinaryHash computeBinaryHash(std::string &elem) {
+BinaryHash computeBinaryHash(Element &elem) {
 	Context ctx;
-    absl::string_view sv_element = elem;
-    std::string sha_string = ctx.Sha256String(sv_element);
-    return Byte2Binary(sha_string);
+    return Byte2Binary(
+        ctx.Sha256String(elem.ToBytes())
+    );
 }
 
 template<>
-BinaryHash computeBinaryHash(elgamal::Ciphertext &elem) {
-	assert(0);
-	std::string rs;
-    return rs;
+BinaryHash computeBinaryHash(ElementAndPayload &elem) {
+    return computeBinaryHash(std::get<0>(elem));
 }
 
 
 template<>
-elgamal::Ciphertext elementCopy(const elgamal::Ciphertext &elem) {
-	elgamal::Ciphertext rs = elgamal::CloneCiphertext(elem).value();
+BinaryHash computeBinaryHash(Ciphertext &elem) {
+    throw std::runtime_error("[Utils] trying to hash a ciphertext");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ELEMENT COPY
+////////////////////////////////////////////////////////////////////////////////
+template<>
+Ciphertext elementCopy(const Ciphertext &elem) {
+	Ciphertext rs = elgamal::CloneCiphertext(elem).value();
 	return rs;
 }
 
 template<>
-std::string elementCopy(const std::string &elem) {
-	std::string rs = elem;
-	return rs;
+ElementAndPayload elementCopy(const ElementAndPayload& elem) {
+    return elem;
 }
 
+template<>
+Element elementCopy(const Element& elem) {
+	Element copy(elem);
+	return copy;
+}
+
+template<>
+CiphertextAndPayload elementCopy(const CiphertextAndPayload& elem) {
+	Ciphertext copy = elgamal::CloneCiphertext(std::get<0>(elem)).value();
+    return std::make_pair(std::move(copy), std::get<1>(elem));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 // generate random binary hash
 BinaryHash generateRandomHash() {
@@ -107,8 +150,10 @@ std::string GetRandomSetElement() {
     return GetRandomNumericString(ELEMENT_STR_LENGTH, false);
 }
 
-std::string GetRandomPadElement() {
-    return GetRandomNumericString(ELEMENT_STR_LENGTH, true);
+Element GetRandomPadElement(Context* ctx) {
+    return ctx->CreateBigNum(NumericString2uint(
+        GetRandomNumericString(ELEMENT_STR_LENGTH, true)
+    ));
 }
 
 Timer::Timer(std::string msg, std::string color) : message(msg), color(color) {

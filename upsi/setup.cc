@@ -1,22 +1,31 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 
+#include "data_util.h"
 #include "upsi/crypto/elgamal.h"
+#include "upsi/crypto/threshold_paillier.h"
 #include "upsi/util/elgamal_key_util.h"
 #include "utils.h"
-#include "data_util.h"
 
 using namespace upsi;
+
+ABSL_FLAG(bool, keys_only, false, "only generate keys");
+ABSL_FLAG(bool, data_only, false, "only generate data");
 
 ABSL_FLAG(std::string, dir, "data/", "name of directory for dataset files");
 ABSL_FLAG(std::string, p0_fn, "party_zero", "prefix for party one's files");
 ABSL_FLAG(std::string, p1_fn, "party_one", "prefix for party zero's files");
 ABSL_FLAG(std::string, shared_fn, "shared", "prefix for shared key file");
+
+ABSL_FLAG(int32_t, mod_length, 1536, "bit-length of Paillier modulus");
+ABSL_FLAG(int32_t, stat_param, 100, "statistical parameter for Paillier");
+
 ABSL_FLAG(int64_t, days, 1, "number of days the protocol is running for");
 ABSL_FLAG(int64_t, p0_size, 10, "total elements in party one's set across all days");
 ABSL_FLAG(int64_t, p1_size, 10, "total elements in party zero's set across all days");
 ABSL_FLAG(int64_t, shared_size, 10, "total elements in intersection across all days");
 ABSL_FLAG(int64_t, max_value, 1000, "maximum number for UPSI-SUM values");
+
 
 Status GenerateDailyData(int day, int64_t p0_size, int64_t p1_size, int64_t shared_size) {
     ASSIGN_OR_RETURN(
@@ -103,19 +112,21 @@ Status GenerateData() {
 }
 
 Status GenerateKeys() {
+    Context ctx;
+
     RETURN_IF_ERROR(
         elgamal_key_util::GenerateElGamalKeyPair(
             CURVE_ID,
-            absl::GetFlag(FLAGS_p0_fn) + ".pub",
-            absl::GetFlag(FLAGS_p0_fn) + ".key"
+            absl::GetFlag(FLAGS_p0_fn) + ".epub",
+            absl::GetFlag(FLAGS_p0_fn) + ".ekey"
         )
     );
 
     RETURN_IF_ERROR(
         elgamal_key_util::GenerateElGamalKeyPair(
             CURVE_ID,
-            absl::GetFlag(FLAGS_p1_fn) + ".pub",
-            absl::GetFlag(FLAGS_p1_fn) + ".key"
+            absl::GetFlag(FLAGS_p1_fn) + ".epub",
+            absl::GetFlag(FLAGS_p1_fn) + ".ekey"
         )
     );
 
@@ -123,32 +134,52 @@ Status GenerateKeys() {
         elgamal_key_util::ComputeJointElGamalPublicKey(
             CURVE_ID,
             {
-                absl::GetFlag(FLAGS_p0_fn) + ".pub",
-                absl::GetFlag(FLAGS_p1_fn) + ".pub"
+                absl::GetFlag(FLAGS_p0_fn) + ".epub",
+                absl::GetFlag(FLAGS_p1_fn) + ".epub"
             },
-            absl::GetFlag(FLAGS_shared_fn) + ".pub"
+            absl::GetFlag(FLAGS_shared_fn) + ".epub"
+        )
+    );
+
+    RETURN_IF_ERROR(
+        GenerateThresholdPaillierKeys(
+            &ctx,
+            absl::GetFlag(FLAGS_mod_length),
+            absl::GetFlag(FLAGS_stat_param),
+            absl::GetFlag(FLAGS_p0_fn) + ".pkey",
+            absl::GetFlag(FLAGS_p1_fn) + ".pkey"
         )
     );
 
     std::cout << "[Setup] keys generated: ";
-    std::cout << absl::GetFlag(FLAGS_p0_fn) << ".key, ";
-    std::cout << absl::GetFlag(FLAGS_p1_fn) << ".key, ";
-    std::cout << absl::GetFlag(FLAGS_shared_fn) << ".pub" << std::endl;
+    std::cout << absl::GetFlag(FLAGS_p0_fn) << ".ekey, ";
+    std::cout << absl::GetFlag(FLAGS_p1_fn) << ".ekey, ";
+    std::cout << absl::GetFlag(FLAGS_shared_fn) << ".epub, ";
+    std::cout << absl::GetFlag(FLAGS_p0_fn) << ".pkey, ";
+    std::cout << absl::GetFlag(FLAGS_p1_fn) << ".pkey" << std::endl;
     return OkStatus();
 }
 
 int main(int argc, char** argv) {
     absl::ParseCommandLine(argc, argv);
 
-    auto status = GenerateKeys();
-    if (!status.ok()) {
-        std::cerr << "[Setup] failure generating keys" << std::endl;
-        std::cerr << status << std::endl;
+    if (!absl::GetFlag(FLAGS_data_only)) {
+        auto status = GenerateKeys();
+        if (!status.ok()) {
+            std::cerr << "[Setup] failure generating keys" << std::endl;
+            std::cerr << status << std::endl;
+            return 1;
+        }
     }
 
-    status = GenerateData();
-    if (!status.ok()) {
-        std::cerr << "[Setup] failure generating datasets" << std::endl;
-        std::cerr << status << std::endl;
+    if (!absl::GetFlag(FLAGS_keys_only)) {
+        auto status = GenerateData();
+        if (!status.ok()) {
+            std::cerr << "[Setup] failure generating datasets" << std::endl;
+            std::cerr << status << std::endl;
+            return 1;
+        }
     }
+
+    return 0;
 }

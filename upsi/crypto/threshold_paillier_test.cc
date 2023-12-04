@@ -38,7 +38,7 @@ TEST(ThresholdPaillierTest, TestDecryptionParty112) {
     ThresholdPaillier party_one(&ctx, std::get<0>(keys));
     ThresholdPaillier party_two(&ctx, std::get<1>(keys));
 
-    BigNum message = ctx.GenerateRandLessThan(std::get<0>(keys).n);
+    BigNum message = ctx.GenerateRandLessThan(ctx.CreateBigNum(std::get<0>(keys).n()));
 
     ASSERT_OK_AND_ASSIGN(
         BigNum ciphertext,
@@ -71,7 +71,7 @@ TEST(ThresholdPaillierTest, TestDecryptionParty221) {
     ThresholdPaillier party_one(&ctx, std::get<0>(keys));
     ThresholdPaillier party_two(&ctx, std::get<1>(keys));
 
-    BigNum message = ctx.GenerateRandLessThan(std::get<0>(keys).n);
+    BigNum message = ctx.GenerateRandLessThan(ctx.CreateBigNum(std::get<0>(keys).n()));
 
     ASSERT_OK_AND_ASSIGN(
         BigNum ciphertext,
@@ -104,7 +104,7 @@ TEST(ThresholdPaillierTest, TestDecryptionParty121) {
     ThresholdPaillier party_one(&ctx, std::get<0>(keys));
     ThresholdPaillier party_two(&ctx, std::get<1>(keys));
 
-    BigNum message = ctx.GenerateRandLessThan(std::get<0>(keys).n);
+    BigNum message = ctx.GenerateRandLessThan(ctx.CreateBigNum(std::get<0>(keys).n()));
 
     ASSERT_OK_AND_ASSIGN(
         BigNum ciphertext,
@@ -137,7 +137,7 @@ TEST(ThresholdPaillierTest, TestDecryptionParty212) {
     ThresholdPaillier party_one(&ctx, std::get<0>(keys));
     ThresholdPaillier party_two(&ctx, std::get<1>(keys));
 
-    BigNum message = ctx.GenerateRandLessThan(std::get<0>(keys).n);
+    BigNum message = ctx.GenerateRandLessThan(ctx.CreateBigNum(std::get<0>(keys).n()));
 
     ASSERT_OK_AND_ASSIGN(
         BigNum ciphertext,
@@ -155,6 +155,49 @@ TEST(ThresholdPaillierTest, TestDecryptionParty212) {
     );
 
     EXPECT_EQ(message, decrypted);
+}
+
+TEST(ThresholdPaillierTest, TestHomomorphicADd) {
+    Context ctx;
+    ASSERT_OK_AND_ASSIGN(
+        auto keys, GenerateThresholdPaillierKeys(&ctx, modulus_length, statistical_param)
+    );
+
+    ThresholdPaillier party_one(&ctx, std::get<0>(keys));
+    ThresholdPaillier party_two(&ctx, std::get<1>(keys));
+
+    BigNum n = ctx.CreateBigNum(std::get<0>(keys).n())
+
+    BigNum a = ctx.GenerateRandLessThan(n);
+    BigNum b = ctx.GenerateRandLessThan(n);
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum ciphertext_a,
+        party_two.Encrypt(a)
+    );
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum ciphertext_b,
+        party_two.Encrypt(b)
+    );
+
+
+    BigNum ciphertext = party_one.Add(ciphertext_a, ciphertext_b); 
+
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum partial,
+        party_one.PartialDecrypt(ciphertext)
+    );
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum decrypted,
+        party_two.Decrypt(ciphertext, partial)
+    );
+    
+    BigNum expected = (a + b).Mod(n);
+
+    EXPECT_EQ(expected, decrypted);
 }
 
 }

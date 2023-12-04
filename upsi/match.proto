@@ -17,11 +17,13 @@ syntax = "proto2";
 
 package upsi;
 
-message EncryptedNodes {
-	repeated OneNode nodes = 1;
+import "upsi/crypto/elgamal.proto";
+
+message TreeNodes {
+	repeated TreeNode nodes = 1;
 }
 
-message OneNode{
+message TreeNode {
   repeated EncryptedElement elements = 2;
 }
 
@@ -36,8 +38,7 @@ message HashSet {
 
 // Holds an encrypted value and possibly encrypted associated data.
 message EncryptedElement {
-  optional bytes elgamal_u = 1; // ElGamal element (u, e)
-  optional bytes elgamal_e = 2;
-  optional bytes associated_data = 3;
+  optional ElGamalCiphertext element = 1; // ElGamal element (u, e)
+  optional bytes payload = 3;
 }
 
