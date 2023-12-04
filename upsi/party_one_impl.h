@@ -25,6 +25,7 @@
 #include "upsi/data_util.h"
 #include "upsi/match.pb.h"
 #include "upsi/message_sink.h"
+#include "upsi/party_impl.h"
 #include "upsi/private_intersection.pb.h"
 #include "upsi/protocol_server.h"
 #include "upsi/upsi.pb.h"
@@ -35,59 +36,48 @@ namespace upsi {
 
 // This class represents the "party 1" part of the updatable private set intersection protocol.
 // This is the party that will NOT receive the output in one-sided UPSI.
-class PartyOneImpl : public ProtocolServer {
+class PartyOneImpl : public ProtocolServer, public PartyImpl<PartyOneDataset> {
     public:
-        PartyOneImpl(
-            Context* ctx,
-            std::string pk_fn,
-            std::string sk_fn,
-            const std::vector<PartyOneDataset>& elements,
-            int32_t modulus_size,
-            int32_t statistical_param,
-            int total_days
-        );
+        
+        // use the default constructor
+        using PartyImpl::PartyImpl;
 
         ~PartyOneImpl() override = default;
 
-        // Executes the next Server round and creates a response.
+        /**
+         * update their tree, compute candidates, & send tree updates
+         */
+        StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
+            const PartyZeroMessage::MessageI& msg,
+            std::vector<Element> elements
+        );
+
+        /**
+         * respond to any follow up messages
+         */
+        StatusOr<PartyOneMessage::MessageIV> GenerateMessageIV(
+            const PartyZeroMessage::MessageIII& msg
+        );
+
+        /**
+         * delegate incoming messages to other methods
+         */
         Status Handle(
             const ClientMessage& request,
             MessageSink<ServerMessage>* server_message_sink
         ) override;
 
-        bool protocol_finished() override { return protocol_finished_; }
+        /**
+         * protocol is finished when we've gone through all days
+         */
+        bool protocol_finished() override { 
+            return (this->current_day == this->total_days);
+        }
 
     private:
-        // Complete server side processing:
-        // 1. Shuffle
-        // 2. Mask with a random exponent
-        // 3. Partial decryption (ElGamal/Paillier)
-        // 4. Update P0's tree
-        // 5. Update P1's tree
-        // 6. Generate {Path_i}_i
-        StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
-            const PartyZeroMessage::MessageI& msg,
-            std::vector<std::string> elements
-        );
-
-        // Each party holds two crypto trees: one containing my elements, one containing the other party's elements.
-        CryptoTree<UPSI_Element> my_tree;
-        CryptoTree<Encrypted_UPSI_Element> other_tree;
-
-        Context* ctx_;  // not owned
-        ECGroup* group;
-
-        std::vector<PartyOneDataset> elements_;
-
-        // el gamal encryption tools
-        std::unique_ptr<ElGamalEncrypter> encrypter;
-        std::unique_ptr<ElGamalDecrypter> decrypter;
-
-        // current day and total days
-        int current_day = 0;
-        int total_days; // must be greater or equal to 1
-
-        bool protocol_finished_ = false;
+        // our plaintext tree & their encrypted tree
+        CryptoTree<Element> my_tree;
+        CryptoTree<CiphertextAndPayload> other_tree;
 };
 
 }  // namespace upsi

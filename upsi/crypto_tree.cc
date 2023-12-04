@@ -146,12 +146,12 @@ std::vector<CryptoNode<T>> CryptoTree<T>::insert(
 			std::vector<T> tmp_node;
 			crypto_tree[u].copyElementsTo(tmp_node);
 			if(u == 0) tmp_node.push_back(std::move(elementCopy(elem[o])));
-			
+
 			int tmp_node_size = tmp_node.size();
 			//std::cerr << "tmp_node size  = " << tmp_node_size << std::endl;
 
 			for (int i = 0; i < tmp_node_size; ++i) {
-				int x = computeIndex( computeBinaryHash(tmp_node[i]) );
+				int x = computeIndex(computeBinaryHash(tmp_node[i]) );
 				//if(u == 0 && i == 0) std::cerr<<"index is " << x << std::endl;
 				int steps = 0;
 				if(x != leaf_ind[o]) steps = 32 - __builtin_clz(x ^ leaf_ind[o]);
@@ -210,7 +210,7 @@ void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &
 	delete [] leaf_ind;
 
 	assert(node_cnt == ind.size());
-	
+
 	//for (int i = 0; i < node_cnt; ++i) std::cerr << ind[i] << std::endl;
 
 	// replace nodes (including stash)
@@ -223,7 +223,7 @@ void CryptoTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &
 
 // Find path for an element (including stash) and extract all elements on the path
 template<typename T>
-std::vector<T> CryptoTree<T>::getPath(std::string element) {
+std::vector<T> CryptoTree<T>::getPath(Element element) {
     std::vector<T> encyrpted_elem;
     //std::cerr << "computing binary hash of "<< element << "\n";
     BinaryHash binary_hash = computeBinaryHash(element);
@@ -231,7 +231,7 @@ std::vector<T> CryptoTree<T>::getPath(std::string element) {
     //std::cerr << "computing index...\n";
     int leaf_index = computeIndex(binary_hash);
     //std::cerr << "get a path from " << leaf_index << std::endl;
-	
+
 	//std::cerr << "tree size = " << crypto_tree.size() << std::endl;
 	for (int u = leaf_index; ; u >>= 1) {
 		//if(crypto_tree[u].node.size() > 0) std::cerr<< crypto_tree[u].node.size() << " ";
@@ -241,7 +241,9 @@ std::vector<T> CryptoTree<T>::getPath(std::string element) {
     return encyrpted_elem;
 }
 
-template class CryptoTree<std::string>;
-template class CryptoTree<elgamal::Ciphertext>;
+template class CryptoTree<Element>;
+template class CryptoTree<Ciphertext>;
+template class CryptoTree<ElementAndPayload>;
+template class CryptoTree<CiphertextAndPayload>;
 
 } // namespace upsi

@@ -25,6 +25,7 @@ message PartyZeroMessage {
   oneof message_content {
     //StartProtocolRequest start = 1;
     MessageI message_i = 1;
+    MessageIII message_iii = 2;
   }
 
   // For initiating the protocol.
@@ -35,10 +36,13 @@ message PartyZeroMessage {
   // the server's set re-encrypted with the client's key, and shuffled.
   message MessageI {
     optional HashSet hash_set = 1;
-    optional EncryptedNodes encrypted_nodes = 2;
-    optional EncryptedSet encrypted_set = 3;
+    optional TreeNodes tree_updates = 2;
+    optional EncryptedSet candidates = 3;
   }
 
+  message MessageIII {
+    repeated bytes payloads = 1;
+  }
 }
 
 // Server Messages.
@@ -47,6 +51,7 @@ message PartyOneMessage {
   oneof message_content {
     //ServerExchange server_key_exchange = 1;
     MessageII message_ii = 1;
+    MessageIV message_iv = 2;
   }
 
   // Server key exchange - Threshold ElGamal
@@ -54,7 +59,11 @@ message PartyOneMessage {
 
   message MessageII {
     optional HashSet hash_set = 1;
-    optional EncryptedNodes encrypted_nodes = 2;
-    optional EncryptedSet encrypted_set = 3;
+    optional TreeNodes tree_updates = 2;
+    optional EncryptedSet candidates = 3;
+  }
+
+  message MessageIV {
+    repeated bytes payloads = 1;
   }
 }

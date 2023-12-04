@@ -19,6 +19,9 @@ package(default_visibility = ["//visibility:public"])
 grpc_proto_library(
     name = "match_proto",
     srcs = ["match.proto"],
+    deps = [
+        "//upsi/crypto:elgamal_proto"
+    ],
 )
 
 grpc_proto_library(
@@ -58,6 +61,17 @@ cc_library(
 )
 
 cc_library(
+    name = "party_impl",
+    hdrs = ["party_impl.h"],
+    deps = [
+        "//upsi/crypto:elgamal",
+        "//upsi/crypto:paillier",
+        "//upsi/util:elgamal_key_util",
+    ],
+)
+
+
+cc_library(
     name = "party_zero_impl",
     srcs = ["party_zero_impl.cc"],
     hdrs = ["party_zero_impl.h"],
@@ -66,6 +80,7 @@ cc_library(
         ":data_util",
         ":match_proto",
         ":message_sink",
+        ":party_impl",
         ":private_intersection_proto",
         ":protocol_client",
         ":upsi_proto",
@@ -99,6 +114,7 @@ cc_library(
         ":data_util",
         ":match_proto",
         ":message_sink",
+        ":party_impl",
         ":private_intersection_proto",
         ":protocol_server",
         ":upsi_proto",
@@ -198,6 +214,7 @@ cc_library(
     deps = [
         "//upsi/crypto:ec_commutative_cipher",
         "//upsi/crypto:paillier",
+        "//upsi/util:elgamal_proto_util",
     ],
 )
 
@@ -210,6 +227,7 @@ cc_library(
         ":match_proto",
         "//upsi/crypto:ec_commutative_cipher",
         "//upsi/crypto:paillier",
+        "//upsi/util:elgamal_proto_util",
     ],
 )
 
@@ -232,6 +250,7 @@ cc_binary(
         ":data_util",
         ":utils",
         "//upsi/crypto:elgamal",
+        "//upsi/crypto:paillier",
         "//upsi/util:elgamal_key_util",
         "//upsi/util:proto_util",
         "@com_google_absl//absl/base",

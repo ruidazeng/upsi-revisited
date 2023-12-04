@@ -35,3 +35,12 @@ message PaillierPrivateKey {
   // modulus will be n^(s+1), and the message space will be n^s.
   optional int32 s = 3;
 }
+
+message ThresholdPaillierKey {
+
+    // BigNum encoding modulus n
+    optional bytes n = 1;
+
+    // BigNum encoding share of the private key
+    optional bytes share = 2;
+}

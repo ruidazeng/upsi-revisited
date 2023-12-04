@@ -69,7 +69,7 @@ class CryptoTree
 
         void replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &new_nodes, std::vector<BinaryHash> &hsh);
 
-		std::vector<T> getPath(std::string element);
+		std::vector<T> getPath(Element element);
 };
 
 }

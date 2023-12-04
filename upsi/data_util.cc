@@ -293,8 +293,10 @@ Status WriteClientDatasetToFile(
   return OkStatus();
 }
 
-StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
-    absl::string_view server_data_filename) {
+StatusOr<std::vector<BigNum>> ReadServerDatasetFromFile(
+    absl::string_view server_data_filename,
+    Context* context
+) {
   // Open file.
   std::ifstream server_data_file;
   server_data_file.open(std::string(server_data_filename));
@@ -306,7 +308,7 @@ StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
 
   // Read each line from file (unescaping and splitting columns). Verify that
   // each line contains a single column
-  std::vector<std::string> server_data;
+  std::vector<BigNum> server_data;
   std::string line;
   int64_t line_number = 0;
   while (std::getline(server_data_file, line)) {
@@ -318,7 +320,9 @@ StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
           line_number, "has ", columns.size(),
           " comma-separated items (file: ", server_data_filename, ")"));
     }
-    server_data.push_back(columns[0]);
+    server_data.push_back(
+        context->CreateBigNum(NumericString2uint(columns[0]))
+    );
     line_number++;
   }
 
@@ -333,7 +337,7 @@ StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
   return server_data;
 }
 
-StatusOr<std::pair<std::vector<std::string>, std::vector<BigNum>>>
+StatusOr<std::pair<std::vector<BigNum>, std::vector<BigNum>>>
 ReadClientDatasetFromFile(absl::string_view client_data_filename,
                           Context* context) {
   // Open file.
@@ -348,7 +352,7 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
   // Read each line from file (unescaping and splitting columns). Verify that
   // each line contains two columns, and parse the second column into an
   // associated value.
-  std::vector<std::string> client_identifiers;
+  std::vector<BigNum> client_identifiers;
   std::vector<BigNum> client_associated_values;
   std::string line;
   int64_t line_number = 0;
@@ -361,7 +365,9 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
           line_number, "has ", columns.size(),
           " comma-separated items (file: ", client_data_filename, ")"));
     }
-    client_identifiers.push_back(columns[0]);
+    client_identifiers.push_back(
+        context->CreateBigNum(NumericString2uint(columns[0]))
+    );
     int64_t parsed_associated_value;
     if (!absl::SimpleAtoi(columns[1], &parsed_associated_value) ||
         parsed_associated_value < 0) {
@@ -409,9 +415,10 @@ StatusOr<std::vector<PartyZeroDataset>> ReadPartyZeroDataset(
 StatusOr<std::vector<PartyOneDataset>> ReadPartyOneDataset(
     std::string dir,
     std::string prefix,
-    int days
+    int days,
+    Context* ctx
 ) {
-    std::vector<std::vector<std::string>> datasets(days);
+    std::vector<std::vector<BigNum>> datasets(days);
 
 
     for (int day = 1; day <= days; day++) {
@@ -420,7 +427,7 @@ StatusOr<std::vector<PartyOneDataset>> ReadPartyOneDataset(
 
         ASSIGN_OR_RETURN(
             datasets[day - 1],
-            ReadServerDatasetFromFile(dir + prefix + "_" + std::to_string(day) + ".csv")
+            ReadServerDatasetFromFile(dir + prefix + "_" + std::to_string(day) + ".csv", ctx)
         );
     }
 

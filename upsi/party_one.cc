@@ -37,22 +37,13 @@
 
 using namespace upsi;
 
-ABSL_FLAG(std::string, port,    "0.0.0.0:10501", "listening port");
-ABSL_FLAG(std::string, sk_fn,   "party_one.key", "filename for elgamal secret key");
-ABSL_FLAG(std::string, pk_fn,   "shared.pub",    "filename for shared elgamal public key");
+ABSL_FLAG(std::string, port,   "0.0.0.0:10501",  "listening port");
+ABSL_FLAG(std::string, esk_fn, "party_one.ekey", "filename for elgamal secret key");
+ABSL_FLAG(std::string, epk_fn, "shared.epub",    "filename for shared elgamal public key");
+ABSL_FLAG(std::string, psk_fn, "party_one.pkey", "filename for paillier key share");
 
 ABSL_FLAG(std::string, dir, "data/", "name of directory for dataset files");
 ABSL_FLAG(std::string, prefix, "party_one", "prefix for dataset files");
-
-ABSL_FLAG(
-    int32_t,
-    paillier_modulus_size,
-    1536,
-    "The bit-length of the modulus to use for Paillier encryption. The modulus "
-    "will be the product of two safe primes, each of size paillier_modulus_size/2."
-);
-
-ABSL_FLAG(int32_t, paillier_statistical_param, 100, "Paillier statistical parameter.");
 
 ABSL_FLAG(int, days, 10, "total days the protocol will run for");
 
@@ -61,24 +52,22 @@ Status RunPartyOne() {
     Context context;
 
     // read in dataset
-    std::clog << "[PartyOne] loading data... " << std::endl;
     ASSIGN_OR_RETURN(
         auto dataset,
         ReadPartyOneDataset(
             absl::GetFlag(FLAGS_dir),
             absl::GetFlag(FLAGS_prefix),
-            absl::GetFlag(FLAGS_days)
+            absl::GetFlag(FLAGS_days),
+            &context
         )
     );
-    std::clog << "done." << std::endl;
 
     std::unique_ptr<ProtocolServer> party_one = std::make_unique<PartyOneImpl>(
         &context,
-        absl::GetFlag(FLAGS_pk_fn),
-        absl::GetFlag(FLAGS_sk_fn),
+        absl::GetFlag(FLAGS_epk_fn),
+        absl::GetFlag(FLAGS_esk_fn),
+        absl::GetFlag(FLAGS_psk_fn),
         std::move(dataset),
-        absl::GetFlag(FLAGS_paillier_modulus_size),
-        absl::GetFlag(FLAGS_paillier_statistical_param),
         absl::GetFlag(FLAGS_days)
     );
 

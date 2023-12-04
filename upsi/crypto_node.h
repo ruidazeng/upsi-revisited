@@ -1,6 +1,7 @@
 #ifndef CryptoNode_H
 #define CryptoNode_H
 
+#include "upsi/crypto/threshold_paillier.h"
 #include "upsi/match.pb.h"
 #include "upsi/utils.h"
 
@@ -38,17 +39,24 @@ template<typename T>
             bool addElement(T &elem);
 
             // pad with padding elements to the node_size
-            void pad();
-
-            // create a node with the elements in this node but encrypted
-            StatusOr<CryptoNode<elgamal::Ciphertext>> encrypt(
-                Context* ctx,
-                ElGamalEncrypter* encrypter
-            );
+            void pad(Context* ctx);
 
             // serialize the node to be sent over the network
-            Status serialize(OneNode* obj);
+            Status serialize(TreeNode* obj);
     };
+
+StatusOr<CryptoNode<Ciphertext>> EncryptNode(
+    Context* ctx, 
+    ElGamalEncrypter* encrypter,
+    const CryptoNode<Element>& node
+);
+
+StatusOr<CryptoNode<CiphertextAndPayload>> EncryptNode(
+    Context* ctx, 
+    ElGamalEncrypter* elgamal,
+    ThresholdPaillier* paillier,
+    const CryptoNode<ElementAndPayload>& node
+);
 
 } // namespace upsi
 

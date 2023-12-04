@@ -253,6 +253,7 @@ cc_library(
         ":fixed_base_exp",
         ":paillier_proto",
         ":two_modulus_crt",
+        "//upsi/util:proto_util",
         "//upsi/util:status_includes",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/log",
