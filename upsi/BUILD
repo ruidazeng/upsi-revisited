@@ -51,18 +51,20 @@ cc_library(
 )
 
 cc_library(
-    name = "protocol_client",
-    hdrs = ["protocol_client.h"],
+    name = "connection",
+    hdrs = ["connection.h"],
     deps = [
-        ":message_sink",
         ":upsi_proto",
-        "//upsi/util:status_includes",
+        "@com_github_grpc_grpc//:grpc",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
     ],
 )
 
 cc_library(
-    name = "party_impl",
-    hdrs = ["party_impl.h"],
+    name = "party",
+    hdrs = ["party.h"],
     deps = [
         "//upsi/crypto:elgamal",
         "//upsi/crypto:paillier",
@@ -72,17 +74,17 @@ cc_library(
 
 
 cc_library(
-    name = "party_zero_impl",
-    srcs = ["party_zero_impl.cc"],
-    hdrs = ["party_zero_impl.h"],
+    name = "party_zero",
+    srcs = ["party_zero.cc"],
+    hdrs = ["party_zero.h"],
     deps = [
+        ":connection",
         ":crypto_tree",
         ":data_util",
         ":match_proto",
         ":message_sink",
-        ":party_impl",
+        ":party",
         ":private_intersection_proto",
-        ":protocol_client",
         ":upsi_proto",
         ":utils",
         "//upsi/crypto:bn_util",
@@ -96,27 +98,16 @@ cc_library(
 )
 
 cc_library(
-    name = "protocol_server",
-    hdrs = ["protocol_server.h"],
-    deps = [
-        ":message_sink",
-        ":upsi_proto",
-        "//upsi/util:status_includes",
-    ],
-)
-
-cc_library(
-    name = "party_one_impl",
-    srcs = ["party_one_impl.cc"],
-    hdrs = ["party_one_impl.h"],
+    name = "party_one",
+    srcs = ["party_one.cc"],
+    hdrs = ["party_one.h"],
     deps = [
         ":crypto_tree",
         ":data_util",
         ":match_proto",
         ":message_sink",
-        ":party_impl",
+        ":party",
         ":private_intersection_proto",
-        ":protocol_server",
         ":upsi_proto",
         ":utils",
         "//upsi/crypto:bn_util",
@@ -150,37 +141,22 @@ cc_library(
     deps = [
         ":message_sink",
         ":upsi_proto",
-        ":protocol_server",
+        ":party_one",
         "//upsi/util:status_includes",
         "@com_github_grpc_grpc//:grpc++",
     ],
 )
 
 cc_binary(
-    name = "party_one",
-    srcs = ["party_one.cc"],
+    name = "run",
+    srcs = ["run.cc"],
     deps = [
+        ":connection",
         ":data_util",
-        ":party_one_impl",
-        ":protocol_server",
+        ":party_one",
+        ":party_zero",
         ":upsi_proto",
         ":upsi_rpc_impl",
-        "@com_github_grpc_grpc//:grpc",
-        "@com_github_grpc_grpc//:grpc++",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-    ],
-)
-
-cc_binary(
-    name = "party_zero",
-    srcs = ["party_zero.cc"],
-    deps = [
-        ":party_zero_impl",
-        ":data_util",
-        ":upsi_proto",
-        ":protocol_client",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_absl//absl/base",
@@ -197,8 +173,7 @@ cc_binary(
         ":data_util",
         ":upsi_proto",
         ":upsi_rpc_impl",
-        ":protocol_server",
-        ":party_one_impl",
+        ":party_one",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_absl//absl/base",

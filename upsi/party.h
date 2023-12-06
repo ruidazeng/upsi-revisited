@@ -1,5 +1,5 @@
-#ifndef PARTY_IMPL_H_
-#define PARTY_IMPL_H_
+#ifndef PARTY_H_
+#define PARTY_H_
 
 #include "upsi/crypto/elgamal.h"
 #include "upsi/crypto/threshold_paillier.h"
@@ -9,12 +9,8 @@
 
 namespace upsi {
 
-template<typename Dataset>
-class PartyImpl { 
+class Party { 
     protected:
-        // one dataset for each day
-        std::vector<Dataset> datasets;
-
         // used for various crypto operations
         Context* ctx_;
         ECGroup* group;
@@ -38,16 +34,14 @@ class PartyImpl {
          * spk_fn   : filename for el gamal secret key
          * psk_fn   : filename for paillier key
          */
-        PartyImpl(
+        Party(
             Context* ctx,
             std::string epk_fn,
             std::string esk_fn,
             std::string psk_fn,
-            const std::vector<Dataset>& d,
             int total_days
         ) {
             this->ctx_ = ctx;
-            this->datasets = d;
 
             this->total_days = total_days;
 
@@ -57,7 +51,7 @@ class PartyImpl {
 
             auto epk = ProtoUtils::ReadProtoFromFile<ElGamalPublicKey>(epk_fn);
             if (!epk.ok()) {
-                std::runtime_error("[PartyImpl] failure in reading shared public key");
+                std::runtime_error("[Party] failure in reading shared public key");
             }
 
             encrypter = std::make_unique<ElGamalEncrypter>(
@@ -66,7 +60,7 @@ class PartyImpl {
 
             auto esk = ProtoUtils::ReadProtoFromFile<ElGamalSecretKey>(esk_fn);
             if (!esk.ok()) {
-                std::runtime_error("[PartyImpl] failure in reading secret key");
+                std::runtime_error("[Party] failure in reading secret key");
             }
 
             decrypter = std::make_unique<ElGamalDecrypter>(
@@ -75,13 +69,18 @@ class PartyImpl {
 
             auto psk = ProtoUtils::ReadProtoFromFile<ThresholdPaillierKey>(psk_fn);
             if (!psk.ok()) {
-                std::runtime_error("[PartyImpl] failure in reading paillier key");
+                std::runtime_error("[Party] failure in reading paillier key");
             }
 
             paillier = std::make_unique<ThresholdPaillier>(ctx_, psk.value());
+        }
+
+        // protocol is finished when we've gone through all days
+        bool protocol_finished() { 
+            return (this->current_day == this->total_days);
         }
 };
 
 } // namespace upsi
 
-#endif  // PARTY_IMPL_H_
+#endif  // PARTY_H_

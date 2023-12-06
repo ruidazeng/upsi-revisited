@@ -42,3 +42,7 @@ message EncryptedElement {
   optional bytes payload = 3;
 }
 
+message PaillierCiphertext {
+  optional bytes ciphertext = 1;
+}
+

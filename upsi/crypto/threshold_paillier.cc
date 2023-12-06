@@ -82,13 +82,13 @@ Status GenerateThresholdPaillierKeys(
 ThresholdPaillier::~ThresholdPaillier() = default;
 
 ThresholdPaillier::ThresholdPaillier(Context* ctx, const BigNum& n, const BigNum& share)
-    : ctx_(ctx), n_(n), share_(share), n_squared_(n * n) { }
+    : ctx_(ctx), n(n), share_(share), n_squared_(n * n) { }
 
 ThresholdPaillier::ThresholdPaillier(Context* ctx, const ThresholdPaillierKey& key)
     : ThresholdPaillier(ctx, ctx->CreateBigNum(key.n()), ctx->CreateBigNum(key.share())) { }
 
     StatusOr<BigNum> ThresholdPaillier::Encrypt(const BigNum& message) const {
-        return PublicPaillier(ctx_, n_).Encrypt(message);
+        return PublicPaillier(ctx_, n).Encrypt(message);
     }
 
 StatusOr<BigNum> ThresholdPaillier::PartialDecrypt(const BigNum& c) const {
@@ -133,7 +133,7 @@ StatusOr<BigNum> ThresholdPaillier::Decrypt(
 
     auto ours = PartialDecrypt(c);
     if (ours.ok()) {
-        return (partial.ModMul(*ours, n_squared_) - ctx_->One()) / n_;
+        return (partial.ModMul(*ours, n_squared_) - ctx_->One()) / n;
     } else {
         return ours.status();
     }
