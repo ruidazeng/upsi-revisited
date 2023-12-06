@@ -58,9 +58,11 @@ class ThresholdPaillier {
      */
     BigNum Add(const BigNum& ciphertext1, const BigNum& ciphertext2) const;
 
+    // modulus 
+    const BigNum n;
+
     private:
     Context* const ctx_;
-    const BigNum n_;
     const BigNum share_;
     const BigNum n_squared_;
 };

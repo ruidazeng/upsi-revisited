@@ -13,155 +13,477 @@
  * limitations under the License.
  */
 
-#include <iostream>
-#include <memory>
-#include <ostream>
-#include <string>
-#include <utility>
+#include "upsi/party_zero.h"
 
-#include "absl/flags/flag.h"
-#include "absl/flags/parse.h"
-#include "absl/strings/str_cat.h"
-#include "include/grpc/grpc_security_constants.h"
-#include "include/grpcpp/channel.h"
-#include "include/grpcpp/client_context.h"
-#include "include/grpcpp/create_channel.h"
-#include "include/grpcpp/grpcpp.h"
-#include "include/grpcpp/security/credentials.h"
-#include "include/grpcpp/support/status.h"
-#include "upsi/party_zero_impl.h"
-#include "upsi/data_util.h"
-#include "upsi/upsi.grpc.pb.h"
-#include "upsi/upsi.pb.h"
-#include "upsi/protocol_client.h"
-#include "upsi/util/status.inc"
 
-ABSL_FLAG(std::string, port,   "0.0.0.0:10501",   "port to connect to server");
-ABSL_FLAG(std::string, esk_fn, "party_zero.ekey", "filename for elgamal secret key");
-ABSL_FLAG(std::string, epk_fn, "shared.epub",     "filename for shared elgamal public key");
-ABSL_FLAG(std::string, psk_fn, "party_zero.pkey", "filename for paillier key share");
+#include "absl/memory/memory.h"
 
-ABSL_FLAG(std::string, dir, "data/", "name of directory for dataset files");
-ABSL_FLAG(std::string, prefix, "party_zero", "prefix for dataset files");
-
-ABSL_FLAG(int, days, 10, "total days the protocol will run for");
+#include "upsi/connection.h"
+#include "upsi/crypto/ec_point_util.h"
+#include "upsi/crypto/elgamal.h"
+#include "upsi/util/elgamal_proto_util.h"
+#include "upsi/util/proto_util.h"
+#include "upsi/utils.h"
 
 namespace upsi {
-namespace {
 
-class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
-    public:
-        explicit InvokeServerHandleClientMessageSink(std::unique_ptr<UPSIRpc::Stub> stub)
-            : stub_(std::move(stub)) {}
+////////////////////////////////////////////////////////////////////////////////
+// WITH PAYLOAD CLASS METHODS
+////////////////////////////////////////////////////////////////////////////////
 
-        ~InvokeServerHandleClientMessageSink() override = default;
-
-        Status Send(const ClientMessage& message) override {
-            ::grpc::ClientContext client_context;
-            client_context.set_deadline(std::chrono::system_clock::time_point::max());
-
-            ::grpc::Status grpc_status = stub_->Handle(
-                &client_context,
-                message,
-                &last_server_response_
+void PartyZeroWithPayload::LoadData(const std::vector<PartyZeroDataset>& datasets) {
+    this->datasets.resize(this->total_days);
+    for (auto day = 0; day < this->total_days; day++) {
+        std::vector<ElementAndPayload> dailyset;
+        for (size_t i = 0; i < datasets[day].first.size(); i++) {
+            dailyset.push_back(
+                GetPayload(datasets[day].first[i], datasets[day].second[i])
             );
-            if (grpc_status.ok()) {
-                return OkStatus();
-            } else {
-                return InternalError(
-                    absl::StrCat(
-                        "[ClientMessageSink] failed to send message, error code: ",
-                        grpc_status.error_code(),
-                        ", error_message: \n", grpc_status.error_message()
-                    )
-                );
-            }
         }
-
-        const ServerMessage& last_server_response() { return last_server_response_; }
-
-        private:
-            std::unique_ptr<UPSIRpc::Stub> stub_;
-            ServerMessage last_server_response_;
-    };
-
-    Status RunPartyZero() {
-        Context context;
-
-        // read in dataset
-        ASSIGN_OR_RETURN(
-            auto dataset,
-            ReadPartyZeroDataset(
-                absl::GetFlag(FLAGS_dir),
-                absl::GetFlag(FLAGS_prefix),
-                absl::GetFlag(FLAGS_days),
-                &context
-            )
-        );
-
-        std::unique_ptr<PartyZeroImpl> party_zero = std::make_unique<PartyZeroImpl>(
-            &context,
-            absl::GetFlag(FLAGS_epk_fn),
-            absl::GetFlag(FLAGS_esk_fn),
-            absl::GetFlag(FLAGS_psk_fn),
-            std::move(dataset),
-            absl::GetFlag(FLAGS_days)
-        );
-
-        ::grpc::ChannelArguments args;
-        args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, 1024 * 1024 * 1024);
-
-        // setup connection with other party
-        std::unique_ptr<UPSIRpc::Stub> stub = UPSIRpc::NewStub(::grpc::CreateCustomChannel(
-            absl::GetFlag(FLAGS_port),
-            ::grpc::experimental::LocalCredentials(
-                grpc_local_connect_type::LOCAL_TCP
-            ),
-            args
-        ));
-        InvokeServerHandleClientMessageSink sink(std::move(stub));
-
-        Timer timer("[PartyZero] total runtime");
-        for (int i = 0; i < absl::GetFlag(FLAGS_days); i++) {
-            std::clog << "[PartyZero] sending MessageI" << std::endl;
-            RETURN_IF_ERROR(party_zero->SendMessageI(&sink));
-
-            ServerMessage message_ii = sink.last_server_response();
-            std::clog << "[PartyZero] received MessageII" << std::endl;
-
-            std::clog << "[PartyZero] sending MessageIII" << std::endl;
-            RETURN_IF_ERROR(party_zero->Handle(message_ii, &sink));
-
-            ServerMessage message_iv = sink.last_server_response();
-
-            std::clog << "[PartyZero] received MessageIV" << std::endl;
-            RETURN_IF_ERROR(party_zero->Handle(message_iv, &sink));
-
+        this->datasets[day] = dailyset;
     }
+}
+
+Status PartyZeroWithPayload::SendMessageI(MessageSink<ClientMessage>* sink) {
+    ClientMessage msg;
+
+    ASSIGN_OR_RETURN(auto message_i, GenerateMessageI(datasets[current_day]));
+
+    *(msg.mutable_party_zero_msg()->mutable_message_i()) = message_i;
+    return sink->Send(msg);
+}
+
+StatusOr<PartyZeroMessage::MessageI> PartyZeroWithPayload::GenerateMessageI(
+    std::vector<ElementAndPayload> elements
+) {
+    Timer timer("[Timer] generate MessageI");
+    PartyZeroMessage::MessageI msg;
+
+    std::clog << "[PartyZeroWithPayload] inserting our into tree" << std::endl;
+    Timer insert("[Timer] our tree update");
+    std::vector<std::string> hsh;
+
+    std::vector<CryptoNode<ElementAndPayload>> updates = this->my_tree.insert(elements, hsh);
+
+    for (size_t i = 0; i < updates.size(); ++i) {
+        updates[i].pad(this->ctx_);
+
+        ASSIGN_OR_RETURN(
+            CryptoNode<CiphertextAndPayload> ciphertext,
+            EncryptNode(this->ctx_, this->encrypter.get(), this->paillier.get(), updates[i])
+        );
+
+        // attach to outgoing message
+        RETURN_IF_ERROR(ciphertext.serialize(msg.mutable_tree_updates()->add_nodes()));
+    }
+
+    for (const std::string &cur_hsh : hsh) {
+        msg.mutable_hash_set()->add_elements(cur_hsh);
+    }
+    insert.stop();
+
+    std::clog << "[PartyZeroWithPayload] computing (y - x)" << std::endl;
+    Timer compute("[Timer] computing (y - x)");
+
+    for (size_t i = 0; i < elements.size(); ++i) {
+        std::vector<Ciphertext> path = this->other_tree.getPath(elements[i].first);
+        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i].first));
+        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
+        ASSIGN_OR_RETURN(BigNum payload, paillier->Encrypt(elements[i].second));
+
+        for (size_t j = 0; j < path.size(); ++j) {
+            Ciphertext y = std::move(path[j]);
+
+            // homomorphically subtract x and rerandomize
+            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
+            ASSIGN_OR_RETURN(Ciphertext randomized, encrypter->ReRandomize(y_minus_x));
+
+            // add this to the message
+            auto candidate = msg.mutable_candidates()->add_elements();
+            ASSIGN_OR_RETURN(
+                *candidate->mutable_element(),
+                elgamal_proto_util::SerializeCiphertext(randomized)
+            );
+            *candidate->mutable_payload() = payload.ToBytes();
+        }
+    }
+
+    compute.stop();
+    timer.stop();
+    return msg;
+}
+
+Status PartyZeroWithPayload::SendMessageIII(
+    const PartyOneMessage::MessageII& res,
+    MessageSink<ClientMessage>* sink
+) {
+    Timer timer("[Timer] send MessageIII");
+
+    Timer update("[Timer] their tree update");
+    std::vector<std::string> other_hsh;
+
+    for (const std::string& cur_hsh : res.hash_set().elements()) {
+        other_hsh.push_back(std::move(cur_hsh));
+    }
+
+    std::vector<CryptoNode<Ciphertext>> new_nodes;
+    for (const TreeNode& cur_node : res.tree_updates().nodes()) {
+        auto* node = new CryptoNode<Ciphertext>(DEFAULT_NODE_SIZE);
+        for (const EncryptedElement& element : cur_node.elements()) {
+            ASSIGN_OR_RETURN(
+                auto ciphertext,
+                elgamal_proto_util::DeserializeCiphertext(this->group, element.element())
+            );
+            node->addElement(ciphertext);
+        }
+        new_nodes.push_back(std::move(*node));
+    }
+    this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
+    update.stop();
+
+    Timer results("[Timer] generate MessageIII");
+    ASSIGN_OR_RETURN(
+        std::vector<CiphertextAndPayload> candidates,
+        DeserializeCiphertextAndPayloads(res.candidates().elements(), this->ctx_, this->group)
+    );
+
+    ClientMessage msg;
+
+    ASSIGN_OR_RETURN(
+        PartyZeroMessage::MessageIII req,
+        GenerateMessageIII(std::move(candidates))
+    );
+    *(msg.mutable_party_zero_msg()->mutable_message_iii()) = std::move(req);
+    results.stop();
     timer.stop();
 
-    std::cout << "[PartyZero] sum = " << party_zero->sum << std::endl;
+    return sink->Send(msg);
+}
+
+Status PartyZeroWithPayload::Handle(const ServerMessage& msg, MessageSink<ClientMessage>* sink) {
+    if (protocol_finished()) {
+        return InvalidArgumentError("[PartyZeroWithPayload] protocol is already complete");
+    } else if (!msg.has_party_one_msg()) {
+        return InvalidArgumentError("[PartyZeroWithPayload] incorrect message type");
+    }
+
+    if (msg.party_one_msg().has_message_ii()) {
+        RETURN_IF_ERROR(SendMessageIII(msg.party_one_msg().message_ii(), sink));
+    } else if (msg.party_one_msg().has_message_iv()) {
+        RETURN_IF_ERROR(ProcessMessageIV(msg.party_one_msg().message_iv()));
+    } else {
+        return InvalidArgumentError(
+            "[PartyZeroWithPayload] received a party one message of unknown type"
+        );
+    }
 
     return OkStatus();
 }
 
-}  // namespace
-}  // namespace upsi
 
-int main(int argc, char** argv) {
-    absl::ParseCommandLine(argc, argv);
+////////////////////////////////////////////////////////////////////////////////
+// CARDINALITY CLASS METHODS
+////////////////////////////////////////////////////////////////////////////////
 
-    if (!DEBUG) { std::clog.setstate(std::ios_base::failbit); }
+void PartyZeroCardinality::LoadData(const std::vector<PartyZeroDataset>& datasets) {
+    this->datasets.resize(this->total_days);
+    for (auto day = 0; day < this->total_days; day++) {
+        std::vector<Element> dailyset;
+        for (size_t i = 0; i < datasets[day].first.size(); i++) {
+            dailyset.push_back(datasets[day].first[i]);
+        }
+        this->datasets[day] = dailyset;
+    }
+}
 
-    auto status = upsi::RunPartyZero();
+Status PartyZeroCardinality::SendMessageI(MessageSink<ClientMessage>* sink) {
+    ClientMessage msg;
 
-    std::clog.clear();
+    ASSIGN_OR_RETURN(auto message_i, GenerateMessageI(datasets[current_day]));
 
-    if (!status.ok()) {
-        std::cerr << "[PartyZero] failure " << std::endl;
-        std::cerr << status << std::endl;
-        return 1;
+    *(msg.mutable_party_zero_msg()->mutable_message_i()) = message_i;
+    return sink->Send(msg);
+}
+
+StatusOr<PartyZeroMessage::MessageI> PartyZeroCardinality::GenerateMessageI(
+    std::vector<Element> elements
+) {
+    Timer timer("[Timer] generate MessageI");
+    PartyZeroMessage::MessageI msg;
+
+    std::clog << "[PartyZeroCardinality] inserting our into tree" << std::endl;
+    Timer insert("[Timer] our tree update");
+    std::vector<std::string> hsh;
+
+    std::vector<CryptoNode<Element>> updates = this->my_tree.insert(elements, hsh);
+
+    for (size_t i = 0; i < updates.size(); ++i) {
+        updates[i].pad(this->ctx_);
+
+        ASSIGN_OR_RETURN(
+            CryptoNode<Ciphertext> ciphertext,
+            EncryptNode(this->ctx_, this->encrypter.get(), updates[i])
+        );
+
+        // attach to outgoing message
+        RETURN_IF_ERROR(ciphertext.serialize(msg.mutable_tree_updates()->add_nodes()));
     }
 
-    return 0;
+    for (const std::string &cur_hsh : hsh) {
+        msg.mutable_hash_set()->add_elements(cur_hsh);
+    }
+    insert.stop();
+
+    std::clog << "[PartyZeroCardinality] computing (y - x)" << std::endl;
+    Timer compute("[Timer] computing (y - x)");
+
+    for (size_t i = 0; i < elements.size(); ++i) {
+        std::vector<Ciphertext> path = this->other_tree.getPath(elements[i]);
+        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i]));
+        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
+
+        for (size_t j = 0; j < path.size(); ++j) {
+            Ciphertext y = std::move(path[j]);
+
+            // homomorphically subtract x and rerandomize
+            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
+            ASSIGN_OR_RETURN(Ciphertext randomized, encrypter->ReRandomize(y_minus_x));
+
+            // add this to the message
+            auto candidate = msg.mutable_candidates()->add_elements();
+            ASSIGN_OR_RETURN(
+                *candidate->mutable_element(),
+                elgamal_proto_util::SerializeCiphertext(randomized)
+            );
+        }
+    }
+
+    compute.stop();
+    timer.stop();
+    return msg;
 }
+
+Status PartyZeroCardinality::ProcessMessageII(const PartyOneMessage::MessageII& res) {
+    Timer timer("[Timer] send MessageIII");
+
+    Timer update("[Timer] their tree update");
+    std::vector<std::string> other_hsh;
+
+    for (const std::string& cur_hsh : res.hash_set().elements()) {
+        other_hsh.push_back(std::move(cur_hsh));
+    }
+
+    std::vector<CryptoNode<Ciphertext>> new_nodes;
+    for (const TreeNode& cur_node : res.tree_updates().nodes()) {
+        auto* node = new CryptoNode<Ciphertext>(DEFAULT_NODE_SIZE);
+        for (const EncryptedElement& element : cur_node.elements()) {
+            ASSIGN_OR_RETURN(
+                auto ciphertext,
+                elgamal_proto_util::DeserializeCiphertext(this->group, element.element())
+            );
+            node->addElement(ciphertext);
+        }
+        new_nodes.push_back(std::move(*node));
+    }
+    this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
+    update.stop();
+
+    Timer results("[Timer] update cardinality");
+
+    ASSIGN_OR_RETURN(
+        std::vector<Ciphertext> candidates,
+        DeserializeCiphertexts(res.candidates().elements(), this->ctx_, this->group)
+    );
+
+    for (const Ciphertext& candidate : candidates) {
+        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidate));
+        if (plaintext.IsPointAtInfinity()) { 
+            this->cardinality++;
+        }
+    }
+
+    // the day is over after the second message
+    this->current_day++;
+    return OkStatus();
+}
+
+Status PartyZeroCardinality::Handle(
+    const ServerMessage& msg, 
+    MessageSink<ClientMessage>* sink
+) {
+    if (protocol_finished()) {
+        return InvalidArgumentError("[PartyZeroWithPayload] protocol is already complete");
+    } else if (!msg.has_party_one_msg()) {
+        return InvalidArgumentError("[PartyZeroWithPayload] incorrect message type");
+    }
+
+    if (msg.party_one_msg().has_message_ii()) {
+        RETURN_IF_ERROR(ProcessMessageII(msg.party_one_msg().message_ii()));
+    } else {
+        return InvalidArgumentError(
+            "[PartyZeroWithPayload] received a party one message of unknown type"
+        );
+    }
+
+    return OkStatus();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GET PAYLOAD
+////////////////////////////////////////////////////////////////////////////////
+
+ElementAndPayload PartyZeroSum::GetPayload(BigNum element, BigNum value) {
+    return std::make_pair(element, value);
+}
+
+ElementAndPayload PartyZeroSecretShare::GetPayload(BigNum element, BigNum value) {
+    return std::make_pair(element, element);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RUN
+////////////////////////////////////////////////////////////////////////////////
+
+Status PartyZeroCardinality::Run(Connection* sink) {
+    while (!protocol_finished()) {
+        std::clog << "[PartyZero] sending MessageI" << std::endl;
+        RETURN_IF_ERROR(SendMessageI(sink));
+
+        ServerMessage message_ii = sink->last_server_response();
+        std::clog << "[PartyZero] received MessageII" << std::endl;
+
+        std::clog << "[PartyZero] sending MessageIII" << std::endl;
+        RETURN_IF_ERROR(Handle(message_ii, sink));
+    }
+    return OkStatus();
+}
+
+Status PartyZeroSum::Run(Connection* sink) {
+    while (!protocol_finished()) {
+        std::clog << "[PartyZero] sending MessageI" << std::endl;
+        RETURN_IF_ERROR(SendMessageI(sink));
+
+        ServerMessage message_ii = sink->last_server_response();
+        std::clog << "[PartyZero] received MessageII" << std::endl;
+
+        std::clog << "[PartyZero] sending MessageIII" << std::endl;
+        RETURN_IF_ERROR(Handle(message_ii, sink));
+
+        ServerMessage message_iv = sink->last_server_response();
+
+        std::clog << "[PartyZero] received MessageIV" << std::endl;
+        RETURN_IF_ERROR(Handle(message_iv, sink));
+    }
+    return OkStatus();
+}
+
+Status PartyZeroSecretShare::Run(Connection* sink) {
+    while (!protocol_finished()) {
+        std::clog << "[PartyZero] sending MessageI" << std::endl;
+        RETURN_IF_ERROR(SendMessageI(sink));
+
+        ServerMessage message_ii = sink->last_server_response();
+        std::clog << "[PartyZero] received MessageII" << std::endl;
+
+        std::clog << "[PartyZero] sending MessageIII" << std::endl;
+        RETURN_IF_ERROR(Handle(message_ii, sink));
+    }
+    return OkStatus();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// GENERATE MESSAGE III
+////////////////////////////////////////////////////////////////////////////////
+
+StatusOr<PartyZeroMessage::MessageIII> PartyZeroSum::GenerateMessageIII(
+    std::vector<CiphertextAndPayload> candidates
+) {
+    PartyZeroMessage::MessageIII req;
+    BigNum ciphertext = this->ctx_->Zero();
+
+    for (size_t i = 0; i < candidates.size(); i++) {
+        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i].first));
+        if (plaintext.IsPointAtInfinity()) { 
+            this->cardinality++;
+            if (ciphertext.IsZero()) {
+                ciphertext = candidates[i].second;
+            } else {
+                ciphertext = paillier->Add(ciphertext, candidates[i].second);
+            }
+        }
+    }
+
+    this->sum_ciphertext = ciphertext;
+    *req.add_payloads()->mutable_ciphertext() = ciphertext.ToBytes(); 
+    return req;
+}
+
+StatusOr<PartyZeroMessage::MessageIII> PartyZeroSecretShare::GenerateMessageIII(
+    std::vector<CiphertextAndPayload> candidates
+) {
+    PartyZeroMessage::MessageIII req;
+
+    for (size_t i = 0; i < candidates.size(); i++) {
+        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i].first));
+        if (plaintext.IsPointAtInfinity()) { 
+            BigNum share = this->ctx_->GenerateRandLessThan(this->paillier->n);
+
+            // save -share as our share
+            shares.push_back(this->paillier->n - share);
+
+            // element + share is their share
+            ASSIGN_OR_RETURN(BigNum encrypted, this->paillier->Encrypt(share));
+            encrypted = paillier->Add(candidates[i].second, encrypted);
+            ASSIGN_OR_RETURN(BigNum partial, this->paillier->PartialDecrypt(encrypted));
+            *req.add_payloads()->mutable_ciphertext() = encrypted.ToBytes(); 
+            *req.add_payloads()->mutable_ciphertext() = partial.ToBytes(); 
+        }
+    }
+    // the day is over for us since there are no more incoming messages
+    this->current_day++;
+    return req;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PROCESS MESSAGE IV
+////////////////////////////////////////////////////////////////////////////////
+
+Status PartyZeroSum::ProcessMessageIV(const PartyOneMessage::MessageIV& msg) {
+    for (auto payload : msg.payloads()) {
+        ASSIGN_OR_RETURN(
+            BigNum big, 
+            this->paillier->Decrypt(
+                this->sum_ciphertext, 
+                this->ctx_->CreateBigNum(payload.ciphertext())
+            )
+        );
+        ASSIGN_OR_RETURN(uint64_t sum, big.ToIntValue());
+        this->sum += sum;
+    }
+    this->current_day++;
+    return OkStatus();
+}
+
+Status PartyZeroSecretShare::ProcessMessageIV(const PartyOneMessage::MessageIV& msg) {
+    // there is no fourth message for secret share
+    return OkStatus();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// PRINT RESULT
+////////////////////////////////////////////////////////////////////////////////
+
+void PartyZeroCardinality::PrintResult() {
+    std::cout << "[PartyZero] CARDINALITY = " << this->cardinality << std::endl;
+}
+
+void PartyZeroSum::PrintResult() {
+    std::cout << "[PartyZero] CARDINALITY = " << this->cardinality << std::endl;
+    std::cout << "[PartyZero] SUM = " << this->sum << std::endl;
+}
+
+void PartyZeroSecretShare::PrintResult() {
+    std::cout << "[PartyZero] CARDINALITY = " << this->shares.size() << std::endl;
+}
+
+}  // namespace upsi

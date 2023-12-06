@@ -36,12 +36,12 @@ mkdir data
 To run the protocol, have two instances (terminals) open. First we initialize Party 1 using:
 
 ```bash
-./bazel-bin/upsi/party_one
+./bazel-bin/upsi/run --party=1 --func=CA
 ```
 
 Then we initialize Party 0 using:
 ```bash
-./bazel-bin/upsi/party_zero
+./bazel-bin/upsi/run --party=0 --func=CA
 ```
 
 Note that the parameters (such as the number of days) for the experiments can be edited in `party_zero.cc` and `party_one.cc`.

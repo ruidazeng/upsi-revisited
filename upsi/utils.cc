@@ -8,25 +8,69 @@
 
 namespace upsi {
 
-StatusOr<std::vector<CiphertextAndPayload>> DeserializeCandidates(
+
+bool AbslParseFlag(absl::string_view text, Functionality* func, std::string* err) {
+    if (text == "PSI") { *func = Functionality::PSI; }
+    else if (text == "CA") { *func = Functionality::CA; }
+    else if (text == "SUM") { *func = Functionality::SUM; }
+    else if (text == "SS") { *func = Functionality::SS; }
+    else { 
+        *err = "unknown functionality"; 
+        return false;
+    }
+    return true;
+}
+
+std::string AbslUnparseFlag(Functionality func) {
+    switch (func) {
+        case Functionality::PSI:
+            return "PSI";
+        case Functionality::CA:
+            return "CA";
+        case Functionality::SUM:
+            return "SUM";
+        case Functionality::SS:
+            return "SS";
+        default:
+            return "CA";
+    }
+}
+
+StatusOr<std::vector<Ciphertext>> DeserializeCiphertexts(
     const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
     Context* ctx,
     ECGroup* group
 ) {
-    std::vector<CiphertextAndPayload> candidates;
+    std::vector<Ciphertext> ciphertexts;
     for (const EncryptedElement& element : serialized) {
         ASSIGN_OR_RETURN(
             Ciphertext ciphertext,
             elgamal_proto_util::DeserializeCiphertext(group, element.element())
         );
-        candidates.push_back(
+        ciphertexts.push_back(std::move(ciphertext));
+    }
+    return ciphertexts;
+}
+
+StatusOr<std::vector<CiphertextAndPayload>> DeserializeCiphertextAndPayloads(
+    const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
+    Context* ctx,
+    ECGroup* group
+) {
+    std::vector<CiphertextAndPayload> ciphertexts;
+    for (const EncryptedElement& element : serialized) {
+        ASSIGN_OR_RETURN(
+            Ciphertext ciphertext,
+            elgamal_proto_util::DeserializeCiphertext(group, element.element())
+        );
+        ciphertexts.push_back(
             std::make_pair(
                 std::move(ciphertext),
                 ctx->CreateBigNum(element.payload())
             )
         );
     }
-    return candidates;
+    return ciphertexts;
 }
 
 StatusOr<ECPoint> exponentiate(ECGroup* group, const BigNum& m) {

@@ -41,7 +41,7 @@ message PartyZeroMessage {
   }
 
   message MessageIII {
-    repeated bytes payloads = 1;
+    repeated PaillierCiphertext payloads = 1;
   }
 }
 
@@ -64,6 +64,6 @@ message PartyOneMessage {
   }
 
   message MessageIV {
-    repeated bytes payloads = 1;
+    repeated PaillierCiphertext payloads = 1;
   }
 }

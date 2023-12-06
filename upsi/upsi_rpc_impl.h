@@ -22,9 +22,9 @@
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/server_context.h"
 #include "include/grpcpp/support/status.h"
+#include "upsi/party_one.h"
 #include "upsi/upsi.grpc.pb.h"
 #include "upsi/upsi.pb.h"
-#include "upsi/protocol_server.h"
 
 namespace upsi {
 
@@ -40,7 +40,7 @@ class UPSIRpcImpl : public UPSIRpc::Service {
   // protocol_server_impls' Handle methods should therefore Send at most one
   // message to the server_message_sink.
   explicit UPSIRpcImpl(
-      std::unique_ptr<ProtocolServer> protocol_server_impl)
+      std::unique_ptr<PartyOne> protocol_server_impl)
       : protocol_server_impl_(std::move(protocol_server_impl)) {}
 
   // Executes a round of the protocol.
@@ -53,7 +53,7 @@ class UPSIRpcImpl : public UPSIRpc::Service {
   }
 
  private:
-  std::unique_ptr<ProtocolServer> protocol_server_impl_;
+  std::unique_ptr<PartyOne> protocol_server_impl_;
 };
 
 }  // namespace upsi

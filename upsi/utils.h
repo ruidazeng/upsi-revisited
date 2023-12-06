@@ -55,10 +55,20 @@ namespace upsi {
     // protocol functionality options
     enum Functionality { PSI, CA, SUM, SS };
 
+    // these allow us to have a Functionality command line flag
+    bool AbslParseFlag(absl::string_view text, Functionality* func, std::string* err);
+    std::string AbslUnparseFlag(Functionality func);
+
 
 	typedef std::string BinaryHash;
 
-    StatusOr<std::vector<CiphertextAndPayload>> DeserializeCandidates(
+    StatusOr<std::vector<Ciphertext>> DeserializeCiphertexts(
+        const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
+        Context* ctx,
+        ECGroup* group
+    );
+
+    StatusOr<std::vector<CiphertextAndPayload>> DeserializeCiphertextAndPayloads(
         const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
         Context* ctx,
         ECGroup* group

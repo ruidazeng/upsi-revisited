@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <thread>
+
 #include "upsi/upsi_rpc_impl.h"
 
 #include "upsi/util/status.inc"
