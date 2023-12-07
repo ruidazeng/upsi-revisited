@@ -187,39 +187,6 @@ cc_library(
 )
 
 cc_library(
-    name = "simultaneous_fixed_bases_exp",
-    srcs = [
-        "simultaneous_fixed_bases_exp.cc",
-    ],
-    hdrs = [
-        "simultaneous_fixed_bases_exp.h",
-    ],
-    deps = [
-        ":bn_util",
-        ":ec_util",
-        ":elgamal",
-        ":mont_mul",
-        ":paillier",
-        "//upsi/util:status_includes",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "simultaneous_fixed_bases_exp_test",
-    srcs = [
-        "simultaneous_fixed_bases_exp_test.cc",
-    ],
-    deps = [
-        ":elgamal",
-        ":simultaneous_fixed_bases_exp",
-        "//upsi/util:status_includes",
-        "//upsi/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
     name = "two_modulus_crt",
     srcs = [
         "two_modulus_crt.cc",
@@ -275,93 +242,6 @@ cc_test(
     ],
 )
 
-cc_library(
-    name = "shanks_discrete_log",
-    srcs = [
-        "shanks_discrete_log.cc",
-    ],
-    hdrs = [
-        "shanks_discrete_log.h",
-    ],
-    deps = [
-        ":bn_util",
-        ":ec_util",
-        ":elgamal",
-        "//upsi/util:status_includes",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "camenisch_shoup",
-    srcs = [
-        "camenisch_shoup.cc",
-    ],
-    hdrs = [
-        "camenisch_shoup.h",
-    ],
-    deps = [
-        ":bn_util",
-        ":fixed_base_exp",
-        "//upsi/crypto/proto:big_num_cc_proto",
-        "//upsi/crypto/proto:camenisch_shoup_cc_proto",
-        "//upsi/crypto/proto:proto_util",
-        "//upsi/util:status_includes",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "camenisch_shoup_test",
-    srcs = [
-        "camenisch_shoup_test.cc",
-    ],
-    deps = [
-        ":bn_util",
-        ":camenisch_shoup",
-        "//upsi/crypto/proto:camenisch_shoup_cc_proto",
-        "//upsi/crypto/proto:proto_util",
-        "//upsi/util:status_includes",
-        "//upsi/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "pedersen_over_zn",
-    srcs = [
-        "pedersen_over_zn.cc",
-    ],
-    hdrs = [
-        "pedersen_over_zn.h",
-    ],
-    deps = [
-        ":bn_util",
-        ":simultaneous_fixed_bases_exp",
-        "//upsi/crypto/proto:big_num_cc_proto",
-        "//upsi/crypto/proto:pedersen_cc_proto",
-        "//upsi/crypto/proto:proto_util",
-        "//upsi/util:status_includes",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "pedersen_over_zn_test",
-    size = "medium",
-    srcs = ["pedersen_over_zn_test.cc"],
-    tags = ["requires-net:external"],
-    deps = [
-        ":bn_util",
-        ":pedersen_over_zn",
-        "//upsi/crypto/proto:pedersen_cc_proto",
-        "//upsi/crypto/proto:proto_util",
-        "//upsi/util:status_includes",
-        "//upsi/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
-    ],
-)
-
 grpc_proto_library(
     name = "ec_key_proto",
     srcs = ["ec_key.proto"],
@@ -370,15 +250,4 @@ grpc_proto_library(
 grpc_proto_library(
     name = "elgamal_proto",
     srcs = ["elgamal.proto"],
-)
-
-cc_library(
-    name = "hash",
-    hdrs = [
-        "hash.h",
-    ],
-    deps = [
-        ":bn_util",
-        "@com_google_absl//absl/strings",
-    ],
 )
