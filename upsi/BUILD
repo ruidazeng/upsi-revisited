@@ -193,8 +193,10 @@ cc_library(
     deps = [
         ":crypto_node",
         ":utils",
-        "//upsi/crypto:ec_commutative_cipher",
+        "//upsi/crypto:ec_util",
+        "//upsi/crypto:elgamal",
         "//upsi/crypto:paillier",
+        "//upsi/util:elgamal_proto_util",
     ],
 )
 

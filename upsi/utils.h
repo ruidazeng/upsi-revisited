@@ -36,7 +36,7 @@ namespace upsi {
     #define CURVE_ID NID_X9_62_prime256v1
 	#define DEFAULT_NODE_SIZE 4
 
-    #define ELEMENT_STR_LENGTH 32
+    #define ELEMENT_STR_LENGTH 16
 
 	#define DEBUG 1
 
@@ -65,6 +65,11 @@ namespace upsi {
     StatusOr<std::vector<Ciphertext>> DeserializeCiphertexts(
         const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
         Context* ctx,
+        ECGroup* group
+    );
+
+    StatusOr<std::vector<std::pair<Ciphertext, Ciphertext>>> DeserializeCiphertextAndElGamals(
+        const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
         ECGroup* group
     );
 

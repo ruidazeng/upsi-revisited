@@ -46,6 +46,40 @@ class PartyOne : public Party {
         virtual void PrintResult() { }
 };
 
+class PartyOneNoPayload : public PartyOne {
+    public:
+        PartyOneNoPayload(
+            Context* ctx,
+            std::string epk_fn,
+            std::string esk_fn,
+            std::string psk_fn,
+            const std::vector<PartyOneDataset>& datasets,
+            int total_days
+        ) : PartyOne(ctx, epk_fn, esk_fn, psk_fn, total_days), datasets(datasets) { }
+
+        ~PartyOneNoPayload() override = default;
+
+        /**
+         * update their tree, compute candidates, & send tree updates
+         */
+        virtual StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
+            const PartyZeroMessage::MessageI& msg,
+            std::vector<Element> elements
+        ) = 0;
+
+        /**
+         * delegate incoming messages to other methods
+         */
+        Status Handle(const ClientMessage& request, MessageSink<ServerMessage>* sink) override;
+
+    protected:
+        // one dataset for each day
+        std::vector<std::vector<Element>> datasets;
+
+        // our plaintext tree & their encrypted tree
+        CryptoTree<Element> my_tree;
+        CryptoTree<Ciphertext> other_tree;
+};
 
 class PartyOneWithPayload : public PartyOne {
     public:
@@ -84,16 +118,28 @@ class PartyOneWithPayload : public PartyOne {
         CryptoTree<CiphertextAndPayload> other_tree;
 };
 
-class PartyOneCardinality : public PartyOne {
+class PartyOnePSI : public PartyOneNoPayload {
+
     public:
-        PartyOneCardinality(
-            Context* ctx,
-            std::string epk_fn,
-            std::string esk_fn,
-            std::string psk_fn,
-            const std::vector<PartyOneDataset>& datasets,
-            int total_days
-        ) : PartyOne(ctx, epk_fn, esk_fn, psk_fn, total_days), datasets(datasets) { }
+
+        using PartyOneNoPayload::PartyOneNoPayload;
+
+        ~PartyOnePSI() override = default;
+
+        /**
+         * update their tree, compute candidates, & send tree updates
+         */
+        StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
+            const PartyZeroMessage::MessageI& msg,
+            std::vector<Element> elements
+        );
+};
+
+class PartyOneCardinality : public PartyOneNoPayload {
+
+    public:
+
+        using PartyOneNoPayload::PartyOneNoPayload;
 
         ~PartyOneCardinality() override = default;
 
@@ -104,19 +150,6 @@ class PartyOneCardinality : public PartyOne {
             const PartyZeroMessage::MessageI& msg,
             std::vector<Element> elements
         );
-
-        /**
-         * delegate incoming messages to other methods
-         */
-        Status Handle(const ClientMessage& request, MessageSink<ServerMessage>* sink) override;
-
-    protected:
-        // one dataset for each day
-        std::vector<std::vector<Element>> datasets;
-
-        // our plaintext tree & their encrypted tree
-        CryptoTree<Element> my_tree;
-        CryptoTree<Ciphertext> other_tree;
 };
 
 class PartyOneSum : public PartyOneWithPayload {

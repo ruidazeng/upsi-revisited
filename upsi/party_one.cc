@@ -37,29 +37,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
     PartyOneMessage::MessageII response;
 
     Timer update("[Timer] their tree update");
-    std::vector<std::string> other_hsh;
-
-    for (const std::string& cur_hsh : request.hash_set().elements()) {
-        other_hsh.push_back(std::move(cur_hsh));
-    }
-
-    std::vector<CryptoNode<CiphertextAndPayload>> new_nodes;
-    for (const TreeNode& cur_node : request.tree_updates().nodes()) {
-        auto* node = new CryptoNode<CiphertextAndPayload>(DEFAULT_NODE_SIZE);
-        for (const EncryptedElement& element : cur_node.elements()) {
-            ASSIGN_OR_RETURN(
-                auto ciphertext,
-                elgamal_proto_util::DeserializeCiphertext(this->group, element.element())
-            );
-            auto pair = std::make_pair(
-                std::move(ciphertext), 
-                this->ctx_->CreateBigNum(element.payload())
-            );
-            node->addElement(pair);
-        }
-        new_nodes.push_back(std::move(*node));
-    }
-    this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
+    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
     update.stop();
 
     Timer cand("[Timer] compute candidates");
@@ -107,38 +85,109 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
         auto candidate = response.mutable_candidates()->add_elements();
         ASSIGN_OR_RETURN(candidates[i].first, decrypter->PartialDecrypt(candidates[i].first));
         ASSIGN_OR_RETURN(
-            *candidate->mutable_element(),
+            *candidate->mutable_paillier()->mutable_element(),
             elgamal_proto_util::SerializeCiphertext(candidates[i].first)
         );
         // TODO: rerandomize the payload
-        *candidate->mutable_payload() = candidates[i].second.ToBytes();
+        *candidate->mutable_paillier()->mutable_payload() = candidates[i].second.ToBytes();
     }
     partial.stop();
 
-    Timer ourupdate("[Timer] our tree update");
-    std::vector<std::string> hsh;
-    auto updates = this->my_tree.insert(elements, hsh);
-
-    for (size_t i = 0; i < updates.size(); ++i) {
-        updates[i].pad(this->ctx_);
-
-        ASSIGN_OR_RETURN(
-            CryptoNode<Ciphertext> ciphertext,
-            EncryptNode(this->ctx_, this->encrypter.get(), updates[i])
-        );
-
-        // attach to outgoing message
-        RETURN_IF_ERROR(ciphertext.serialize(response.mutable_tree_updates()->add_nodes()));
-    }
-
-    for (const std::string &cur_hsh : hsh) {
-        response.mutable_hash_set()->add_elements(cur_hsh);
-    }
-    ourupdate.stop();
+    // update our tree
+    RETURN_IF_ERROR(my_tree.Update(
+        this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
+    ));
 
     timer.stop();
     return response;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// CARDINALITY
+////////////////////////////////////////////////////////////////////////////////
+
+StatusOr<PartyOneMessage::MessageII> PartyOnePSI::GenerateMessageII(
+    const PartyZeroMessage::MessageI& request,
+    std::vector<Element> elements
+) {
+    Timer timer("[Timer] generate MessageII");
+    PartyOneMessage::MessageII response;
+
+    Timer update("[Timer] their tree update");
+    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
+    update.stop();
+
+    Timer cand("[Timer] compute candidates");
+    ASSIGN_OR_RETURN(
+        auto candidates,
+        DeserializeCiphertextAndElGamals(request.candidates().elements(), this->group)
+    );
+
+    for (size_t i = 0; i < elements.size(); ++i) {
+        std::vector<Ciphertext> path = this->other_tree.getPath(elements[i]);
+        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i]));
+        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
+
+        for (size_t j = 0; j < path.size(); ++j) {
+            Ciphertext y = std::move(path[j]);
+            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
+            candidates.push_back(std::make_pair(
+                std::move(y_minus_x), std::move(y)
+            ));
+        }
+    }
+    cand.stop();
+
+    Timer shuffle("[Timer] shuffle candidates");
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::shuffle(candidates.begin(), candidates.end(), gen);
+    shuffle.stop();
+
+    Timer masking("[Timer] mask candidates");
+    for (size_t i = 0; i < candidates.size(); i++) {
+        BigNum alpha = this->encrypter->CreateRandomMask();
+        BigNum beta = this->encrypter->CreateRandomMask();
+        ASSIGN_OR_RETURN(
+            candidates[i].first, 
+            elgamal::Exp(candidates[i].first, alpha)
+        );
+        ASSIGN_OR_RETURN(
+            Ciphertext mask,
+            elgamal::Exp(candidates[i].first, beta)
+        );
+        ASSIGN_OR_RETURN(
+            candidates[i].second,
+            elgamal::Mul(candidates[i].second, mask)
+        );
+    }
+    masking.stop();
+
+    Timer partial("[Timer] part decrypting");
+    for (size_t i = 0; i < candidates.size(); i++) {
+        auto candidate = response.mutable_candidates()->add_elements();
+        ASSIGN_OR_RETURN(candidates[i].first, decrypter->PartialDecrypt(candidates[i].first));
+        ASSIGN_OR_RETURN(candidates[i].second, decrypter->PartialDecrypt(candidates[i].second));
+        ASSIGN_OR_RETURN(
+            *candidate->mutable_elgamal()->mutable_element(),
+            elgamal_proto_util::SerializeCiphertext(candidates[i].first)
+        );
+        ASSIGN_OR_RETURN(
+            *candidate->mutable_elgamal()->mutable_payload(),
+            elgamal_proto_util::SerializeCiphertext(candidates[i].second)
+        );
+    }
+    partial.stop();
+
+    // update our tree
+    RETURN_IF_ERROR(my_tree.Update(
+        this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
+    ));
+
+    timer.stop();
+    return response;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // CARDINALITY
@@ -152,25 +201,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
     PartyOneMessage::MessageII response;
 
     Timer update("[Timer] their tree update");
-    std::vector<std::string> other_hsh;
-
-    for (const std::string& cur_hsh : request.hash_set().elements()) {
-        other_hsh.push_back(std::move(cur_hsh));
-    }
-
-    std::vector<CryptoNode<Ciphertext>> new_nodes;
-    for (const TreeNode& cur_node : request.tree_updates().nodes()) {
-        auto* node = new CryptoNode<Ciphertext>(DEFAULT_NODE_SIZE);
-        for (const EncryptedElement& element : cur_node.elements()) {
-            ASSIGN_OR_RETURN(
-                auto ciphertext,
-                elgamal_proto_util::DeserializeCiphertext(this->group, element.element())
-            );
-            node->addElement(ciphertext);
-        }
-        new_nodes.push_back(std::move(*node));
-    }
-    this->other_tree.replaceNodes(other_hsh.size(), new_nodes, other_hsh);
+    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
     update.stop();
 
     Timer cand("[Timer] compute candidates");
@@ -213,32 +244,16 @@ StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
         auto candidate = response.mutable_candidates()->add_elements();
         ASSIGN_OR_RETURN(candidates[i], decrypter->PartialDecrypt(candidates[i]));
         ASSIGN_OR_RETURN(
-            *candidate->mutable_element(),
+            *candidate->mutable_no_payload()->mutable_element(),
             elgamal_proto_util::SerializeCiphertext(candidates[i])
         );
     }
     partial.stop();
 
-    Timer ourupdate("[Timer] our tree update");
-    std::vector<std::string> hsh;
-    auto updates = this->my_tree.insert(elements, hsh);
-
-    for (size_t i = 0; i < updates.size(); ++i) {
-        updates[i].pad(this->ctx_);
-
-        ASSIGN_OR_RETURN(
-            CryptoNode<Ciphertext> ciphertext,
-            EncryptNode(this->ctx_, this->encrypter.get(), updates[i])
-        );
-
-        // attach to outgoing message
-        RETURN_IF_ERROR(ciphertext.serialize(response.mutable_tree_updates()->add_nodes()));
-    }
-
-    for (const std::string &cur_hsh : hsh) {
-        response.mutable_hash_set()->add_elements(cur_hsh);
-    }
-    ourupdate.stop();
+    // update our tree
+    RETURN_IF_ERROR(my_tree.Update(
+        this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
+    ));
 
     timer.stop();
     return response;
@@ -289,7 +304,7 @@ StatusOr<PartyOneMessage::MessageIV> PartyOneSecretShare::ProcessMessageIII(
 // HANDLE
 ////////////////////////////////////////////////////////////////////////////////
 
-Status PartyOneCardinality::Handle(const ClientMessage& req, MessageSink<ServerMessage>* sink) {
+Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMessage>* sink) {
     if (protocol_finished()) {
         return InvalidArgumentError("[PartyOneWithPayload] protocol is already complete");
     } else if (!req.has_party_zero_msg()) {

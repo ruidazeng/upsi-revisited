@@ -88,7 +88,7 @@ void CryptoNode<CiphertextAndPayload>::pad(Context* ctx) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// CRYPTONODE::ENCRYPT()
+// ENCRYPT NODE
 ////////////////////////////////////////////////////////////////////////////////
 StatusOr<CryptoNode<Ciphertext>> EncryptNode(
     Context* ctx,
@@ -137,7 +137,7 @@ Status CryptoNode<Ciphertext>::serialize(TreeNode* obj) {
     for (const Ciphertext& elem : node) {
         EncryptedElement* ee = obj->add_elements();
         ASSIGN_OR_RETURN(
-            *ee->mutable_element(), 
+            *ee->mutable_no_payload()->mutable_element(), 
             elgamal_proto_util::SerializeCiphertext(elem)
         );
     }
@@ -149,11 +149,11 @@ Status CryptoNode<CiphertextAndPayload>::serialize(TreeNode* obj) {
     for (const CiphertextAndPayload& elem : node) {
         EncryptedElement* ee = obj->add_elements();
         ASSIGN_OR_RETURN(
-            *ee->mutable_element(), 
+            *ee->mutable_paillier()->mutable_element(), 
             elgamal_proto_util::SerializeCiphertext(std::get<0>(elem))
         );
 
-        *ee->mutable_payload() = std::get<1>(elem).ToBytes();
+        *ee->mutable_paillier()->mutable_payload() = std::get<1>(elem).ToBytes();
     }
     return OkStatus();
 }

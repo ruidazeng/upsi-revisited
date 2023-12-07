@@ -59,6 +59,11 @@ Status RunPartyZero() {
 
     std::unique_ptr<PartyZero> party_zero;
     switch (absl::GetFlag(FLAGS_func)) {
+        case Functionality::PSI:
+            party_zero = std::make_unique<PartyZeroPSI>(
+                &context, epk_fn, esk_fn, ppk_fn, absl::GetFlag(FLAGS_days)
+            );
+            break;
         case Functionality::CA:
             party_zero = std::make_unique<PartyZeroCardinality>(
                 &context, epk_fn, esk_fn, ppk_fn, absl::GetFlag(FLAGS_days)
@@ -121,6 +126,11 @@ Status RunPartyOne() {
 
     std::unique_ptr<PartyOne> party_one;
     switch (absl::GetFlag(FLAGS_func)) {
+        case Functionality::PSI:
+            party_one = std::make_unique<PartyOnePSI>(
+                &context, epk_fn, esk_fn, ppk_fn, std::move(dataset), absl::GetFlag(FLAGS_days)
+            );
+            break;
         case Functionality::CA:
             party_one = std::make_unique<PartyOneCardinality>(
                 &context, epk_fn, esk_fn, ppk_fn, std::move(dataset), absl::GetFlag(FLAGS_days)

@@ -36,6 +36,51 @@ class PartyZero : public Party {
         virtual void PrintResult() = 0;
 };
 
+class PartyZeroNoPayload : public PartyZero {
+
+    public:
+        // use default constructor
+        using PartyZero::PartyZero;
+
+        virtual ~PartyZeroNoPayload() = default;
+
+        /**
+         * set the datasets variable based on the functionality
+         *
+         * this can't happen in the constructor for weird inheritance reasons
+         */
+        void LoadData(const std::vector<PartyZeroDataset>& datasets);
+
+        Status Run(Connection* sink) override;
+
+        /**
+         * send tree updates & intersection candidates
+         */
+        Status SendMessageI(MessageSink<ClientMessage>* sink);
+
+        virtual StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
+            std::vector<Element> elements
+        ) = 0;
+
+        /**
+         * update their tree & compute cardinality
+         */
+        virtual Status ProcessMessageII(const PartyOneMessage::MessageII& res) = 0;
+
+        /**
+         * delegate incoming messages to other methods
+         */
+        Status Handle(const ServerMessage& res, MessageSink<ClientMessage>* sink) override;
+
+    protected:
+        // one dataset for each day
+        std::vector<std::vector<Element>> datasets;
+
+        // our plaintext tree & their encrypted tree
+        CryptoTree<Element> my_tree;
+        CryptoTree<Ciphertext> other_tree;
+};
+
 class PartyZeroWithPayload : public PartyZero {
     public:
         // use default constructor
@@ -93,55 +138,60 @@ class PartyZeroWithPayload : public PartyZero {
         CryptoTree<Ciphertext> other_tree;
 };
 
-class PartyZeroCardinality : public PartyZero {
+class PartyZeroPSI : public PartyZeroNoPayload {
 
     public:
         // use default constructor
-        using PartyZero::PartyZero;
+        using PartyZeroNoPayload::PartyZeroNoPayload;
 
-        virtual ~PartyZeroCardinality() = default;
-
-        /**
-         * set the datasets variable based on the functionality
-         *
-         * this can't happen in the constructor for weird inheritance reasons
-         */
-        void LoadData(const std::vector<PartyZeroDataset>& datasets);
-
-        Status Run(Connection* sink) override;
-
-        /**
-         * send tree updates & intersection candidates
-         */
-        Status SendMessageI(MessageSink<ClientMessage>* sink);
+        virtual ~PartyZeroPSI() = default;
 
         StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
             std::vector<Element> elements
-        );
+        ) override;
 
         /**
          * update their tree & compute cardinality
          */
-        Status ProcessMessageII(const PartyOneMessage::MessageII& res);
+        Status ProcessMessageII(const PartyOneMessage::MessageII& res) override;
+
+        /**
+         * print the cardinality & the intersection (if it's small enough)
+         */
+        void PrintResult() override;
+
+    private:
+        // maps g^x to x
+        std::map<std::string, std::string> group_mapping;
+
+        // elements in the intersection
+        std::vector<std::string> intersection; 
+};
+
+
+class PartyZeroCardinality : public PartyZeroNoPayload {
+
+    public:
+        // use default constructor
+        using PartyZeroNoPayload::PartyZeroNoPayload;
+
+        virtual ~PartyZeroCardinality() = default;
+
+        StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
+            std::vector<Element> elements
+        ) override;
+
+        /**
+         * update their tree & compute cardinality
+         */
+        Status ProcessMessageII(const PartyOneMessage::MessageII& res) override;
 
         /**
          * print cardinality
          */
         void PrintResult() override;
 
-        /**
-         * delegate incoming messages to other methods
-         */
-        Status Handle(const ServerMessage& res, MessageSink<ClientMessage>* sink) override;
-
     protected:
-        // one dataset for each day
-        std::vector<std::vector<Element>> datasets;
-
-        // our plaintext tree & their encrypted tree
-        CryptoTree<Element> my_tree;
-        CryptoTree<Ciphertext> other_tree;
-
         int64_t cardinality = 0;
 };
 
