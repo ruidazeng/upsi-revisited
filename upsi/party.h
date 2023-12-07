@@ -76,8 +76,9 @@ class Party {
         }
 
         // protocol is finished when we've gone through all days
-        bool protocol_finished() { 
-            return (this->current_day == this->total_days);
+        bool protocol_finished() {
+            return false; 
+            // return (this->current_day >= this->total_days);
         }
 };
 
