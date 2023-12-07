@@ -17,26 +17,10 @@ load("@com_github_grpc_grpc//bazel:grpc_build_system.bzl", "grpc_proto_library")
 package(default_visibility = ["//visibility:public"])
 
 grpc_proto_library(
-    name = "match_proto",
-    srcs = ["match.proto"],
-    deps = [
-        "//upsi/crypto:elgamal_proto"
-    ],
-)
-
-grpc_proto_library(
-    name = "private_intersection_proto",
-    srcs = ["private_intersection.proto"],
-    deps = [
-        ":match_proto",
-    ],
-)
-
-grpc_proto_library(
     name = "upsi_proto",
     srcs = ["upsi.proto"],
     deps = [
-        ":private_intersection_proto",
+        "//upsi/crypto:elgamal_proto"
     ],
 )
 
@@ -81,10 +65,8 @@ cc_library(
         ":connection",
         ":crypto_tree",
         ":data_util",
-        ":match_proto",
         ":message_sink",
         ":party",
-        ":private_intersection_proto",
         ":upsi_proto",
         ":utils",
         "//upsi/crypto:bn_util",
@@ -104,10 +86,8 @@ cc_library(
     deps = [
         ":crypto_tree",
         ":data_util",
-        ":match_proto",
         ":message_sink",
         ":party",
-        ":private_intersection_proto",
         ":upsi_proto",
         ":utils",
         "//upsi/crypto:bn_util",
@@ -125,7 +105,7 @@ cc_library(
     srcs = ["data_util.cc"],
     hdrs = ["data_util.h"],
     deps = [
-        ":match_proto",
+        ":upsi_proto",
     	":utils",
         "//upsi/crypto:bn_util",
         "//upsi/util:status_includes",
@@ -199,7 +179,7 @@ cc_library(
     hdrs = ["crypto_node.h"],
     deps = [
         ":utils",
-        ":match_proto",
+        ":upsi_proto",
         "//upsi/crypto:ec_commutative_cipher",
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_proto_util",

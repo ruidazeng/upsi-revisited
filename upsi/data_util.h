@@ -26,7 +26,7 @@
 
 #include "absl/strings/string_view.h"
 #include "upsi/crypto/context.h"
-#include "upsi/match.pb.h"
+#include "upsi/upsi.pb.h"
 #include "upsi/util/status.inc"
 #include "upsi/utils.h"
 

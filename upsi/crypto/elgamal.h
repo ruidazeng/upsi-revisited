@@ -42,7 +42,7 @@
 
 #include "upsi/crypto/ec_group.h"
 #include "upsi/crypto/ec_point.h"
-#include "upsi/match.pb.h"
+#include "upsi/upsi.pb.h"
 #include "upsi/util/status.inc"
 
 namespace upsi {
