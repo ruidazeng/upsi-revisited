@@ -17,12 +17,91 @@ syntax = "proto2";
 
 package upsi;
 
-import "upsi/private_intersection.proto";
+import "upsi/crypto/elgamal.proto";
+
+/*
+ * PROTOCOL DATA TYPES
+ */
+message TreeNodes {
+	repeated TreeNode nodes = 1;
+}
+
+message TreeNode {
+  repeated EncryptedElement elements = 2;
+}
+
+message EncryptedSet {
+  repeated EncryptedElement elements = 1;
+}
+
+message HashSet {
+  repeated bytes elements = 1;
+}
+
+message EncryptedElement {
+  optional ElGamalCiphertext element = 1;
+  optional bytes payload = 3;
+}
+
+message PaillierCiphertext {
+  optional bytes ciphertext = 1;
+}
+
+/*
+ * PARTY ZERO
+ */
+message PartyZeroMessage {
+  oneof message_content {
+    //StartProtocolRequest start = 1;
+    MessageI message_i = 1;
+    MessageIII message_iii = 2;
+  }
+
+  // For initiating the protocol.
+  // Client key exchange - Threshold ElGamal
+  message StartProtocolRequest { }
+
+  // Message containing the client's set encrypted under the client's keys, and
+  // the server's set re-encrypted with the client's key, and shuffled.
+  message MessageI {
+    optional HashSet hash_set = 1;
+    optional TreeNodes tree_updates = 2;
+    optional EncryptedSet candidates = 3;
+  }
+
+  message MessageIII {
+    repeated PaillierCiphertext payloads = 1;
+  }
+}
 
 message ClientMessage {
   oneof client_message_oneof {
     PartyZeroMessage
         party_zero_msg = 1;
+  }
+}
+
+/*
+ * PARTY ONE
+ */
+message PartyOneMessage {
+  oneof message_content {
+    //ServerExchange server_key_exchange = 1;
+    MessageII message_ii = 1;
+    MessageIV message_iv = 2;
+  }
+
+  // Server key exchange - Threshold ElGamal
+  message ServerExchange { }
+
+  message MessageII {
+    optional HashSet hash_set = 1;
+    optional TreeNodes tree_updates = 2;
+    optional EncryptedSet candidates = 3;
+  }
+
+  message MessageIV {
+    repeated PaillierCiphertext payloads = 1;
   }
 }
 
@@ -33,8 +112,7 @@ message ServerMessage {
   }
 }
 
-// gRPC interface for Private Join and Compute.
+// the gRPC interface
 service UPSIRpc {
-  // Handles a single protocol round.
   rpc Handle(ClientMessage) returns (ServerMessage) {}
 }

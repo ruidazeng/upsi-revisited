@@ -2,7 +2,7 @@
 #define CryptoNode_H
 
 #include "upsi/crypto/threshold_paillier.h"
-#include "upsi/match.pb.h"
+#include "upsi/upsi.pb.h"
 #include "upsi/utils.h"
 
 namespace upsi {
