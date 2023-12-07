@@ -28,6 +28,8 @@ Before running the protocol, first run the `setup` binary to generate encryption
 
 Make sure the directory has a folder named `data` which holds all the generated dummy data.
 
+Arguments we can use to specify the properties of the data generated includes `days`, `p0_size`, `p1_size`, `shared_size`, and `max_value`.
+
 ```bash
 mkdir data
 ./bazel-bin/upsi/setup
@@ -44,7 +46,15 @@ Then we initialize Party 0 using:
 ./bazel-bin/upsi/run --party=0 --func=CA
 ```
 
-Note that the parameters (such as the number of days) for the experiments can be edited in `party_zero.cc` and `party_one.cc`.
+Arguments we can use to specify the properties of the two parties includes `party`, `port`, `dir`, `func`, `days`.
+
+`func` will specify the desired protocol functionality:
+
+`CA`: cardinality
+
+`SUM`: sum
+
+`SS`: secret sharing
 
 ## Threshold Paillier
 Two party threshold Paillier is in `upsi/crypto/threshold_paillier.h`.
