@@ -22,97 +22,109 @@ import "upsi/crypto/elgamal.proto";
 /*
  * PROTOCOL DATA TYPES
  */
-message TreeNodes {
-	repeated TreeNode nodes = 1;
-}
+message EncryptedElement {
+    oneof element_type {
+        NoPayload no_payload = 1;
+        PaillierPayload paillier = 2;
+        ElGamalPayload elgamal = 3;
+    }
 
-message TreeNode {
-  repeated EncryptedElement elements = 2;
+    message NoPayload {
+        optional ElGamalCiphertext element = 1;
+    }
+
+    message PaillierPayload {
+        optional ElGamalCiphertext element = 1;
+        optional bytes payload = 2;
+    }
+
+    message ElGamalPayload {
+        optional ElGamalCiphertext element = 1;
+        optional ElGamalCiphertext payload = 2;
+    }
 }
 
 message EncryptedSet {
-  repeated EncryptedElement elements = 1;
+    repeated EncryptedElement elements = 1;
 }
 
-message HashSet {
-  repeated bytes elements = 1;
+message TreeNode {
+    repeated EncryptedElement elements = 2;
 }
 
-message EncryptedElement {
-  optional ElGamalCiphertext element = 1;
-  optional bytes payload = 3;
+message TreeUpdates {
+    repeated bytes hashes = 1;
+    repeated TreeNode nodes = 2;
 }
 
 message PaillierCiphertext {
-  optional bytes ciphertext = 1;
+    optional bytes ciphertext = 1;
 }
 
 /*
  * PARTY ZERO
  */
 message PartyZeroMessage {
-  oneof message_content {
-    //StartProtocolRequest start = 1;
-    MessageI message_i = 1;
-    MessageIII message_iii = 2;
-  }
+    oneof message_content {
+        //StartProtocolRequest start = 1;
+        MessageI message_i = 1;
+        MessageIII message_iii = 2;
+    }
 
-  // For initiating the protocol.
-  // Client key exchange - Threshold ElGamal
-  message StartProtocolRequest { }
+    // For initiating the protocol.
+    // Client key exchange - Threshold ElGamal
+    message StartProtocolRequest { }
 
-  // Message containing the client's set encrypted under the client's keys, and
-  // the server's set re-encrypted with the client's key, and shuffled.
-  message MessageI {
-    optional HashSet hash_set = 1;
-    optional TreeNodes tree_updates = 2;
-    optional EncryptedSet candidates = 3;
-  }
+    // Message containing the client's set encrypted under the client's keys, and
+    // the server's set re-encrypted with the client's key, and shuffled.
+    message MessageI {
+        optional TreeUpdates updates = 1;
+        optional EncryptedSet candidates = 2;
+    }
 
-  message MessageIII {
-    repeated PaillierCiphertext payloads = 1;
-  }
+    message MessageIII {
+        repeated PaillierCiphertext payloads = 1;
+    }
 }
 
 message ClientMessage {
-  oneof client_message_oneof {
-    PartyZeroMessage
-        party_zero_msg = 1;
-  }
+    oneof client_message_oneof {
+        PartyZeroMessage
+            party_zero_msg = 1;
+    }
 }
 
 /*
  * PARTY ONE
  */
 message PartyOneMessage {
-  oneof message_content {
-    //ServerExchange server_key_exchange = 1;
-    MessageII message_ii = 1;
-    MessageIV message_iv = 2;
-  }
+    oneof message_content {
+        //ServerExchange server_key_exchange = 1;
+        MessageII message_ii = 1;
+        MessageIV message_iv = 2;
+    }
 
-  // Server key exchange - Threshold ElGamal
-  message ServerExchange { }
+    // Server key exchange - Threshold ElGamal
+    message ServerExchange { }
 
-  message MessageII {
-    optional HashSet hash_set = 1;
-    optional TreeNodes tree_updates = 2;
-    optional EncryptedSet candidates = 3;
-  }
+    message MessageII {
+        optional TreeUpdates updates = 1;
+        optional EncryptedSet candidates = 2;
+    }
 
-  message MessageIV {
-    repeated PaillierCiphertext payloads = 1;
-  }
+    message MessageIV {
+        repeated PaillierCiphertext payloads = 1;
+    }
 }
 
 message ServerMessage {
-  oneof server_message_oneof {
-    PartyOneMessage
-        party_one_msg = 1;
-  }
+    oneof server_message_oneof {
+        PartyOneMessage
+            party_one_msg = 1;
+    }
 }
 
 // the gRPC interface
 service UPSIRpc {
-  rpc Handle(ClientMessage) returns (ServerMessage) {}
+    rpc Handle(ClientMessage) returns (ServerMessage) {}
 }

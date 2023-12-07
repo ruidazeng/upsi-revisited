@@ -321,7 +321,7 @@ StatusOr<std::vector<BigNum>> ReadServerDatasetFromFile(
           " comma-separated items (file: ", server_data_filename, ")"));
     }
     server_data.push_back(
-        context->CreateBigNum(NumericString2uint(columns[0]))
+        context->CreateBigNum(std::stoull(columns[0]))
     );
     line_number++;
   }
@@ -366,7 +366,7 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
           " comma-separated items (file: ", client_data_filename, ")"));
     }
     client_identifiers.push_back(
-        context->CreateBigNum(NumericString2uint(columns[0]))
+        context->CreateBigNum(std::stoull(columns[0]))
     );
     int64_t parsed_associated_value;
     if (!absl::SimpleAtoi(columns[1], &parsed_associated_value) ||

@@ -43,11 +43,42 @@ StatusOr<std::vector<Ciphertext>> DeserializeCiphertexts(
 ) {
     std::vector<Ciphertext> ciphertexts;
     for (const EncryptedElement& element : serialized) {
+        if (!element.has_no_payload()) {
+            return InvalidArgumentError(
+                "[Utils] attempting to parse message with a payload"
+            );
+        }
         ASSIGN_OR_RETURN(
             Ciphertext ciphertext,
-            elgamal_proto_util::DeserializeCiphertext(group, element.element())
+            elgamal_proto_util::DeserializeCiphertext(group, element.no_payload().element())
         );
         ciphertexts.push_back(std::move(ciphertext));
+    }
+    return ciphertexts;
+}
+
+StatusOr<std::vector<std::pair<Ciphertext, Ciphertext>>> DeserializeCiphertextAndElGamals(
+    const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
+    ECGroup* group
+) {
+    std::vector<std::pair<Ciphertext, Ciphertext>> ciphertexts;
+    for (const EncryptedElement& element : serialized) {
+        if (!element.has_elgamal()) {
+            return InvalidArgumentError(
+                "[Utils] attempting to parse message without El Gamal payload"
+            );
+        }
+        ASSIGN_OR_RETURN(
+            Ciphertext ciphertext,
+            elgamal_proto_util::DeserializeCiphertext(group, element.elgamal().element())
+        );
+        ASSIGN_OR_RETURN(
+            Ciphertext payload,
+            elgamal_proto_util::DeserializeCiphertext(group, element.elgamal().payload())
+        );
+        ciphertexts.push_back(std::make_pair(
+            std::move(ciphertext), std::move(payload)
+        ));
     }
     return ciphertexts;
 }
@@ -59,14 +90,20 @@ StatusOr<std::vector<CiphertextAndPayload>> DeserializeCiphertextAndPayloads(
 ) {
     std::vector<CiphertextAndPayload> ciphertexts;
     for (const EncryptedElement& element : serialized) {
+        if (!element.has_paillier()) {
+            return InvalidArgumentError(
+                "[Utils] attempting to parse message without Paillier payload"
+            );
+        }
+
         ASSIGN_OR_RETURN(
             Ciphertext ciphertext,
-            elgamal_proto_util::DeserializeCiphertext(group, element.element())
+            elgamal_proto_util::DeserializeCiphertext(group, element.paillier().element())
         );
         ciphertexts.push_back(
             std::make_pair(
                 std::move(ciphertext),
-                ctx->CreateBigNum(element.payload())
+                ctx->CreateBigNum(element.paillier().payload())
             )
         );
     }
