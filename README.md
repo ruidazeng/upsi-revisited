@@ -28,7 +28,7 @@ Before running the protocol, first run the `setup` binary to generate encryption
 
 Make sure the directory has a folder named `data` which holds all the generated dummy data.
 
-Arguments we can use to specify the properties of the data generated includes `days`, `p0_size`, `p1_size`, `shared_size`, and `max_value`.
+Arguments we can use to specify the properties of the data generated includes `days`, `p0_size`, `p1_size`, `shared_size`, `per_day`, and `max_value`.
 
 (Note: the number of elements in the intersection is randomly generated regardless of `shared_size`).
 
