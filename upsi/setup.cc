@@ -23,11 +23,82 @@ ABSL_FLAG(int32_t, stat_param, 100, "statistical parameter for Paillier");
 ABSL_FLAG(int64_t, days, 10, "number of days the protocol is running for");
 ABSL_FLAG(int64_t, p0_size, 50, "total elements in party one's set across all days");
 ABSL_FLAG(int64_t, p1_size, 50, "total elements in party zero's set across all days");
-ABSL_FLAG(int64_t, shared_size, 25, "total elements in intersection across all days"); // the real intersection/shared_size is randomly generated
+ABSL_FLAG(int64_t, shared_size, 25, "total elements in intersection across all days");
+
+ABSL_FLAG(int64_t, per_day, 0, "total elements in both sets each days");
 ABSL_FLAG(int64_t, max_value, 1000, "maximum number for UPSI-SUM values");
 
+Status GenerateJointData() {
 
-Status GenerateDailyData(int day, int64_t p0_size, int64_t p1_size, int64_t shared_size) {
+    int64_t total = absl::GetFlag(FLAGS_days) * absl::GetFlag(FLAGS_per_day);
+
+    ASSIGN_OR_RETURN(
+        auto datasets,
+        GenerateRandomDatabases(
+            total, total, absl::GetFlag(FLAGS_shared_size), absl::GetFlag(FLAGS_max_value)
+        )
+    );
+
+    auto party_zero = std::get<1>(datasets);
+    auto party_one  = std::get<0>(datasets);
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::shuffle(party_one.begin(), party_one.end(), gen);
+
+    // shuffle party zero's elements and values in the same permutation
+    std::vector<size_t> permutation(total);
+    std::iota(permutation.begin(), permutation.end(), 0);
+    std::shuffle(permutation.begin(), permutation.end(), gen);
+
+
+    // split into days
+    auto i = 0;
+    for (auto day = 1; day <= absl::GetFlag(FLAGS_days); day++) {
+        std::vector<std::string> p0_elements;
+        std::vector<int64_t> p0_values; 
+        std::vector<std::string> p1_elements;
+        for (auto j = 0; j < absl::GetFlag(FLAGS_per_day); j++) {
+            p0_elements.push_back(party_zero.first[permutation[i]]);
+            p0_values.push_back(party_zero.second[permutation[i]]);
+            p1_elements.push_back(party_one[i]);
+            i++;
+        }
+
+        RETURN_IF_ERROR(
+            WriteClientDatasetToFile(
+                p0_elements, p0_values,
+                (
+                    absl::GetFlag(FLAGS_dir) + absl::GetFlag(FLAGS_p0_fn)
+                    + "_" + std::to_string(day) + ".csv"
+                )
+            )
+        );
+
+        RETURN_IF_ERROR(
+            WriteServerDatasetToFile(
+                p1_elements,
+                (
+                    absl::GetFlag(FLAGS_dir) + absl::GetFlag(FLAGS_p1_fn)
+                    + "_" + std::to_string(day) + ".csv"
+                )
+            )
+        );
+    }
+
+    std::cout << "[Setup] mock data generated in " << absl::GetFlag(FLAGS_dir) << std::endl;
+    std::cout << "        P0's total elements : " << total << std::endl;
+    std::cout << "        P1's total elements : " << total << std::endl;
+    std::cout << "        intersection size   : " << absl::GetFlag(FLAGS_shared_size) << std::endl;
+    std::cout << "        intersection sum    : " << std::get<2>(datasets) << std::endl;
+
+    return OkStatus();
+}
+
+StatusOr<int64_t> GenerateDailyData(
+    int day, int64_t p0_size, int64_t p1_size, int64_t shared_size
+) {
     ASSIGN_OR_RETURN(
         auto datasets,
         GenerateRandomDatabases(p1_size, p0_size, shared_size, absl::GetFlag(FLAGS_max_value)) // the real intersection/shared_size is randomly generated
@@ -53,7 +124,8 @@ Status GenerateDailyData(int day, int64_t p0_size, int64_t p1_size, int64_t shar
             )
         )
     );
-    return OkStatus();
+
+    return std::get<2>(datasets);
 }
 
 Status GenerateData() {
@@ -82,7 +154,7 @@ Status GenerateData() {
     std::sort(p1_daily_sizes.begin(), p1_daily_sizes.end());
 
     // generate each day's data
-    int64_t p0_total = 0, p1_total = 0, overlap_total = 0;
+    int64_t p0_total = 0, p1_total = 0, overlap_total = 0, sum_total = 0;
     for (int day = 0; day < days; day++) {
         auto p0_today = p0_daily_sizes[day] - p0_total;
         auto p1_today = p1_daily_sizes[day] - p1_total;
@@ -97,17 +169,19 @@ Status GenerateData() {
             ).ToIntValue().value();
         }
 
-        RETURN_IF_ERROR(GenerateDailyData(day + 1, p0_today, p1_today, overlap));
+        ASSIGN_OR_RETURN(auto sum, GenerateDailyData(day + 1, p0_today, p1_today, overlap));
 
         p0_total += p0_today;
         p1_total += p1_today;
         overlap_total += overlap;
+        sum_total += sum;
     }
 
     std::cout << "[Setup] mock data generated in " << absl::GetFlag(FLAGS_dir) << std::endl;
-    std::cout << "        P0's total elements   : " << p0_total << std::endl;
-    std::cout << "        P1's total elements   : " << p1_total << std::endl;
-    std::cout << "        shared total elements : " << overlap_total << std::endl;
+    std::cout << "        P0's total elements : " << p0_total << std::endl;
+    std::cout << "        P1's total elements : " << p1_total << std::endl;
+    std::cout << "        intersection size   : " << overlap_total << std::endl;
+    std::cout << "        intersection sum    : " << sum_total << std::endl;
     return OkStatus();
 }
 
@@ -173,13 +247,17 @@ int main(int argc, char** argv) {
     }
 
     if (!absl::GetFlag(FLAGS_keys_only)) {
-        auto status = GenerateData();
+        Status status;
+        if (absl::GetFlag(FLAGS_per_day) == 0) {
+            status = GenerateData();
+        } else {
+            status = GenerateJointData();
+        }
         if (!status.ok()) {
             std::cerr << "[Setup] failure generating datasets" << std::endl;
             std::cerr << status << std::endl;
             return 1;
         }
     }
-
     return 0;
 }
