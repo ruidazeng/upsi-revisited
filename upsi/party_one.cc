@@ -33,14 +33,10 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
     const PartyZeroMessage::MessageI& request,
     std::vector<Element> elements
 ) {
-    Timer timer("[Timer] generate MessageII");
     PartyOneMessage::MessageII response;
 
-    Timer update("[Timer] their tree update");
     RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
-    update.stop();
 
-    Timer cand("[Timer] compute candidates");
     ASSIGN_OR_RETURN(
         std::vector<CiphertextAndPayload> candidates,
         DeserializeCiphertextAndPayloads(request.candidates().elements(), this->ctx_, this->group)
@@ -62,15 +58,11 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
             );
         }
     }
-    cand.stop();
 
-    Timer shuffle("[Timer] shuffle candidates");
     std::random_device rd;
     std::mt19937 gen(rd());
     std::shuffle(candidates.begin(), candidates.end(), gen);
-    shuffle.stop();
 
-    Timer masking("[Timer] mask candidates");
     for (size_t i = 0; i < candidates.size(); i++) {
         BigNum mask = this->encrypter->CreateRandomMask();
         ASSIGN_OR_RETURN(
@@ -78,9 +70,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
             elgamal::Exp(candidates[i].first, mask)
         );
     }
-    masking.stop();
 
-    Timer partial("[Timer] part decrypting");
     for (size_t i = 0; i < candidates.size(); i++) {
         auto candidate = response.mutable_candidates()->add_elements();
         ASSIGN_OR_RETURN(candidates[i].first, decrypter->PartialDecrypt(candidates[i].first));
@@ -91,14 +81,12 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
         // TODO: rerandomize the payload
         *candidate->mutable_paillier()->mutable_payload() = candidates[i].second.ToBytes();
     }
-    partial.stop();
 
     // update our tree
     RETURN_IF_ERROR(my_tree.Update(
         this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
     ));
 
-    timer.stop();
     return response;
 }
 
@@ -110,14 +98,10 @@ StatusOr<PartyOneMessage::MessageII> PartyOnePSI::GenerateMessageII(
     const PartyZeroMessage::MessageI& request,
     std::vector<Element> elements
 ) {
-    Timer timer("[Timer] generate MessageII");
     PartyOneMessage::MessageII response;
 
-    Timer update("[Timer] their tree update");
     RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
-    update.stop();
 
-    Timer cand("[Timer] compute candidates");
     ASSIGN_OR_RETURN(
         auto candidates,
         DeserializeCiphertextAndElGamals(request.candidates().elements(), this->group)
@@ -136,15 +120,11 @@ StatusOr<PartyOneMessage::MessageII> PartyOnePSI::GenerateMessageII(
             ));
         }
     }
-    cand.stop();
 
-    Timer shuffle("[Timer] shuffle candidates");
     std::random_device rd;
     std::mt19937 gen(rd());
     std::shuffle(candidates.begin(), candidates.end(), gen);
-    shuffle.stop();
 
-    Timer masking("[Timer] mask candidates");
     for (size_t i = 0; i < candidates.size(); i++) {
         BigNum alpha = this->encrypter->CreateRandomMask();
         BigNum beta = this->encrypter->CreateRandomMask();
@@ -161,9 +141,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOnePSI::GenerateMessageII(
             elgamal::Mul(candidates[i].second, mask)
         );
     }
-    masking.stop();
 
-    Timer partial("[Timer] part decrypting");
     for (size_t i = 0; i < candidates.size(); i++) {
         auto candidate = response.mutable_candidates()->add_elements();
         ASSIGN_OR_RETURN(candidates[i].first, decrypter->PartialDecrypt(candidates[i].first));
@@ -177,14 +155,12 @@ StatusOr<PartyOneMessage::MessageII> PartyOnePSI::GenerateMessageII(
             elgamal_proto_util::SerializeCiphertext(candidates[i].second)
         );
     }
-    partial.stop();
 
     // update our tree
     RETURN_IF_ERROR(my_tree.Update(
         this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
     ));
 
-    timer.stop();
     return response;
 }
 
@@ -197,14 +173,10 @@ StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
     const PartyZeroMessage::MessageI& request,
     std::vector<Element> elements
 ) {
-    Timer timer("[Timer] generate MessageII");
     PartyOneMessage::MessageII response;
 
-    Timer update("[Timer] their tree update");
     RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
-    update.stop();
 
-    Timer cand("[Timer] compute candidates");
     ASSIGN_OR_RETURN(
         std::vector<Ciphertext> candidates,
         DeserializeCiphertexts(request.candidates().elements(), this->ctx_, this->group)
@@ -221,15 +193,11 @@ StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
             candidates.push_back(std::move(y_minus_x));
         }
     }
-    cand.stop();
 
-    Timer shuffle("[Timer] shuffle candidates");
     std::random_device rd;
     std::mt19937 gen(rd());
     std::shuffle(candidates.begin(), candidates.end(), gen);
-    shuffle.stop();
 
-    Timer masking("[Timer] mask candidates");
     for (size_t i = 0; i < candidates.size(); i++) {
         BigNum mask = this->encrypter->CreateRandomMask();
         ASSIGN_OR_RETURN(
@@ -237,9 +205,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
             elgamal::Exp(candidates[i], mask)
         );
     }
-    masking.stop();
 
-    Timer partial("[Timer] part decrypting");
     for (size_t i = 0; i < candidates.size(); i++) {
         auto candidate = response.mutable_candidates()->add_elements();
         ASSIGN_OR_RETURN(candidates[i], decrypter->PartialDecrypt(candidates[i]));
@@ -248,14 +214,12 @@ StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
             elgamal_proto_util::SerializeCiphertext(candidates[i])
         );
     }
-    partial.stop();
 
     // update our tree
     RETURN_IF_ERROR(my_tree.Update(
         this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
     ));
 
-    timer.stop();
     return response;
 }
 
@@ -267,7 +231,6 @@ StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
 StatusOr<PartyOneMessage::MessageIV> PartyOneSum::ProcessMessageIII(
     const PartyZeroMessage::MessageIII& msg
 ) {
-    Timer timer("[Timer] generate MessageIV");
     PartyOneMessage::MessageIV res;
 
     for (auto payload : msg.payloads()) {
@@ -277,7 +240,6 @@ StatusOr<PartyOneMessage::MessageIV> PartyOneSum::ProcessMessageIII(
         );
         *res.add_payloads()->mutable_ciphertext() = partial.ToBytes();
     }
-    timer.stop();
 
     return res;
 }
@@ -320,7 +282,7 @@ Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMes
             GenerateMessageII(msg.message_i(), datasets[current_day])
         );
         *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
-        this->current_day++;
+        FinishDay();
     } else {
         return InvalidArgumentError(
             "[PartyOneWithPayload] received a party zero message of unknown type"
@@ -353,8 +315,7 @@ Status PartyOneSum::Handle(const ClientMessage& req, MessageSink<ServerMessage>*
             ProcessMessageIII(msg.message_iii())
         );
         *(res.mutable_party_one_msg()->mutable_message_iv()) = std::move(message_iv);
-        std::clog << "[PartyOne] finished day " << this->current_day << std::endl;
-        this->current_day++;
+        FinishDay();
     } else {
         return InvalidArgumentError(
             "[PartyOneWithPayload] received a party zero message of unknown type"
@@ -388,7 +349,7 @@ Status PartyOneSecretShare::Handle(
         auto status = ProcessMessageIII(msg.message_iii());
         if (!status.ok()) { return status.status(); }
         std::clog << "[PartyOne] finished day " << this->current_day << std::endl;
-        this->current_day += 1;
+        FinishDay();
         return OkStatus();
     } else {
         return InvalidArgumentError(

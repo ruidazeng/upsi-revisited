@@ -112,10 +112,14 @@ namespace upsi {
         public:
             Timer(std::string msg, std::string color = WHITE);
             void stop();
+            void lap();
+            void print();
         private:
             std::string message;
             std::string color;
             std::chrono::time_point<std::chrono::high_resolution_clock> start;
+            std::vector<std::chrono::duration<float>> laps;
+            bool using_laps = false;
     };
 }
 
