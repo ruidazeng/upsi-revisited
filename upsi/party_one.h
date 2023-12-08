@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PARTYONE_IMPL_H_
-#define PARTYONE_IMPL_H_
+#ifndef PARTYONE_H_
+#define PARTYONE_H_
 
 #include "upsi/crypto/context.h"
 #include "upsi/crypto/ec_commutative_cipher.h"
@@ -195,4 +195,4 @@ class PartyOneSecretShare : public PartyOneWithPayload {
 
 }  // namespace upsi
 
-#endif  // PARTYONE_IMPL_H_
+#endif  // PARTYONE_H_
