@@ -75,8 +75,13 @@ class Party {
             paillier = std::make_unique<ThresholdPaillier>(ctx_, psk.value());
         }
 
+        // call once the day is finished for this party
+        virtual void FinishDay() {
+            this->current_day++;
+        }
+
         // protocol is finished when we've gone through all days
-        bool protocol_finished() {
+        virtual bool protocol_finished() {
             return (this->current_day >= this->total_days);
         }
 };

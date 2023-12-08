@@ -402,6 +402,9 @@ StatusOr<std::vector<PartyZeroDataset>> ReadPartyZeroDataset(
     std::vector<PartyZeroDataset> datasets(days);
 
     for (int day = 1; day <= days; day++) {
+        std::cout << "[DataUtil] reading ";
+        std::cout << dir + prefix + "_" + std::to_string(day) + ".csv" << std::endl;
+
         ASSIGN_OR_RETURN(
             datasets[day - 1],
             ReadClientDatasetFromFile(dir + prefix + "_" + std::to_string(day) + ".csv", ctx)
