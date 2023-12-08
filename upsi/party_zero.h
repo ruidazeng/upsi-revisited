@@ -1,5 +1,5 @@
-#ifndef PARTYZERO_IMPL_H_
-#define PARTYZERO_IMPL_H_
+#ifndef PARTYZERO_H_
+#define PARTYZERO_H_
 
 #include <memory>
 #include <string>
@@ -262,4 +262,4 @@ class PartyZeroSecretShare : public PartyZeroWithPayload {
 
 }  // namespace upsi
 
-#endif  // PARTYZERO_IMPL_H_
+#endif  // PARTYZERO_H_

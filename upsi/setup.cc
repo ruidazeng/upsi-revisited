@@ -26,7 +26,6 @@ ABSL_FLAG(int64_t, p1_size, 50, "total elements in party zero's set across all d
 ABSL_FLAG(int64_t, shared_size, 25, "total elements in intersection across all days");
 
 ABSL_FLAG(int64_t, per_day, 0, "total elements in both sets each days");
-
 ABSL_FLAG(int64_t, max_value, 1000, "maximum number for UPSI-SUM values");
 
 Status GenerateJointData() {
@@ -102,7 +101,7 @@ StatusOr<int64_t> GenerateDailyData(
 ) {
     ASSIGN_OR_RETURN(
         auto datasets,
-        GenerateRandomDatabases(p1_size, p0_size, shared_size, absl::GetFlag(FLAGS_max_value))
+        GenerateRandomDatabases(p1_size, p0_size, shared_size, absl::GetFlag(FLAGS_max_value)) // the real intersection/shared_size is randomly generated
     );
 
     RETURN_IF_ERROR(

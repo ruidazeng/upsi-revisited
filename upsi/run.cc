@@ -172,7 +172,8 @@ Status RunPartyOne() {
     }, grpc_server.get());
 
     // TODO: why isn't this working anymore?
-    while (!service.protocol_finished()) { }
+    while (!service.protocol_finished()) { 
+    }
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     // shut down server
