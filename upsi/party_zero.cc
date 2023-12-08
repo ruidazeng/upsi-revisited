@@ -43,15 +43,17 @@ void PartyZeroNoPayload::LoadData(const std::vector<PartyZeroDataset>& datasets)
 }
 
 Status PartyZeroNoPayload::Run(Connection* sink) {
+    Timer timer("[PartyZero] Daily");
     while (!protocol_finished()) {
-        std::clog << "[PartyZero] sending MessageI" << std::endl;
+        Timer day("[PartyZero] Day " + std::to_string(this->current_day));
+        timer.lap();
         RETURN_IF_ERROR(SendMessageI(sink));
-
         ServerMessage message_ii = sink->last_server_response();
-        std::clog << "[PartyZero] received MessageII" << std::endl;
-
         RETURN_IF_ERROR(Handle(message_ii, sink));
+        timer.stop();
+        day.stop();
     }
+    timer.print();
     return OkStatus();
 }
 
@@ -114,16 +116,12 @@ Status PartyZeroWithPayload::SendMessageI(MessageSink<ClientMessage>* sink) {
 StatusOr<PartyZeroMessage::MessageI> PartyZeroWithPayload::GenerateMessageI(
     std::vector<ElementAndPayload> elements
 ) {
-    Timer timer("[Timer] generate MessageI");
     PartyZeroMessage::MessageI msg;
 
     // update our tree
     RETURN_IF_ERROR(my_tree.Update(
         this->ctx_, this->encrypter.get(), this->paillier.get(), elements, msg.mutable_updates()
     ));
-
-    std::clog << "[PartyZeroWithPayload] computing (y - x)" << std::endl;
-    Timer compute("[Timer] computing (y - x)");
 
     for (size_t i = 0; i < elements.size(); ++i) {
         std::vector<Ciphertext> path = this->other_tree.getPath(elements[i].first);
@@ -148,8 +146,6 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroWithPayload::GenerateMessageI(
         }
     }
 
-    compute.stop();
-    timer.stop();
     return msg;
 }
 
@@ -157,14 +153,10 @@ Status PartyZeroWithPayload::SendMessageIII(
     const PartyOneMessage::MessageII& res,
     MessageSink<ClientMessage>* sink
 ) {
-    Timer timer("[Timer] send MessageIII");
 
-    Timer update("[Timer] their tree update");
     RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &res.updates()));
-    update.stop();
 
 
-    Timer results("[Timer] generate MessageIII");
     ASSIGN_OR_RETURN(
         std::vector<CiphertextAndPayload> candidates,
         DeserializeCiphertextAndPayloads(res.candidates().elements(), this->ctx_, this->group)
@@ -177,8 +169,6 @@ Status PartyZeroWithPayload::SendMessageIII(
         GenerateMessageIII(std::move(candidates))
     );
     *(msg.mutable_party_zero_msg()->mutable_message_iii()) = std::move(req);
-    results.stop();
-    timer.stop();
 
     return sink->Send(msg);
 }
@@ -211,18 +201,12 @@ Status PartyZeroWithPayload::Handle(const ServerMessage& msg, MessageSink<Client
 StatusOr<PartyZeroMessage::MessageI> PartyZeroPSI::GenerateMessageI(
     std::vector<Element> elements
 ) {
-    Timer timer("[Timer] generate MessageI");
     PartyZeroMessage::MessageI msg;
-
-    std::clog << "[PartyZeroPSI] inserting our into tree" << std::endl;
 
     // update our tree
     RETURN_IF_ERROR(my_tree.Update(
         this->ctx_, this->encrypter.get(), elements, msg.mutable_updates()
     ));
-
-    std::clog << "[PartyZeroPSI] computing (y - x)" << std::endl;
-    Timer compute("[Timer] computing (y - x)");
 
     for (size_t i = 0; i < elements.size(); ++i) {
         // record g^x so we can check if it is in the intersection later
@@ -255,26 +239,18 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroPSI::GenerateMessageI(
         }
     }
 
-    compute.stop();
-    timer.stop();
     return msg;
 }
 
 StatusOr<PartyZeroMessage::MessageI> PartyZeroCardinality::GenerateMessageI(
     std::vector<Element> elements
 ) {
-    Timer timer("[Timer] generate MessageI");
     PartyZeroMessage::MessageI msg;
-
-    std::clog << "[PartyZeroCardinality] inserting our into tree" << std::endl;
 
     // update our tree
     RETURN_IF_ERROR(my_tree.Update(
         this->ctx_, this->encrypter.get(), elements, msg.mutable_updates()
     ));
-
-    std::clog << "[PartyZeroCardinality] computing (y - x)" << std::endl;
-    Timer compute("[Timer] computing (y - x)");
 
     for (size_t i = 0; i < elements.size(); ++i) {
         std::vector<Ciphertext> path = this->other_tree.getPath(elements[i]);
@@ -297,8 +273,6 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroCardinality::GenerateMessageI(
         }
     }
 
-    compute.stop();
-    timer.stop();
     return msg;
 }
 
@@ -307,13 +281,9 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroCardinality::GenerateMessageI(
 ////////////////////////////////////////////////////////////////////////////////
 
 Status PartyZeroPSI::ProcessMessageII(const PartyOneMessage::MessageII& res) {
-    Timer timer("[Timer] send MessageIII");
 
-    Timer update("[Timer] their tree update");
     RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &res.updates()));
-    update.stop();
 
-    Timer results("[Timer] update cardinality");
 
     ASSIGN_OR_RETURN(
         auto candidates,
@@ -330,18 +300,13 @@ Status PartyZeroPSI::ProcessMessageII(const PartyOneMessage::MessageII& res) {
     }
 
     // the day is over after the second message
-    this->current_day++;
+    FinishDay();
     return OkStatus();
 }
 
 Status PartyZeroCardinality::ProcessMessageII(const PartyOneMessage::MessageII& res) {
-    Timer timer("[Timer] send MessageIII");
 
-    Timer update("[Timer] their tree update");
     RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &res.updates()));
-    update.stop();
-
-    Timer results("[Timer] update cardinality");
 
     ASSIGN_OR_RETURN(
         std::vector<Ciphertext> candidates,
@@ -356,7 +321,7 @@ Status PartyZeroCardinality::ProcessMessageII(const PartyOneMessage::MessageII& 
     }
 
     // the day is over after the second message
-    this->current_day++;
+    FinishDay();
     return OkStatus();
 }
 
@@ -377,35 +342,38 @@ ElementAndPayload PartyZeroSecretShare::GetPayload(BigNum element, BigNum value)
 ////////////////////////////////////////////////////////////////////////////////
 
 Status PartyZeroSum::Run(Connection* sink) {
+    Timer timer("[PartyZero] Daily");
     while (!protocol_finished()) {
-        std::clog << "[PartyZero] sending MessageI" << std::endl;
+        Timer day("[PartyZero] Day " + std::to_string(this->current_day));
+        timer.lap();
         RETURN_IF_ERROR(SendMessageI(sink));
 
         ServerMessage message_ii = sink->last_server_response();
-        std::clog << "[PartyZero] received MessageII" << std::endl;
-
-        std::clog << "[PartyZero] sending MessageIII" << std::endl;
         RETURN_IF_ERROR(Handle(message_ii, sink));
 
         ServerMessage message_iv = sink->last_server_response();
-
-        std::clog << "[PartyZero] received MessageIV" << std::endl;
         RETURN_IF_ERROR(Handle(message_iv, sink));
+        timer.stop();
+        day.stop();
     }
+    timer.print();
     return OkStatus();
 }
 
 Status PartyZeroSecretShare::Run(Connection* sink) {
+    Timer timer("[PartyZero] Daily");
     while (!protocol_finished()) {
-        std::clog << "[PartyZero] sending MessageI" << std::endl;
+        Timer day("[PartyZero] Day " + std::to_string(this->current_day));
+        timer.lap();
         RETURN_IF_ERROR(SendMessageI(sink));
 
         ServerMessage message_ii = sink->last_server_response();
-        std::clog << "[PartyZero] received MessageII" << std::endl;
 
-        std::clog << "[PartyZero] sending MessageIII" << std::endl;
         RETURN_IF_ERROR(Handle(message_ii, sink));
+        timer.stop();
+        day.stop();
     }
+    timer.print();
     return OkStatus();
 }
 
@@ -431,8 +399,16 @@ StatusOr<PartyZeroMessage::MessageIII> PartyZeroSum::GenerateMessageIII(
         }
     }
 
+    // if the intersection is empty today, send a random value
+    if (ciphertext.IsZero()) {
+        *req.add_payloads()->mutable_ciphertext() = (
+            this->ctx_->GenerateRandLessThan(paillier->n_squared_).ToBytes()
+        );
+    } else {
+        *req.add_payloads()->mutable_ciphertext() = ciphertext.ToBytes(); 
+    }
     this->sum_ciphertext = ciphertext;
-    *req.add_payloads()->mutable_ciphertext() = ciphertext.ToBytes(); 
+
     return req;
 }
 
@@ -458,7 +434,7 @@ StatusOr<PartyZeroMessage::MessageIII> PartyZeroSecretShare::GenerateMessageIII(
         }
     }
     // the day is over for us since there are no more incoming messages
-    this->current_day++;
+    FinishDay();
     return req;
 }
 
@@ -467,6 +443,14 @@ StatusOr<PartyZeroMessage::MessageIII> PartyZeroSecretShare::GenerateMessageIII(
 ////////////////////////////////////////////////////////////////////////////////
 
 Status PartyZeroSum::ProcessMessageIV(const PartyOneMessage::MessageIV& msg) {
+
+    FinishDay();
+
+    // if the intersection was empty today, no need to decrypt
+    if (this->sum_ciphertext.IsZero()) {
+        return OkStatus();
+    }
+
     for (auto payload : msg.payloads()) {
         ASSIGN_OR_RETURN(
             BigNum big, 
@@ -478,7 +462,7 @@ Status PartyZeroSum::ProcessMessageIV(const PartyOneMessage::MessageIV& msg) {
         ASSIGN_OR_RETURN(uint64_t sum, big.ToIntValue());
         this->sum += sum;
     }
-    this->current_day++;
+
     return OkStatus();
 }
 

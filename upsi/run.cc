@@ -97,7 +97,8 @@ Status RunPartyZero() {
     ));
     Connection sink(std::move(stub));
 
-    Timer timer("[PartyZero] total runtime");
+    Timer timer("[PartyZero] Total");
+    std::cout << "[PartyZero] starting protocol" << std::endl;
     RETURN_IF_ERROR(party_zero->Run(&sink));
     timer.stop();
     party_zero->PrintResult();

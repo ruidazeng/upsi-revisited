@@ -60,11 +60,11 @@ class ThresholdPaillier {
 
     // modulus 
     const BigNum n;
+    const BigNum n_squared_;
 
     private:
     Context* const ctx_;
     const BigNum share_;
-    const BigNum n_squared_;
 };
 }
 
