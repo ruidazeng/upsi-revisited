@@ -388,7 +388,7 @@ Status PartyOneSecretShare::Handle(
         auto status = ProcessMessageIII(msg.message_iii());
         if (!status.ok()) { return status.status(); }
         std::clog << "[PartyOne] finished day " << this->current_day << std::endl;
-        this->current_day += 1;
+        this->current_day++;
         return OkStatus();
     } else {
         return InvalidArgumentError(

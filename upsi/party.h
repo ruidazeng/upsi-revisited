@@ -77,6 +77,7 @@ class Party {
 
         // protocol is finished when we've gone through all days
         bool protocol_finished() {
+            std::cout << "[Party] " << this->current_day << " day out of " << this->total_days << " total days" << std::endl;
             return (this->current_day >= this->total_days);
         }
 };

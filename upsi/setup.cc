@@ -23,14 +23,14 @@ ABSL_FLAG(int32_t, stat_param, 100, "statistical parameter for Paillier");
 ABSL_FLAG(int64_t, days, 10, "number of days the protocol is running for");
 ABSL_FLAG(int64_t, p0_size, 50, "total elements in party one's set across all days");
 ABSL_FLAG(int64_t, p1_size, 50, "total elements in party zero's set across all days");
-ABSL_FLAG(int64_t, shared_size, 25, "total elements in intersection across all days");
+ABSL_FLAG(int64_t, shared_size, 25, "total elements in intersection across all days"); // the real intersection/shared_size is randomly generated
 ABSL_FLAG(int64_t, max_value, 1000, "maximum number for UPSI-SUM values");
 
 
 Status GenerateDailyData(int day, int64_t p0_size, int64_t p1_size, int64_t shared_size) {
     ASSIGN_OR_RETURN(
         auto datasets,
-        GenerateRandomDatabases(p1_size, p0_size, shared_size, absl::GetFlag(FLAGS_max_value))
+        GenerateRandomDatabases(p1_size, p0_size, shared_size, absl::GetFlag(FLAGS_max_value)) // the real intersection/shared_size is randomly generated
     );
 
     RETURN_IF_ERROR(
