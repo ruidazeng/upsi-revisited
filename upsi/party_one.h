@@ -31,39 +31,30 @@
 
 namespace upsi {
 
-class PartyOne : public Party {
-
+class PartyOne : public BaseParty {
     public:
-        // use default constructor
-        using Party::Party;
-
-        virtual ~PartyOne() = default;
+        // use base constructor
+        using BaseParty::BaseParty;
 
         // the methods to define for subclasses
         virtual Status Handle(const ClientMessage& msg, MessageSink<ServerMessage>* sink) = 0;
 
-        // by default party one has no output => by default party one prints the communication costs
-        virtual void PrintResult() { 
+        // by default just print out the communication cost
+        virtual void PrintResult() {
             std::cout << "[PartyOne] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
         }
-    
-    protected: 
+
+    protected:
         // TODO: total communication costs for party_zero
         int total_cost = 0;
 };
 
-class PartyOneNoPayload : public PartyOne {
+class PartyOneNoPayload : public Party<Element, Ciphertext>, public PartyOne {
     public:
-        PartyOneNoPayload(
-            Context* ctx,
-            std::string epk_fn,
-            std::string esk_fn,
-            std::string psk_fn,
-            const std::vector<PartyOneDataset>& datasets,
-            int total_days
-        ) : PartyOne(ctx, epk_fn, esk_fn, psk_fn, total_days), datasets(datasets) { }
+        PartyOneNoPayload(PSIParams* params, const std::vector<PartyOneDataset>& datasets) :
+            Party<Element, Ciphertext>(params), PartyOne(params), datasets(datasets) {}
 
-        ~PartyOneNoPayload() override = default;
+        virtual ~PartyOneNoPayload() = default;
 
         /**
          * update their tree, compute candidates, & send tree updates
@@ -81,24 +72,14 @@ class PartyOneNoPayload : public PartyOne {
     protected:
         // one dataset for each day
         std::vector<std::vector<Element>> datasets;
-
-        // our plaintext tree & their encrypted tree
-        CryptoTree<Element> my_tree;
-        CryptoTree<Ciphertext> other_tree;
 };
 
-class PartyOneWithPayload : public PartyOne {
+class PartyOneWithPayload : public Party<Element, CiphertextAndPayload>, public PartyOne {
     public:
-        PartyOneWithPayload(
-            Context* ctx,
-            std::string epk_fn,
-            std::string esk_fn,
-            std::string psk_fn,
-            const std::vector<PartyOneDataset>& datasets,
-            int total_days
-        ) : PartyOne(ctx, epk_fn, esk_fn, psk_fn, total_days), datasets(datasets) { }
+        PartyOneWithPayload(PSIParams* params, const std::vector<PartyOneDataset>& datasets) :
+            Party<Element, CiphertextAndPayload>(params), PartyOne(params), datasets(datasets) {}
 
-        ~PartyOneWithPayload() override = default;
+        virtual ~PartyOneWithPayload() = default;
 
         /**
          * update their tree, compute candidates, & send tree updates
@@ -118,16 +99,11 @@ class PartyOneWithPayload : public PartyOne {
     protected:
         // one dataset for each day
         std::vector<std::vector<Element>> datasets;
-
-        // our plaintext tree & their encrypted tree
-        CryptoTree<Element> my_tree;
-        CryptoTree<CiphertextAndPayload> other_tree;
 };
 
 class PartyOnePSI : public PartyOneNoPayload {
 
     public:
-
         using PartyOneNoPayload::PartyOneNoPayload;
 
         ~PartyOnePSI() override = default;
@@ -144,7 +120,7 @@ class PartyOnePSI : public PartyOneNoPayload {
 class PartyOneCardinality : public PartyOneNoPayload {
 
     public:
-
+        // use default constructor
         using PartyOneNoPayload::PartyOneNoPayload;
 
         ~PartyOneCardinality() override = default;
@@ -161,7 +137,7 @@ class PartyOneCardinality : public PartyOneNoPayload {
 class PartyOneSum : public PartyOneWithPayload {
 
     public:
-        // use the default constructor
+        // use default constructor
         using PartyOneWithPayload::PartyOneWithPayload;
 
         /**
@@ -180,7 +156,7 @@ class PartyOneSum : public PartyOneWithPayload {
 class PartyOneSecretShare : public PartyOneWithPayload {
 
     public:
-        // use the default constructor
+        // use default constructor
         using PartyOneWithPayload::PartyOneWithPayload;
 
         // the output secret shares

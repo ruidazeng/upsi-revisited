@@ -120,22 +120,29 @@ StatusOr<CryptoNode<CiphertextAndPayload>> EncryptNode(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// CRYPTONODE::SERIALIZE()
+// SERIALIZE NODE
 ////////////////////////////////////////////////////////////////////////////////
-template<>
-Status CryptoNode<Element>::serialize(TreeNode* obj) {
-    throw std::runtime_error("[CryptoNode<Element>] not implemented");
+
+Status SerializeNode(CryptoNode<Element>* cnode, PlaintextNode* pnode) {
+    for (const Element& elem : cnode->node) {
+        PlaintextElement* pe = pnode->add_elements();
+        *pe->mutable_element() = elem.ToBytes();
+    }
+    return OkStatus();
 }
 
-template<>
-Status CryptoNode<ElementAndPayload>::serialize(TreeNode* obj) {
-    throw std::runtime_error("[CryptoNode<ElementAndPayload>] not implemented");
+Status SerializeNode(CryptoNode<ElementAndPayload>* cnode, PlaintextNode* pnode) {
+    for (const ElementAndPayload& elem : cnode->node) {
+        PlaintextElement* pe = pnode->add_elements();
+        *pe->mutable_element() = elem.first.ToBytes();
+        *pe->mutable_payload() = elem.second.ToBytes();
+    }
+    return OkStatus();
 }
 
-template<>
-Status CryptoNode<Ciphertext>::serialize(TreeNode* obj) {
-    for (const Ciphertext& elem : node) {
-        EncryptedElement* ee = obj->add_elements();
+Status SerializeNode(CryptoNode<Ciphertext>* cnode, TreeNode* tnode) {
+    for (const Ciphertext& elem : cnode->node) {
+        EncryptedElement* ee = tnode->add_elements();
         ASSIGN_OR_RETURN(
             *ee->mutable_no_payload()->mutable_element(), 
             elgamal_proto_util::SerializeCiphertext(elem)
@@ -144,19 +151,90 @@ Status CryptoNode<Ciphertext>::serialize(TreeNode* obj) {
     return OkStatus();
 }
 
-template<>
-Status CryptoNode<CiphertextAndPayload>::serialize(TreeNode* obj) {
-    for (const CiphertextAndPayload& elem : node) {
-        EncryptedElement* ee = obj->add_elements();
+Status SerializeNode(CryptoNode<CiphertextAndPayload>* cnode, TreeNode* tnode) {
+    for (const CiphertextAndPayload& elem : cnode->node) {
+        EncryptedElement* ee = tnode->add_elements();
         ASSIGN_OR_RETURN(
             *ee->mutable_paillier()->mutable_element(), 
-            elgamal_proto_util::SerializeCiphertext(std::get<0>(elem))
+            elgamal_proto_util::SerializeCiphertext(elem.first)
         );
 
-        *ee->mutable_paillier()->mutable_payload() = std::get<1>(elem).ToBytes();
+        *ee->mutable_paillier()->mutable_payload() = elem.second.ToBytes();
     }
     return OkStatus();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// DESERIALIZE NODE
+////////////////////////////////////////////////////////////////////////////////
+
+StatusOr<CryptoNode<Element>> DeserializeNode(const PlaintextNode& pnode, Context* ctx) {
+    CryptoNode<Element> node(pnode.elements().size());
+    for (const PlaintextElement& element : pnode.elements()) {
+        Element e = ctx->CreateBigNum(element.element());
+        node.addElement(e);
+    }
+
+    return node;
+}
+
+StatusOr<CryptoNode<ElementAndPayload>> DeserializeNodeWithPayload(
+    const PlaintextNode& pnode, Context* ctx
+) {
+    CryptoNode<ElementAndPayload> node(pnode.elements().size());
+    for (const PlaintextElement& element : pnode.elements()) {
+        ElementAndPayload pair = std::make_pair(
+            ctx->CreateBigNum(element.element()),
+            ctx->CreateBigNum(element.payload())
+        );
+        node.addElement(pair);
+    }
+
+    return node;
+}
+
+StatusOr<CryptoNode<Ciphertext>> DeserializeNode(const TreeNode& tnode, ECGroup* group) {
+    CryptoNode<Ciphertext> node(tnode.elements().size());
+    for (const EncryptedElement& element : tnode.elements()) {
+        ElGamalCiphertext elem;
+        if (element.has_no_payload()) {
+            elem = element.no_payload().element();
+        } else if (element.has_paillier()) {
+            elem = element.paillier().element();
+        } else {
+            elem = element.elgamal().element();
+        }
+        ASSIGN_OR_RETURN(
+            Ciphertext ciphertext, 
+            elgamal_proto_util::DeserializeCiphertext(group, elem)
+        );
+        node.addElement(ciphertext);
+    }
+
+    return node;
+}
+
+StatusOr<CryptoNode<CiphertextAndPayload>> DeserializeNode(
+    const TreeNode& tnode, Context* ctx, ECGroup* group
+) {
+    CryptoNode<CiphertextAndPayload> node(tnode.elements().size());
+    for (const EncryptedElement& element : tnode.elements()) {
+        if (!element.has_paillier()) {
+            return InvalidArgumentError("[CryptoNode] expected node to have paillier payload");
+        }
+        ASSIGN_OR_RETURN(
+            Ciphertext ciphertext, 
+            elgamal_proto_util::DeserializeCiphertext(group, element.paillier().element())
+        );
+        auto pair = std::make_pair(
+            std::move(ciphertext), ctx->CreateBigNum(element.paillier().payload())
+        );
+        node.addElement(pair);
+    }
+
+    return node;
+}
+
 
 template class CryptoNode<Element>;
 template class CryptoNode<Ciphertext>;

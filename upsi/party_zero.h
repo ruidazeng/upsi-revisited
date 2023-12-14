@@ -21,13 +21,10 @@
 
 namespace upsi {
 
-class PartyZero : public Party {
-
+class PartyZero : public BaseParty {
     public:
-        // use default constructor
-        using Party::Party;
-
-        virtual ~PartyZero() = default;
+        // use base constructor
+        using BaseParty::BaseParty;
 
         // the methods to define for subclasses
         virtual void LoadData(const std::vector<PartyZeroDataset>& datasets) = 0;
@@ -40,11 +37,11 @@ class PartyZero : public Party {
         int total_cost = 0;
 };
 
-class PartyZeroNoPayload : public PartyZero {
+class PartyZeroNoPayload : public Party<Element, Ciphertext>, public PartyZero {
 
     public:
-        // use default constructor
-        using PartyZero::PartyZero;
+        PartyZeroNoPayload(PSIParams* params) :
+            Party<Element, Ciphertext>(params), PartyZero(params) {}
 
         virtual ~PartyZeroNoPayload() = default;
 
@@ -79,16 +76,12 @@ class PartyZeroNoPayload : public PartyZero {
     protected:
         // one dataset for each day
         std::vector<std::vector<Element>> datasets;
-
-        // our plaintext tree & their encrypted tree
-        CryptoTree<Element> my_tree;
-        CryptoTree<Ciphertext> other_tree;
 };
 
-class PartyZeroWithPayload : public PartyZero {
+class PartyZeroWithPayload : public Party<ElementAndPayload, Ciphertext>, public PartyZero {
     public:
-        // use default constructor
-        using PartyZero::PartyZero;
+        PartyZeroWithPayload(PSIParams* params) :
+            Party<ElementAndPayload, Ciphertext>(params), PartyZero(params) {}
 
         virtual ~PartyZeroWithPayload() = default;
 
@@ -136,10 +129,6 @@ class PartyZeroWithPayload : public PartyZero {
     protected:
         // one dataset for each day
         std::vector<std::vector<ElementAndPayload>> datasets;
-
-        // our plaintext tree & their encrypted tree
-        CryptoTree<ElementAndPayload> my_tree;
-        CryptoTree<Ciphertext> other_tree;
 };
 
 class PartyZeroPSI : public PartyZeroNoPayload {
@@ -169,7 +158,7 @@ class PartyZeroPSI : public PartyZeroNoPayload {
         std::map<std::string, std::string> group_mapping;
 
         // elements in the intersection
-        std::vector<std::string> intersection; 
+        std::vector<std::string> intersection;
 };
 
 
@@ -202,14 +191,9 @@ class PartyZeroCardinality : public PartyZeroNoPayload {
 class PartyZeroSum : public PartyZeroWithPayload {
 
     public:
-        PartyZeroSum(
-            Context* ctx,
-            std::string epk_fn,
-            std::string esk_fn,
-            std::string psk_fn,
-            int total_days
-        ) : PartyZeroWithPayload(ctx, epk_fn, esk_fn, psk_fn, total_days), 
-            sum_ciphertext(ctx->Zero()) { }
+        PartyZeroSum(PSIParams* params) :
+            PartyZeroWithPayload(params),
+            sum_ciphertext(params->ctx->Zero()) { }
 
         ~PartyZeroSum() override = default;
 
@@ -257,7 +241,7 @@ class PartyZeroSecretShare : public PartyZeroWithPayload {
         // there is no fourth message for secret share
         Status ProcessMessageIV(const PartyOneMessage::MessageIV& msg) override;
 
-        // print cardinality 
+        // print cardinality
         void PrintResult() override;
 
         // the output secret shares

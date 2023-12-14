@@ -61,6 +61,33 @@ message PaillierCiphertext {
     optional bytes ciphertext = 1;
 }
 
+/**
+ * FOR WRITING TREES INTO FILES
+ */ 
+message PlaintextElement {
+    optional bytes element = 1;
+    optional bytes payload = 2;
+}
+
+message PlaintextNode {
+    repeated PlaintextElement elements = 1;
+}
+
+message PlaintextTree {
+    repeated PlaintextNode nodes = 1;
+    optional int32 stash_size = 2;
+    optional int32 node_size = 3;
+    optional int32 actual_size = 4;
+}
+
+message EncryptedTree {
+    repeated TreeNode nodes = 1;
+    optional int32 stash_size = 2;
+    optional int32 node_size = 3;
+    optional int32 actual_size = 4;
+}
+
+
 /*
  * PARTY ZERO
  */

@@ -8,3 +8,5 @@ bazel-*
 *.epub
 *.pkey
 *.csv
+*.tree
+*.etree

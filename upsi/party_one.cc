@@ -52,7 +52,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
             ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
             candidates.push_back(
                 std::make_pair(
-                    std::move(y_minus_x), 
+                    std::move(y_minus_x),
                     path[j].second
                 )
             );
@@ -66,7 +66,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
     for (size_t i = 0; i < candidates.size(); i++) {
         BigNum mask = this->encrypter->CreateRandomMask();
         ASSIGN_OR_RETURN(
-            candidates[i].first, 
+            candidates[i].first,
             elgamal::Exp(candidates[i].first, mask)
         );
     }
@@ -129,7 +129,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOnePSI::GenerateMessageII(
         BigNum alpha = this->encrypter->CreateRandomMask();
         BigNum beta = this->encrypter->CreateRandomMask();
         ASSIGN_OR_RETURN(
-            candidates[i].first, 
+            candidates[i].first,
             elgamal::Exp(candidates[i].first, alpha)
         );
         ASSIGN_OR_RETURN(
@@ -201,7 +201,7 @@ StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
     for (size_t i = 0; i < candidates.size(); i++) {
         BigNum mask = this->encrypter->CreateRandomMask();
         ASSIGN_OR_RETURN(
-            candidates[i], 
+            candidates[i],
             elgamal::Exp(candidates[i], mask)
         );
     }
@@ -235,7 +235,7 @@ StatusOr<PartyOneMessage::MessageIV> PartyOneSum::ProcessMessageIII(
 
     for (auto payload : msg.payloads()) {
         ASSIGN_OR_RETURN(
-            BigNum partial, 
+            BigNum partial,
             this->paillier->PartialDecrypt(this->ctx_->CreateBigNum(payload.ciphertext()))
         );
         *res.add_payloads()->mutable_ciphertext() = partial.ToBytes();
@@ -288,7 +288,7 @@ Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMes
             "[PartyOneWithPayload] received a party zero message of unknown type"
         );
     }
-    std::cout << "[PartyOneNoPartyLoad] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
+    std::cout << "[PartyOne] Day " + std::to_string(this->current_day) + " Comm (B): " << res.ByteSizeLong() << std::endl;
     this->total_cost += res.ByteSizeLong();
     return sink->Send(res);
 }
@@ -322,13 +322,13 @@ Status PartyOneSum::Handle(const ClientMessage& req, MessageSink<ServerMessage>*
             "[PartyOneWithPayload] received a party zero message of unknown type"
         );
     }
-    std::cout << "[PartyOneSum] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
+    std::cout << "[PartyOne] Day " + std::to_string(this->current_day) + " Comm (B): " << res.ByteSizeLong() << std::endl;
     this->total_cost += res.ByteSizeLong();
     return sink->Send(res);
 }
 
 Status PartyOneSecretShare::Handle(
-    const ClientMessage& req, 
+    const ClientMessage& req,
     MessageSink<ServerMessage>* sink
 ) {
     if (protocol_finished()) {

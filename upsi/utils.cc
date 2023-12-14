@@ -14,8 +14,8 @@ bool AbslParseFlag(absl::string_view text, Functionality* func, std::string* err
     else if (text == "CA") { *func = Functionality::CA; }
     else if (text == "SUM") { *func = Functionality::SUM; }
     else if (text == "SS") { *func = Functionality::SS; }
-    else { 
-        *err = "unknown functionality"; 
+    else {
+        *err = "unknown functionality";
         return false;
     }
     return true;
