@@ -69,7 +69,7 @@ Status PartyZeroNoPayload::SendMessageI(MessageSink<ClientMessage>* sink) {
 }
 
 Status PartyZeroNoPayload::Handle(
-    const ServerMessage& msg, 
+    const ServerMessage& msg,
     MessageSink<ClientMessage>* sink
 ) {
     if (protocol_finished()) {
@@ -157,9 +157,7 @@ Status PartyZeroWithPayload::SendMessageIII(
     const PartyOneMessage::MessageII& res,
     MessageSink<ClientMessage>* sink
 ) {
-
     RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &res.updates()));
-
 
     ASSIGN_OR_RETURN(
         std::vector<CiphertextAndPayload> candidates,
@@ -173,7 +171,7 @@ Status PartyZeroWithPayload::SendMessageIII(
         GenerateMessageIII(std::move(candidates))
     );
     *(msg.mutable_party_zero_msg()->mutable_message_iii()) = std::move(req);
-    
+
     std::cout << "[PartyZeroWithPartyLoad III] Day " + std::to_string(this->current_day) + " (B): " << msg.ByteSizeLong() << std::endl;
     this->total_cost += msg.ByteSizeLong();
     return sink->Send(msg);
@@ -298,7 +296,7 @@ Status PartyZeroPSI::ProcessMessageII(const PartyOneMessage::MessageII& res) {
 
     for (const std::pair<Ciphertext, Ciphertext>& candidate : candidates) {
         ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidate.first));
-        if (plaintext.IsPointAtInfinity()) { 
+        if (plaintext.IsPointAtInfinity()) {
             ASSIGN_OR_RETURN(ECPoint point, decrypter->Decrypt(candidate.second));
             ASSIGN_OR_RETURN(auto key, point.ToBytesUnCompressed());
             intersection.push_back(group_mapping[key]);
@@ -321,11 +319,12 @@ Status PartyZeroCardinality::ProcessMessageII(const PartyOneMessage::MessageII& 
 
     for (const Ciphertext& candidate : candidates) {
         ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidate));
-        if (plaintext.IsPointAtInfinity()) { 
+        if (plaintext.IsPointAtInfinity()) {
             this->cardinality++;
         }
     }
 
+    std::cout << "[PartyZero] Day " << current_day << " = " << cardinality << std::endl;
     // the day is over after the second message
     FinishDay();
     return OkStatus();
@@ -395,7 +394,7 @@ StatusOr<PartyZeroMessage::MessageIII> PartyZeroSum::GenerateMessageIII(
 
     for (size_t i = 0; i < candidates.size(); i++) {
         ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i].first));
-        if (plaintext.IsPointAtInfinity()) { 
+        if (plaintext.IsPointAtInfinity()) {
             this->cardinality++;
             if (ciphertext.IsZero()) {
                 ciphertext = candidates[i].second;
@@ -411,7 +410,7 @@ StatusOr<PartyZeroMessage::MessageIII> PartyZeroSum::GenerateMessageIII(
             this->ctx_->GenerateRandLessThan(paillier->n_squared_).ToBytes()
         );
     } else {
-        *req.add_payloads()->mutable_ciphertext() = ciphertext.ToBytes(); 
+        *req.add_payloads()->mutable_ciphertext() = ciphertext.ToBytes();
     }
     this->sum_ciphertext = ciphertext;
 
@@ -425,7 +424,7 @@ StatusOr<PartyZeroMessage::MessageIII> PartyZeroSecretShare::GenerateMessageIII(
 
     for (size_t i = 0; i < candidates.size(); i++) {
         ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i].first));
-        if (plaintext.IsPointAtInfinity()) { 
+        if (plaintext.IsPointAtInfinity()) {
             BigNum share = this->ctx_->GenerateRandLessThan(this->paillier->n);
 
             // save -share as our share
@@ -435,8 +434,8 @@ StatusOr<PartyZeroMessage::MessageIII> PartyZeroSecretShare::GenerateMessageIII(
             ASSIGN_OR_RETURN(BigNum encrypted, this->paillier->Encrypt(share));
             encrypted = paillier->Add(candidates[i].second, encrypted);
             ASSIGN_OR_RETURN(BigNum partial, this->paillier->PartialDecrypt(encrypted));
-            *req.add_payloads()->mutable_ciphertext() = encrypted.ToBytes(); 
-            *req.add_payloads()->mutable_ciphertext() = partial.ToBytes(); 
+            *req.add_payloads()->mutable_ciphertext() = encrypted.ToBytes();
+            *req.add_payloads()->mutable_ciphertext() = partial.ToBytes();
         }
     }
     // the day is over for us since there are no more incoming messages
@@ -459,9 +458,9 @@ Status PartyZeroSum::ProcessMessageIV(const PartyOneMessage::MessageIV& msg) {
 
     for (auto payload : msg.payloads()) {
         ASSIGN_OR_RETURN(
-            BigNum big, 
+            BigNum big,
             this->paillier->Decrypt(
-                this->sum_ciphertext, 
+                this->sum_ciphertext,
                 this->ctx_->CreateBigNum(payload.ciphertext())
             )
         );

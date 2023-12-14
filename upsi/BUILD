@@ -50,6 +50,7 @@ cc_library(
     name = "party",
     hdrs = ["party.h"],
     deps = [
+        ":crypto_tree",
         "//upsi/crypto:elgamal",
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_key_util",
@@ -119,9 +120,11 @@ cc_library(
     srcs = ["upsi_rpc_impl.cc"],
     hdrs = ["upsi_rpc_impl.h"],
     deps = [
+        ":crypto_tree",
         ":message_sink",
-        ":upsi_proto",
+        ":party",
         ":party_one",
+        ":upsi_proto",
         "//upsi/util:status_includes",
         "@com_github_grpc_grpc//:grpc++",
     ],
@@ -150,15 +153,12 @@ cc_binary(
     name = "test",
     srcs = ["test.cc"],
     deps = [
+        ":crypto_tree",
         ":data_util",
         ":upsi_proto",
-        ":upsi_rpc_impl",
-        ":party_one",
-        "@com_github_grpc_grpc//:grpc",
-        "@com_github_grpc_grpc//:grpc++",
+        "//upsi/util:elgamal_proto_util",
+        "//upsi/util:proto_util",
         "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
     ],
 )
 
@@ -204,7 +204,9 @@ cc_binary(
     name = "setup",
     srcs = ["setup.cc"],
     deps = [
+        ":crypto_tree",
         ":data_util",
+        ":upsi_proto",
         ":utils",
         "//upsi/crypto:elgamal",
         "//upsi/crypto:paillier",
