@@ -63,6 +63,8 @@ Status PartyZeroNoPayload::SendMessageI(MessageSink<ClientMessage>* sink) {
     ASSIGN_OR_RETURN(auto message_i, GenerateMessageI(datasets[current_day]));
 
     *(msg.mutable_party_zero_msg()->mutable_message_i()) = message_i;
+    std::cout << "[PartyZeroNoPartyLoad] Day " + std::to_string(this->current_day) + " (B): " << msg.ByteSizeLong() << std::endl;
+    this->total_cost += msg.ByteSizeLong();
     return sink->Send(msg);
 }
 
@@ -110,6 +112,8 @@ Status PartyZeroWithPayload::SendMessageI(MessageSink<ClientMessage>* sink) {
     ASSIGN_OR_RETURN(auto message_i, GenerateMessageI(datasets[current_day]));
 
     *(msg.mutable_party_zero_msg()->mutable_message_i()) = message_i;
+    std::cout << "[PartyZeroWithPartyLoad I] Day " + std::to_string(this->current_day) + " (B): " << msg.ByteSizeLong() << std::endl;
+    this->total_cost += msg.ByteSizeLong();
     return sink->Send(msg);
 }
 
@@ -169,7 +173,9 @@ Status PartyZeroWithPayload::SendMessageIII(
         GenerateMessageIII(std::move(candidates))
     );
     *(msg.mutable_party_zero_msg()->mutable_message_iii()) = std::move(req);
-
+    
+    std::cout << "[PartyZeroWithPartyLoad III] Day " + std::to_string(this->current_day) + " (B): " << msg.ByteSizeLong() << std::endl;
+    this->total_cost += msg.ByteSizeLong();
     return sink->Send(msg);
 }
 
@@ -476,6 +482,7 @@ Status PartyZeroSecretShare::ProcessMessageIV(const PartyOneMessage::MessageIV& 
 ////////////////////////////////////////////////////////////////////////////////
 
 void PartyZeroPSI::PrintResult() {
+    std::cout << "[PartyZero] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
     std::cout << "[PartyZero] CARDINALITY = " << this->intersection.size() << std::endl;
     if (this->intersection.size() < 250) {
         for (const std::string& element : this->intersection) {
@@ -485,15 +492,18 @@ void PartyZeroPSI::PrintResult() {
 }
 
 void PartyZeroCardinality::PrintResult() {
+    std::cout << "[PartyZero] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
     std::cout << "[PartyZero] CARDINALITY = " << this->cardinality << std::endl;
 }
 
 void PartyZeroSum::PrintResult() {
+    std::cout << "[PartyZero] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
     std::cout << "[PartyZero] CARDINALITY = " << this->cardinality << std::endl;
     std::cout << "[PartyZero] SUM = " << this->sum << std::endl;
 }
 
 void PartyZeroSecretShare::PrintResult() {
+    std::cout << "[PartyZero] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
     std::cout << "[PartyZero] CARDINALITY = " << this->shares.size() << std::endl;
 }
 
