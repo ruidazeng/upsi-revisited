@@ -61,10 +61,14 @@ Arguments we can use to specify the properties of the two parties includes `part
 ## Setting Up on Google Cloud
 
 > [!NOTE] 
-> There is already a VM setup in the UPSI project on Google Cloud called `upsi-1` that has cloned the repository and
+> There is already a VM setup in the UPSI project on Google Cloud called `upsi-2` that has cloned the repository and
 > installed bazel. Given the `id_upsi` ssh key, you should be able to connect and directly run the project there. 
 > 
 > The following instructions are for setting up a new machine.
+
+> [!IMPORTANT]
+> If you are setting up a new VM, it needs to be set to have Debian 10 (buster) as its boot disk. Otherwise the
+> build will not work.
 
 First, you will need to setup an ssh key. Ideally you will use the `id_upsi` key that we all already have. To add a key, 
 go to the VM instance on the Google Cloud console, click "EDIT" in the top bar, scroll down to the **SSH Keys** section,
@@ -83,7 +87,7 @@ To setup a new key, you can create one by running the following:
 ```bash
 ssh-keygen -t ed25519 -C "<your@email>"
 ```
-and adding the contents of the `.pub` file to your GitHub account (under *Settings > SSH and GPG keys*). `upsi-1` has
+and adding the contents of the `.pub` file to your GitHub account (under *Settings > SSH and GPG keys*). `upsi-2` has
 `id_github` as its key for connecting to GitHub using Max's account.
 
 Before you clone or pull the repository, you may need to add the ssh key to the ssh agent. This can be done by running
@@ -101,8 +105,15 @@ sudo mv bazel-archive-keyring.gpg /usr/share/keyrings
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
 
 sudo apt update && sudo apt install bazel-6.4.0
+sudo update-alternatives --install /usr/bin/bazel bazel /usr/bin/bazel-6.4.0 10
 ```
 Note that since our project is pinned to Bazel 6.4.0 you need to install that version specifically.
+
+You will also need to install `python` and `pip` for the build system to work. 
+```bash
+sudo apt-get install python-pip
+sudo apt-get install python3-distutils
+```
 
 ## Threshold Paillier
 Two party threshold Paillier is in `upsi/crypto/threshold_paillier.h`.
