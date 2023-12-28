@@ -176,9 +176,12 @@ Status RunPartyOne() {
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
+    
+    service.PrintResult();
     // shut down server
     grpc_server->Shutdown();
     grpc_server_thread.join();
+
     std::cout << "[PartyOne] completed protocol and shut down" << std::endl;
 
     return OkStatus();

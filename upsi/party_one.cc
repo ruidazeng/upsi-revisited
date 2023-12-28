@@ -288,7 +288,8 @@ Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMes
             "[PartyOneWithPayload] received a party zero message of unknown type"
         );
     }
-
+    std::cout << "[PartyOneNoPartyLoad] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
+    this->total_cost += res.ByteSizeLong();
     return sink->Send(res);
 }
 
@@ -321,7 +322,8 @@ Status PartyOneSum::Handle(const ClientMessage& req, MessageSink<ServerMessage>*
             "[PartyOneWithPayload] received a party zero message of unknown type"
         );
     }
-
+    std::cout << "[PartyOneSum] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
+    this->total_cost += res.ByteSizeLong();
     return sink->Send(res);
 }
 
@@ -344,6 +346,8 @@ Status PartyOneSecretShare::Handle(
             GenerateMessageII(msg.message_i(), datasets[current_day])
         );
         *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
+        std::cout << "[PartyOneSecretShare] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
+        this->total_cost += res.ByteSizeLong();
         return sink->Send(res);
     } else if (msg.has_message_iii()) {
         auto status = ProcessMessageIII(msg.message_iii());
