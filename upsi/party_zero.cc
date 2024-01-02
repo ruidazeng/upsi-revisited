@@ -482,7 +482,7 @@ Status PartyZeroSecretShare::ProcessMessageIV(const PartyOneMessage::MessageIV& 
 ////////////////////////////////////////////////////////////////////////////////
 
 void PartyZeroPSI::PrintResult() {
-    std::cout << "[PartyZero] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
+    std::cout << "[PartyZero] Total Communication Cost (MB) = " << this->total_cost << std::endl;
     std::cout << "[PartyZero] CARDINALITY = " << this->intersection.size() << std::endl;
     if (this->intersection.size() < 250) {
         for (const std::string& element : this->intersection) {
@@ -492,18 +492,18 @@ void PartyZeroPSI::PrintResult() {
 }
 
 void PartyZeroCardinality::PrintResult() {
-    std::cout << "[PartyZero] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
+    std::cout << "[PartyZero] Total Communication Cost (MB) = " << this->total_cost << std::endl;
     std::cout << "[PartyZero] CARDINALITY = " << this->cardinality << std::endl;
 }
 
 void PartyZeroSum::PrintResult() {
-    std::cout << "[PartyZero] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
+    std::cout << "[PartyZero] Total Communication Cost (MB) = " << this->total_cost << std::endl;
     std::cout << "[PartyZero] CARDINALITY = " << this->cardinality << std::endl;
     std::cout << "[PartyZero] SUM = " << this->sum << std::endl;
 }
 
 void PartyZeroSecretShare::PrintResult() {
-    std::cout << "[PartyZero] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
+    std::cout << "[PartyZero] Total Communication Cost (MB) = " << this->total_cost << std::endl;
     std::cout << "[PartyZero] CARDINALITY = " << this->shares.size() << std::endl;
 }
 

@@ -44,7 +44,7 @@ class PartyOne : public Party {
 
         // by default party one has no output => by default party one prints the communication costs
         virtual void PrintResult() { 
-            std::cout << "[PartyOne] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
+            std::cout << "[PartyOne] Total Communication Cost (MB) = " << this->total_cost << std::endl;
         }
     
     protected: 
