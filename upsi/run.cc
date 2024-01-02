@@ -178,6 +178,7 @@ Status RunPartyOne() {
 
     while (!service.protocol_finished()) { }
 
+    service.PrintComm();
     service.PrintResult();
 
     // shut down server

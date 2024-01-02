@@ -272,6 +272,7 @@ Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMes
     } else if (!req.has_party_zero_msg()) {
         return InvalidArgumentError("[PartyOneWithPayload] incorrect message type");
     }
+    this->AddComm(req);
     const PartyZeroMessage& msg = req.party_zero_msg();
 
     ServerMessage res;
@@ -282,14 +283,14 @@ Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMes
             GenerateMessageII(msg.message_i(), datasets[current_day])
         );
         *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
+        this->AddComm(res);
         FinishDay();
     } else {
         return InvalidArgumentError(
             "[PartyOneWithPayload] received a party zero message of unknown type"
         );
     }
-    std::cout << "[PartyOne] Day " + std::to_string(this->current_day) + " Comm (B): " << res.ByteSizeLong() << std::endl;
-    this->total_cost += res.ByteSizeLong();
+
     return sink->Send(res);
 }
 
@@ -300,6 +301,7 @@ Status PartyOneSum::Handle(const ClientMessage& req, MessageSink<ServerMessage>*
     } else if (!req.has_party_zero_msg()) {
         return InvalidArgumentError("[PartyOneWithPayload] incorrect message type");
     }
+    this->AddComm(req);
     const PartyZeroMessage& msg = req.party_zero_msg();
 
     ServerMessage res;
@@ -310,20 +312,21 @@ Status PartyOneSum::Handle(const ClientMessage& req, MessageSink<ServerMessage>*
             GenerateMessageII(msg.message_i(), datasets[current_day])
         );
         *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
+        this->AddComm(res);
     } else if (msg.has_message_iii()) {
         ASSIGN_OR_RETURN(
             auto message_iv,
             ProcessMessageIII(msg.message_iii())
         );
         *(res.mutable_party_one_msg()->mutable_message_iv()) = std::move(message_iv);
+        this->AddComm(res);
         FinishDay();
     } else {
         return InvalidArgumentError(
             "[PartyOneWithPayload] received a party zero message of unknown type"
         );
     }
-    std::cout << "[PartyOne] Day " + std::to_string(this->current_day) + " Comm (B): " << res.ByteSizeLong() << std::endl;
-    this->total_cost += res.ByteSizeLong();
+
     return sink->Send(res);
 }
 
@@ -337,6 +340,7 @@ Status PartyOneSecretShare::Handle(
         return InvalidArgumentError("[PartyOneWithPayload] incorrect message type");
     }
     const PartyZeroMessage& msg = req.party_zero_msg();
+    this->AddComm(req);
 
     ServerMessage res;
 
@@ -346,13 +350,11 @@ Status PartyOneSecretShare::Handle(
             GenerateMessageII(msg.message_i(), datasets[current_day])
         );
         *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
-        std::cout << "[PartyOneSecretShare] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
-        this->total_cost += res.ByteSizeLong();
+        this->AddComm(res);
         return sink->Send(res);
     } else if (msg.has_message_iii()) {
         auto status = ProcessMessageIII(msg.message_iii());
         if (!status.ok()) { return status.status(); }
-        std::clog << "[PartyOne] finished day " << this->current_day << std::endl;
         FinishDay();
         return OkStatus();
     } else {

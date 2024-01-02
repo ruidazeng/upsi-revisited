@@ -53,7 +53,11 @@ class UPSIRpcImpl : public UPSIRpc::Service {
   }
 
   void PrintResult() {
-    protocol_server_impl_->PrintResult(); 
+    protocol_server_impl_->PrintResult();
+  }
+
+  void PrintComm() {
+    protocol_server_impl_->PrintComm();
   }
 
  private:

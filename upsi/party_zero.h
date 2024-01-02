@@ -31,10 +31,6 @@ class PartyZero : public BaseParty {
         virtual Status Run(Connection* sink) = 0;
         virtual Status Handle(const ServerMessage& msg, MessageSink<ClientMessage>* sink) = 0;
         virtual void PrintResult() = 0;
-
-    protected: 
-        // TODO: total communication costs for party_zero
-        int total_cost = 0;
 };
 
 class PartyZeroNoPayload : public Party<Element, Ciphertext>, public PartyZero {
