@@ -16,6 +16,8 @@
 #ifndef PARTYONE_H_
 #define PARTYONE_H_
 
+#include "src/google/protobuf/message_lite.h"
+
 #include "upsi/crypto/context.h"
 #include "upsi/crypto/ec_commutative_cipher.h"
 #include "upsi/crypto/elgamal.h"
@@ -36,17 +38,31 @@ class PartyOne : public BaseParty {
         // use base constructor
         using BaseParty::BaseParty;
 
+        PartyOne(PSIParams* params) : BaseParty(params), comm_(params->total_days) {};
+
         // the methods to define for subclasses
         virtual Status Handle(const ClientMessage& msg, MessageSink<ServerMessage>* sink) = 0;
 
-        // by default just print out the communication cost
-        virtual void PrintResult() {
-            std::cout << "[PartyOne] Total Communication Cost (Bytes) = " << this->total_cost << std::endl;
+        // by default this party has no result
+        virtual void PrintResult() { }
+
+        void AddComm(const google::protobuf::Message& msg) {
+            comm_[current_day] += msg.ByteSizeLong();
+        }
+
+        void PrintComm() {
+            int total = 0;
+            for (size_t day = 0; day < comm_.size(); day++) {
+                std::cout << "[PartyOne] Day " << std::to_string(day + 1) << " Comm (B):\t";
+                std::cout << comm_[day] << std::endl;
+                total += comm_[day];
+            }
+            std::cout << "[PartyOne] Total Comm (B):\t" << total << std::endl;
         }
 
     protected:
-        // TODO: total communication costs for party_zero
-        int total_cost = 0;
+        // each day's comms cost in bytes
+        std::vector<int> comm_;
 };
 
 class PartyOneNoPayload : public Party<Element, Ciphertext>, public PartyOne {
