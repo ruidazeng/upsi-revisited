@@ -177,7 +177,7 @@ Status RunPartyOne() {
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     
-    service.PrintResult();
+    // service.PrintResult();
     // shut down server
     grpc_server->Shutdown();
     grpc_server_thread.join();
