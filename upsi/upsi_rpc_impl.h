@@ -52,9 +52,9 @@ class UPSIRpcImpl : public UPSIRpc::Service {
     return protocol_server_impl_->protocol_finished();
   }
 
-  void PrintResult() {
-    protocol_server_impl_->PrintResult(); 
-  }
+  // void PrintResult() {
+  //   protocol_server_impl_->PrintResult(); 
+  // }
 
  private:
   std::unique_ptr<PartyOne> protocol_server_impl_;

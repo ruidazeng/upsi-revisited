@@ -43,13 +43,7 @@ class PartyOne : public Party {
         virtual Status Handle(const ClientMessage& msg, MessageSink<ServerMessage>* sink) = 0;
 
         // by default party one has no output => by default party one prints the communication costs
-        virtual void PrintResult() { 
-            std::cout << "[PartyOne] Total Communication Cost (MB) = " << this->total_cost << std::endl;
-        }
-    
-    protected: 
-        // TODO: total communication costs for party_zero
-        int total_cost = 0;
+        virtual void PrintResult() { }
 };
 
 class PartyOneNoPayload : public PartyOne {
