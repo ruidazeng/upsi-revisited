@@ -124,6 +124,7 @@ StatusOr<CryptoNode<CiphertextAndPayload>> EncryptNode(
 ////////////////////////////////////////////////////////////////////////////////
 
 Status SerializeNode(CryptoNode<Element>* cnode, PlaintextNode* pnode) {
+    pnode->set_node_size(cnode->node_size);
     for (const Element& elem : cnode->node) {
         PlaintextElement* pe = pnode->add_elements();
         *pe->mutable_element() = elem.ToBytes();
@@ -132,6 +133,7 @@ Status SerializeNode(CryptoNode<Element>* cnode, PlaintextNode* pnode) {
 }
 
 Status SerializeNode(CryptoNode<ElementAndPayload>* cnode, PlaintextNode* pnode) {
+    pnode->set_node_size(cnode->node_size);
     for (const ElementAndPayload& elem : cnode->node) {
         PlaintextElement* pe = pnode->add_elements();
         *pe->mutable_element() = elem.first.ToBytes();
@@ -144,7 +146,7 @@ Status SerializeNode(CryptoNode<Ciphertext>* cnode, TreeNode* tnode) {
     for (const Ciphertext& elem : cnode->node) {
         EncryptedElement* ee = tnode->add_elements();
         ASSIGN_OR_RETURN(
-            *ee->mutable_no_payload()->mutable_element(), 
+            *ee->mutable_no_payload()->mutable_element(),
             elgamal_proto_util::SerializeCiphertext(elem)
         );
     }
@@ -155,7 +157,7 @@ Status SerializeNode(CryptoNode<CiphertextAndPayload>* cnode, TreeNode* tnode) {
     for (const CiphertextAndPayload& elem : cnode->node) {
         EncryptedElement* ee = tnode->add_elements();
         ASSIGN_OR_RETURN(
-            *ee->mutable_paillier()->mutable_element(), 
+            *ee->mutable_paillier()->mutable_element(),
             elgamal_proto_util::SerializeCiphertext(elem.first)
         );
 
@@ -169,7 +171,7 @@ Status SerializeNode(CryptoNode<CiphertextAndPayload>* cnode, TreeNode* tnode) {
 ////////////////////////////////////////////////////////////////////////////////
 
 StatusOr<CryptoNode<Element>> DeserializeNode(const PlaintextNode& pnode, Context* ctx) {
-    CryptoNode<Element> node(pnode.elements().size());
+    CryptoNode<Element> node(pnode.node_size());
     for (const PlaintextElement& element : pnode.elements()) {
         Element e = ctx->CreateBigNum(element.element());
         node.addElement(e);
@@ -181,7 +183,7 @@ StatusOr<CryptoNode<Element>> DeserializeNode(const PlaintextNode& pnode, Contex
 StatusOr<CryptoNode<ElementAndPayload>> DeserializeNodeWithPayload(
     const PlaintextNode& pnode, Context* ctx
 ) {
-    CryptoNode<ElementAndPayload> node(pnode.elements().size());
+    CryptoNode<ElementAndPayload> node(pnode.node_size());
     for (const PlaintextElement& element : pnode.elements()) {
         ElementAndPayload pair = std::make_pair(
             ctx->CreateBigNum(element.element()),
@@ -205,7 +207,7 @@ StatusOr<CryptoNode<Ciphertext>> DeserializeNode(const TreeNode& tnode, ECGroup*
             elem = element.elgamal().element();
         }
         ASSIGN_OR_RETURN(
-            Ciphertext ciphertext, 
+            Ciphertext ciphertext,
             elgamal_proto_util::DeserializeCiphertext(group, elem)
         );
         node.addElement(ciphertext);
@@ -223,7 +225,7 @@ StatusOr<CryptoNode<CiphertextAndPayload>> DeserializeNode(
             return InvalidArgumentError("[CryptoNode] expected node to have paillier payload");
         }
         ASSIGN_OR_RETURN(
-            Ciphertext ciphertext, 
+            Ciphertext ciphertext,
             elgamal_proto_util::DeserializeCiphertext(group, element.paillier().element())
         );
         auto pair = std::make_pair(
