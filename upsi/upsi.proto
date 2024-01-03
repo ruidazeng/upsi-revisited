@@ -63,14 +63,17 @@ message PaillierCiphertext {
 
 /**
  * FOR WRITING TREES INTO FILES
- */ 
+ */
 message PlaintextElement {
     optional bytes element = 1;
     optional bytes payload = 2;
 }
 
+// node size is needed here because plaintext nodes won't always be
+// padded to the maximum (unlike the ciphertext nodes)
 message PlaintextNode {
     repeated PlaintextElement elements = 1;
+    optional int32 node_size = 2;
 }
 
 message PlaintextTree {
@@ -78,6 +81,7 @@ message PlaintextTree {
     optional int32 stash_size = 2;
     optional int32 node_size = 3;
     optional int32 actual_size = 4;
+    optional int32 depth = 5;
 }
 
 message EncryptedTree {
@@ -85,6 +89,7 @@ message EncryptedTree {
     optional int32 stash_size = 2;
     optional int32 node_size = 3;
     optional int32 actual_size = 4;
+    optional int32 depth = 5;
 }
 
 

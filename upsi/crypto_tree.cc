@@ -323,6 +323,7 @@ Status CryptoTree<Element>::Serialize(PlaintextTree* tree) {
     tree->set_stash_size(this->stash_size);
     tree->set_node_size(this->node_size);
     tree->set_actual_size(this->actual_size);
+    tree->set_depth(this->depth);
 
     for (size_t i = 0; i < this->crypto_tree.size(); i++) {
         RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
@@ -334,6 +335,7 @@ Status CryptoTree<ElementAndPayload>::Serialize(PlaintextTree* tree) {
     tree->set_stash_size(this->stash_size);
     tree->set_node_size(this->node_size);
     tree->set_actual_size(this->actual_size);
+    tree->set_depth(this->depth);
 
     for (size_t i = 0; i < this->crypto_tree.size(); i++) {
         RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
@@ -345,6 +347,7 @@ Status CryptoTree<Ciphertext>::Serialize(EncryptedTree* tree) {
     tree->set_stash_size(this->stash_size);
     tree->set_node_size(this->node_size);
     tree->set_actual_size(this->actual_size);
+    tree->set_depth(this->depth);
 
     for (size_t i = 0; i < this->crypto_tree.size(); i++) {
         RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
@@ -357,6 +360,7 @@ Status CryptoTree<CiphertextAndPayload>::Serialize(EncryptedTree* tree) {
     tree->set_stash_size(this->stash_size);
     tree->set_node_size(this->node_size);
     tree->set_actual_size(this->actual_size);
+    tree->set_depth(this->depth);
 
     for (size_t i = 0; i < this->crypto_tree.size(); i++) {
         RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
@@ -372,6 +376,7 @@ Status CryptoTree<Element>::Load(const PlaintextTree& tree, Context* ctx) {
     this->stash_size = tree.stash_size();
     this->node_size = tree.node_size();
     this->actual_size = tree.actual_size();
+    this->depth = tree.depth();
 
     // reset the tree completely
     this->crypto_tree.clear();
@@ -388,6 +393,7 @@ Status CryptoTree<ElementAndPayload>::Load(const PlaintextTree& tree, Context* c
     this->stash_size = tree.stash_size();
     this->node_size = tree.node_size();
     this->actual_size = tree.actual_size();
+    this->depth = tree.depth();
 
     // reset the tree completely
     this->crypto_tree.clear();
@@ -405,6 +411,7 @@ Status CryptoTree<Ciphertext>::Load(const EncryptedTree& tree, Context* ctx, ECG
     this->stash_size = tree.stash_size();
     this->node_size = tree.node_size();
     this->actual_size = tree.actual_size();
+    this->depth = tree.depth();
 
     // reset the tree completely
     this->crypto_tree.clear();
@@ -423,6 +430,7 @@ Status CryptoTree<CiphertextAndPayload>::Load(
     this->stash_size = tree.stash_size();
     this->node_size = tree.node_size();
     this->actual_size = tree.actual_size();
+    this->depth = tree.depth();
 
     // reset the tree completely
     this->crypto_tree.clear();
@@ -434,6 +442,10 @@ Status CryptoTree<CiphertextAndPayload>::Load(
 
     return OkStatus();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// METHODS FOR DEBUGGING
+////////////////////////////////////////////////////////////////////////////////
 
 std::string stringToHex(const std::string& input) {
     std::stringstream hexStream;
@@ -451,14 +463,58 @@ std::string stringToHex(const std::string& input) {
     return hexStream.str();
 }
 
+Status CryptoTree<Element>::Print() {
+    auto i = 0;
+    std::cout << "[CryptoTree] depth = " << depth << ", actual_size = " << actual_size << std::endl;
+    for (const auto& node : this->crypto_tree) {
+        for (auto e = 1; 1 << e <= i; e++) {
+            std::cout << "\t";
+        }
+        std::cout << i << " (" << node.node.size() << ")";
+        if (node.node.size() <= 4) {
+            std::cout << " : ";
+            for (const Element& element : node.node) {
+                std::cout << element.ToDecimalString() << ", ";
+            }
+        }
+        std::cout << std::endl;
+        i++;
+    }
+    return OkStatus();
+}
+
+Status CryptoTree<ElementAndPayload>::Print() {
+    auto i = 0;
+    std::cout << "[CryptoTree] depth = " << depth << ", actual_size = " << actual_size << std::endl;
+    for (const auto& node : this->crypto_tree) {
+        for (auto e = 1; 1 << e <= i; e++) {
+            std::cout << "\t";
+        }
+        std::cout << i << " (" << node.node.size() << ")";
+        if (node.node.size() <= 4) {
+            std::cout << " : ";
+            for (const ElementAndPayload& element : node.node) {
+                std::cout << element.first.ToDecimalString() << ", ";
+            }
+        }
+        std::cout << std::endl;
+        i++;
+    }
+    return OkStatus();
+}
+
+
 Status CryptoTree<Ciphertext>::Print() {
     auto i = 0;
     for (const auto& node : this->crypto_tree) {
-        std::cout << i << " : ";
-        for (const Ciphertext& element : node.node) {
-            ASSIGN_OR_RETURN(std::string u, element.u.ToBytesUnCompressed());
-            ASSIGN_OR_RETURN(std::string e, element.e.ToBytesUnCompressed());
-            std::cout << "(" << stringToHex(u) <<  ", " << stringToHex(e) << ") ";
+        std::cout << i << " (" << node.node.size() << ")";
+        if (node.node.size() <= 4) {
+            std::cout << " : ";
+            for (const Ciphertext& element : node.node) {
+                ASSIGN_OR_RETURN(std::string u, element.u.ToBytesUnCompressed());
+                ASSIGN_OR_RETURN(std::string e, element.e.ToBytesUnCompressed());
+                std::cout << "(" << stringToHex(u) <<  ", " << stringToHex(e) << ") ";
+            }
         }
         std::cout << std::endl;
         i++;

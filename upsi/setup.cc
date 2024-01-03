@@ -232,13 +232,6 @@ Status GenerateData(Context* ctx) {
         }
     }
 
-    for (auto i = 0; i < total; i++) {
-        if (i % absl::GetFlag(FLAGS_per_day) == 0) std::cout << std::endl;
-        std::cout << party_zero.first[permutation[i]] << "\t";
-        std::cout << party_one[i] << std::endl;
-    }
-    std::cout << std::endl;
-
     std::cout << "[Setup] mock data generated in " << absl::GetFlag(FLAGS_data_dir) << std::endl;
     std::cout << "        P0's total elements : " << total << std::endl;
     std::cout << "        P1's total elements : " << total << std::endl;
