@@ -10,7 +10,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.  
+ * limitations under the License.
  */
 
 // Implementation of the Damgaard-Jurik cryptosystem.
@@ -102,6 +102,7 @@ GeneratePaillierKeyPair(Context* ctx, int32_t modulus_length, int32_t s);
 // This class is not thread-safe since Context is not thread-safe.
 // Note that this class does *not* take the ownership of Context.
 class PublicPaillier {
+ friend class ThresholdPaillier;
  public:
   // Creates a generic PublicPaillier with the public key n and s.
   // n is a composite number equals to p * q where p and q are safe primes and
@@ -166,6 +167,8 @@ class PublicPaillier {
   // EncryptWithRand, additionally retaining the random number used and
   // returning it with the ciphertext.
   StatusOr<PaillierEncAndRand> EncryptAndGetRand(const BigNum& message) const;
+
+  StatusOr<BigNum> ReRand(const BigNum& ciphertext) const;
 
   const BigNum& n() const { return n_; }
   int s() const { return s_; }

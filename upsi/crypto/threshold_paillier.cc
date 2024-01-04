@@ -82,7 +82,7 @@ Status GenerateThresholdPaillierKeys(
 ThresholdPaillier::~ThresholdPaillier() = default;
 
 ThresholdPaillier::ThresholdPaillier(Context* ctx, const BigNum& n, const BigNum& share)
-    : n(n), n_squared_(n * n), ctx_(ctx), share_(share) { 
+    : n(n), n_squared_(n * n), ctx_(ctx), share_(share) {
     paillier = std::make_unique<PublicPaillier>(this->ctx_, this->n);
 }
 
@@ -91,6 +91,11 @@ ThresholdPaillier::ThresholdPaillier(Context* ctx, const ThresholdPaillierKey& k
 
 StatusOr<BigNum> ThresholdPaillier::Encrypt(const BigNum& message) const {
     return paillier->Encrypt(message);
+}
+
+
+StatusOr<BigNum> ThresholdPaillier::ReRand(const BigNum& ciphertext) const {
+    return paillier->ReRand(ciphertext);
 }
 
 StatusOr<BigNum> ThresholdPaillier::PartialDecrypt(const BigNum& c) const {

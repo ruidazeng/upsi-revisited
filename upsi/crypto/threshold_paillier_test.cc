@@ -166,7 +166,7 @@ TEST(ThresholdPaillierTest, TestHomomorphicADd) {
     ThresholdPaillier party_one(&ctx, std::get<0>(keys));
     ThresholdPaillier party_two(&ctx, std::get<1>(keys));
 
-    BigNum n = ctx.CreateBigNum(std::get<0>(keys).n())
+    BigNum n = ctx.CreateBigNum(std::get<0>(keys).n());
 
     BigNum a = ctx.GenerateRandLessThan(n);
     BigNum b = ctx.GenerateRandLessThan(n);
@@ -182,7 +182,7 @@ TEST(ThresholdPaillierTest, TestHomomorphicADd) {
     );
 
 
-    BigNum ciphertext = party_one.Add(ciphertext_a, ciphertext_b); 
+    BigNum ciphertext = party_one.Add(ciphertext_a, ciphertext_b);
 
 
     ASSERT_OK_AND_ASSIGN(
@@ -194,11 +194,86 @@ TEST(ThresholdPaillierTest, TestHomomorphicADd) {
         BigNum decrypted,
         party_two.Decrypt(ciphertext, partial)
     );
-    
+
     BigNum expected = (a + b).Mod(n);
 
     EXPECT_EQ(expected, decrypted);
 }
 
+/**
+ * generate keys, party one encrypts a message, randomizes, and partially decrypts,
+ * and party two fully decrypts; decrypted value should match the message
+ */
+TEST(ThresholdPaillierTest, TestReRandomize1) {
+    Context ctx;
+    ASSERT_OK_AND_ASSIGN(
+        auto keys, GenerateThresholdPaillierKeys(&ctx, modulus_length, statistical_param)
+    );
+
+    ThresholdPaillier party_one(&ctx, std::get<0>(keys));
+    ThresholdPaillier party_two(&ctx, std::get<1>(keys));
+
+    BigNum message = ctx.GenerateRandLessThan(ctx.CreateBigNum(std::get<0>(keys).n()));
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum ciphertext,
+        party_one.Encrypt(message)
+    );
+
+    ASSERT_OK_AND_ASSIGN(
+        ciphertext,
+        party_one.ReRand(ciphertext)
+    );
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum partial,
+        party_one.PartialDecrypt(ciphertext)
+    );
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum decrypted,
+        party_two.Decrypt(ciphertext, partial)
+    );
+
+    EXPECT_EQ(message, decrypted);
+}
+
+/**
+ * generate keys, party one encrypts a message and party two rerandomizes
+ * it & partially decrypts it; party one decrypted value should match the message
+ */
+TEST(ThresholdPaillierTest, TestReRandomize2) {
+    Context ctx;
+    ASSERT_OK_AND_ASSIGN(
+        auto keys, GenerateThresholdPaillierKeys(&ctx, modulus_length, statistical_param)
+    );
+
+    ThresholdPaillier party_one(&ctx, std::get<0>(keys));
+    ThresholdPaillier party_two(&ctx, std::get<1>(keys));
+
+    BigNum message = ctx.GenerateRandLessThan(ctx.CreateBigNum(std::get<0>(keys).n()));
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum ciphertext,
+        party_one.Encrypt(message)
+    );
+
+    ASSERT_OK_AND_ASSIGN(
+        ciphertext,
+        party_two.ReRand(ciphertext)
+    );
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum partial,
+        party_two.PartialDecrypt(ciphertext)
+    );
+
+    ASSERT_OK_AND_ASSIGN(
+        BigNum decrypted,
+        party_one.Decrypt(ciphertext, partial)
+    );
+
+    EXPECT_EQ(message, decrypted);
+}
 }
 }

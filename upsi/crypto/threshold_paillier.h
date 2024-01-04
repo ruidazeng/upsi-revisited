@@ -43,6 +43,9 @@ class ThresholdPaillier {
         // Returns INVALID_ARGUMENT status when the message is < 0 or >= n^s.
         StatusOr<BigNum> Encrypt(const BigNum& message) const;
 
+        // rerandomizes the ciphertext
+        StatusOr<BigNum> ReRand(const BigNum& ciphertext) const;
+
         // partially decrypts the ciphertext with our share and
         //   returns the partial ciphertext as a BigNum
         //
@@ -59,7 +62,7 @@ class ThresholdPaillier {
          */
         BigNum Add(const BigNum& ciphertext1, const BigNum& ciphertext2) const;
 
-        // modulus 
+        // modulus
         const BigNum n;
         const BigNum n_squared_;
 

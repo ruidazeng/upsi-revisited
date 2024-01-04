@@ -403,7 +403,8 @@ StatusOr<PartyZeroMessage::MessageIII> PartyZeroSum::GenerateMessageIII(
             this->ctx_->GenerateRandLessThan(paillier->n_squared_).ToBytes()
         );
     } else {
-        *req.add_payloads()->mutable_ciphertext() = ciphertext.ToBytes();
+        ASSIGN_OR_RETURN(BigNum randomized, this->paillier->ReRand(ciphertext));
+        *req.add_payloads()->mutable_ciphertext() = randomized.ToBytes();
     }
     this->sum_ciphertext = ciphertext;
 
