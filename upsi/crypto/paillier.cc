@@ -432,6 +432,12 @@ StatusOr<PaillierEncAndRand> PublicPaillier::EncryptAndGetRand(
   return {{std::move(c), std::move(r)}};
 }
 
+StatusOr<BigNum> PublicPaillier::ReRand(const BigNum& c) const {
+  BigNum r = ctx_->GenerateRandLessThan(n_);
+  ASSIGN_OR_RETURN(BigNum g_n_to_r, g_n_fbe_->ModExp(r));
+  return c.ModMul(g_n_to_r, modulus_);
+}
+
 PrivatePaillier::~PrivatePaillier() = default;
 
 PrivatePaillier::PrivatePaillier(Context* ctx, const BigNum& p, const BigNum& q,

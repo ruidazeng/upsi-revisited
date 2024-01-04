@@ -79,7 +79,8 @@ StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
             elgamal_proto_util::SerializeCiphertext(candidates[i].first)
         );
         // TODO: rerandomize the payload
-        *candidate->mutable_paillier()->mutable_payload() = candidates[i].second.ToBytes();
+        ASSIGN_OR_RETURN(BigNum randomized, this->paillier->ReRand(candidates[i].second));
+        *candidate->mutable_paillier()->mutable_payload() = randomized.ToBytes();
     }
 
     // update our tree
