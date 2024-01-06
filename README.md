@@ -28,16 +28,15 @@ Before running the protocol, first run the `setup` binary to generate encryption
 
 Make sure the directory has a folder named `data` which holds all the generated dummy data.
 
-Arguments we can use to specify the properties of the data generated includes `days`, `p0_size`, `p1_size`, `shared_size`, `per_day`, and `max_value`.
-
-(Note: the number of elements in the intersection is randomly generated regardless of `shared_size`).
+Arguments we can use to specify the properties of the data generated includes `days`, `p0_size`, `p1_size`, `shared_size`, `per_day`, and more.
 
 ```bash
 mkdir data
 ./bazel-bin/upsi/setup
 ```
 
-An example of setting up with customized parameter looks something similar to this. Note that `start_size` is the size of the initial tree, and the total number of elements is `days` * `per_day`.
+An example of setting up with customized parameter looks something similar to this. Note that `start_size` is the size of the initial tree, and the total number of elements is `days` * `per_day`. The `shared_size` shouldn't impact the results in term of performance numbers, but make it about 60 to 70% of the total element size is a good rule of thumb for running the experiments.
+
 ```bash
 ./bazel-bin/upsi/setup --start_size=0 --days=256 --per_day=256 --shared_size=40000
 ```
