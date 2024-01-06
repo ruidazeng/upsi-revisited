@@ -37,15 +37,30 @@ mkdir data
 ./bazel-bin/upsi/setup
 ```
 
+An example of setting up with customized parameter looks something similar to this. Note that `start_size` is the size of the initial tree, and the total number of elements is `days` * `per_day`.
+```bash
+./bazel-bin/upsi/setup --start_size=0 --days=256 --per_day=256 --shared_size=40000
+```
+
 To run the protocol, have two instances (terminals) open. First we initialize Party 1 using:
 
 ```bash
-./bazel-bin/upsi/run --party=1 --func=CA
+./bazel-bin/upsi/run --party=1 --func=SUM
+```
+
+A more detailed run command will look something similar to this. If we have a `start_size` and an initial tree as part of the setup, make sure to change `initial_trees=true`.
+```
+./bazel-bin/upsi/run --party=1 --func=SUM --days=256 --initial_trees=false
 ```
 
 Then we initialize Party 0 using:
 ```bash
-./bazel-bin/upsi/run --party=0 --func=CA
+./bazel-bin/upsi/run --party=0 --func=SUM
+```
+
+A more detailed run command will look something similar to this. If we have a `start_size` and an initial tree as part of the setup, make sure to change `initial_trees=true`.
+```
+./bazel-bin/upsi/run --party=0 --func=SUM --days=256 --initial_trees=false
 ```
 
 Arguments we can use to specify the properties of the two parties includes `party`, `port`, `dir`, `func`, `days`.
