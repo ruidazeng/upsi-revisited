@@ -148,20 +148,25 @@ class ElGamalDecrypter {
   explicit ElGamalDecrypter(
       std::unique_ptr<elgamal::PrivateKey> elgamal_private_key);
 
+  // initialize exponential decryption (required to use DecryptExp)
+  Status InitDecryptExp(const elgamal::PublicKey* pk, uint64_t exp_limit);
+
   // ElGamalDecrypter cannot be copied or assigned
   ElGamalDecrypter(const ElGamalDecrypter&) = delete;
   ElGamalDecrypter operator=(const ElGamalDecrypter&) = delete;
 
   ~ElGamalDecrypter() = default;
 
-  // Decrypts a given ElGamal ciphertext.
+  // Decrypts a given ElGamal ciphertext to a group element.
   StatusOr<ECPoint> Decrypt(const elgamal::Ciphertext& ciphertext) const;
+
+  // Decrypts a given ElGamal ciphertext to its exponent.
+  StatusOr<BigNum> DecryptExp(const elgamal::Ciphertext& ciphertext) const;
 
   // Partially decrypts a given ElGamal ciphertext with a share of the secret
   // key. The caller should rerandomize the ciphertext using the remaining
   // partial public keys.
-  StatusOr<elgamal::Ciphertext> PartialDecrypt(
-      const elgamal::Ciphertext& ciphertext) const;
+  StatusOr<elgamal::Ciphertext> PartialDecrypt(const elgamal::Ciphertext& ciphertext) const;
 
   // Returns a pointer to the owned ElGamal private key
   const elgamal::PrivateKey* getPrivateKey() const {
@@ -170,6 +175,10 @@ class ElGamalDecrypter {
 
  private:
   std::unique_ptr<elgamal::PrivateKey> private_key_;
+
+  // for exponential decryption
+  Context* ctx_;
+  std::vector<ECPoint> exponents_;
 };
 
 }  // namespace upsi

@@ -4,16 +4,14 @@
 
 #include "upsi/util/elgamal_proto_util.h"
 
-
-/// @brief Tree Construction
-
 namespace upsi {
-/*
-template<typename T>
-BaseTree<T>::BaseTree() {};
-*/
-template<typename T>
-BaseTree<T>::BaseTree(int stash_size, size_t node_size) {
+
+////////////////////////////////////////////////////////////////////////////////
+// GENERIC TREE METHODS
+////////////////////////////////////////////////////////////////////////////////
+
+template<typename T, typename S>
+BaseTree<T, S>::BaseTree(int stash_size, size_t node_size) {
     this->node_size = node_size;
     this->stash_size = stash_size;
 
@@ -28,18 +26,16 @@ BaseTree<T>::BaseTree(int stash_size, size_t node_size) {
 }
 
 /// @brief Helper methods
-template<typename T>
-void BaseTree<T>::addNewLayer() {
+template<typename T, typename S>
+void BaseTree<T, S>::addNewLayer() {
     this->depth += 1;
     int new_size = (1 << (this->depth + 1));
     this->crypto_tree.resize(new_size);
 }
 
-
-
 // compute leaf index of a binary hash
-template<typename T>
-int BaseTree<T>::computeIndex(BinaryHash binary_hash) {
+template<typename T, typename S>
+int BaseTree<T, S>::computeIndex(BinaryHash binary_hash) {
 	//std::cerr << this->depth << std::endl;
 	int x = 1;
 	for (int i = 0; i < this->depth; ++i) {
@@ -50,8 +46,8 @@ int BaseTree<T>::computeIndex(BinaryHash binary_hash) {
 }
 
 // Return indices in paths in decreasing order (including stash)
-template<typename T>
-void BaseTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<int> &ind) {
+template<typename T, typename S>
+void BaseTree<T, S>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<int> &ind) {
 	assert(ind.size() == 0);
 
 	// add the indicies of leaves
@@ -75,8 +71,8 @@ void BaseTree<T>::extractPathIndices(int* leaf_ind, int leaf_cnt, std::vector<in
 }
 
 // Generate random paths, return the indices of leaves and nodes(including stash)
-template<typename T>
-int* BaseTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind, std::vector<BinaryHash> &hsh) { //ind: node indices
+template<typename T, typename S>
+int* BaseTree<T, S>::generateRandomPaths(int cnt, std::vector<int> &ind, std::vector<BinaryHash> &hsh) { //ind: node indices
 
 	// compute leaf indices of the paths
 	int *leaf_ind = new int[cnt];
@@ -90,14 +86,13 @@ int* BaseTree<T>::generateRandomPaths(int cnt, std::vector<int> &ind, std::vecto
 	// need to delete leaf_ind outside this function
 }
 
-
 // @brief Real methods
 
 // Insert new set elements (sender)
 // Return vector of (plaintext) nodes
 // stash: index = 0
-template<typename T>
-std::vector<CryptoNode<T>> BaseTree<T>::insert(
+template<typename T, typename S>
+std::vector<CryptoNode<T>> BaseTree<T, S>::insert(
     std::vector<T> &elem,
     std::vector<std::string> &hsh
 ) {
@@ -178,8 +173,8 @@ std::vector<CryptoNode<T>> BaseTree<T>::insert(
 }
 
 // Update tree (receiver)
-template<typename T>
-void BaseTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &new_nodes, std::vector<std::string> &hsh) {
+template<typename T, typename S>
+void BaseTree<T, S>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &new_nodes, std::vector<std::string> &hsh) {
 
 	int node_cnt = new_nodes.size();
 
@@ -202,10 +197,9 @@ void BaseTree<T>::replaceNodes(int new_elem_cnt, std::vector<CryptoNode<T> > &ne
 	this->actual_size += new_elem_cnt;
 }
 
-
 // Find path for an element (including stash) and extract all elements on the path
-template<typename T>
-std::vector<T> BaseTree<T>::getPath(Element element) {
+template<typename T, typename S>
+std::vector<T> BaseTree<T, S>::getPath(Element element) {
     std::vector<T> encyrpted_elem;
     //std::cerr << "computing binary hash of "<< element << "\n";
     BinaryHash binary_hash = computeBinaryHash(element);
@@ -223,34 +217,40 @@ std::vector<T> BaseTree<T>::getPath(Element element) {
     return encyrpted_elem;
 }
 
-Status CryptoTree<ElementAndPayload>::Update(
-    Context* ctx,
-    ElGamalEncrypter* elgamal,
-    ThresholdPaillier* paillier,
-    std::vector<ElementAndPayload>& elements,
-    TreeUpdates* updates
-) {
-    std::vector<std::string> hashes;
+template<typename T, typename S>
+Status BaseTree<T, S>::Serialize(S* tree) {
+    tree->set_stash_size(this->stash_size);
+    tree->set_node_size(this->node_size);
+    tree->set_actual_size(this->actual_size);
+    tree->set_depth(this->depth);
 
-    std::vector<CryptoNode<ElementAndPayload>> nodes = this->insert(elements, hashes);
-
-    for (size_t i = 0; i < nodes.size(); i++) {
-        nodes[i].pad(ctx);
-
-        ASSIGN_OR_RETURN(
-            CryptoNode<CiphertextAndPayload> ciphertext,
-            EncryptNode(ctx, elgamal, paillier, nodes[i])
-        );
-
-        RETURN_IF_ERROR(SerializeNode(&ciphertext, updates->add_nodes()));
+    for (size_t i = 0; i < this->crypto_tree.size(); i++) {
+        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
     }
+    return OkStatus();
+}
 
-    for (const std::string &hash : hashes) {
-        updates->add_hashes(hash);
+template<typename T, typename S>
+Status BaseTree<T, S>::Deserialize(const S& tree, Context* ctx, ECGroup* group) {
+    this->stash_size = tree.stash_size();
+    this->node_size = tree.node_size();
+    this->actual_size = tree.actual_size();
+    this->depth = tree.depth();
+
+    // reset the tree completely
+    this->crypto_tree.clear();
+
+    for (const auto& tnode : tree.nodes()) {
+        ASSIGN_OR_RETURN(auto node, DeserializeNode<T>(tnode, ctx, group));
+        this->crypto_tree.push_back(std::move(node));
     }
 
     return OkStatus();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// UPDATE
+////////////////////////////////////////////////////////////////////////////////
 
 Status CryptoTree<Element>::Update(
     Context* ctx,
@@ -280,6 +280,63 @@ Status CryptoTree<Element>::Update(
     return OkStatus();
 }
 
+Status CryptoTree<ElementAndPayload>::Update(
+    Context* ctx,
+    ElGamalEncrypter* elgamal,
+    std::vector<ElementAndPayload>& elements,
+    TreeUpdates* updates
+) {
+    std::vector<std::string> hashes;
+
+    std::vector<CryptoNode<ElementAndPayload>> nodes = this->insert(elements, hashes);
+
+    for (size_t i = 0; i < nodes.size(); i++) {
+        nodes[i].pad(ctx);
+
+        ASSIGN_OR_RETURN(
+            CryptoNode<CiphertextAndElGamal> ciphertext,
+            EncryptNode(ctx, elgamal, nodes[i])
+        );
+
+        RETURN_IF_ERROR(SerializeNode(&ciphertext, updates->add_nodes()));
+    }
+
+    for (const std::string &hash : hashes) {
+        updates->add_hashes(hash);
+    }
+
+    return OkStatus();
+}
+
+Status CryptoTree<ElementAndPayload>::Update(
+    Context* ctx,
+    ElGamalEncrypter* elgamal,
+    ThresholdPaillier* paillier,
+    std::vector<ElementAndPayload>& elements,
+    TreeUpdates* updates
+) {
+    std::vector<std::string> hashes;
+
+    std::vector<CryptoNode<ElementAndPayload>> nodes = this->insert(elements, hashes);
+
+    for (size_t i = 0; i < nodes.size(); i++) {
+        nodes[i].pad(ctx);
+
+        ASSIGN_OR_RETURN(
+            CryptoNode<CiphertextAndPaillier> ciphertext,
+            EncryptNode(ctx, elgamal, paillier, nodes[i])
+        );
+
+        RETURN_IF_ERROR(SerializeNode(&ciphertext, updates->add_nodes()));
+    }
+
+    for (const std::string &hash : hashes) {
+        updates->add_hashes(hash);
+    }
+
+    return OkStatus();
+}
+
 Status CryptoTree<Ciphertext>::Update(
     Context* ctx,
     ECGroup* group,
@@ -289,7 +346,7 @@ Status CryptoTree<Ciphertext>::Update(
 
     std::vector<CryptoNode<Ciphertext>> new_nodes;
     for (const TreeNode& tnode : updates->nodes()) {
-        ASSIGN_OR_RETURN(CryptoNode<Ciphertext> cnode, DeserializeNode(tnode, group));
+        ASSIGN_OR_RETURN(CryptoNode<Ciphertext> cnode, DeserializeNode<Ciphertext>(tnode, ctx, group));
         new_nodes.push_back(std::move(cnode));
     }
 
@@ -298,16 +355,16 @@ Status CryptoTree<Ciphertext>::Update(
     return OkStatus();
 }
 
-Status CryptoTree<CiphertextAndPayload>::Update(
+Status CryptoTree<CiphertextAndPaillier>::Update(
     Context* ctx,
     ECGroup* group,
     const TreeUpdates* updates
 ) {
     std::vector<std::string> hashes(updates->hashes().begin(), updates->hashes().end());
 
-    std::vector<CryptoNode<CiphertextAndPayload>> new_nodes;
+    std::vector<CryptoNode<CiphertextAndPaillier>> new_nodes;
     for (const TreeNode& tnode : updates->nodes()) {
-        ASSIGN_OR_RETURN(CryptoNode<CiphertextAndPayload> cnode, DeserializeNode(tnode, ctx, group));
+        ASSIGN_OR_RETURN(CryptoNode<CiphertextAndPaillier> cnode, DeserializeNode<CiphertextAndPaillier>(tnode, ctx, group));
         new_nodes.push_back(std::move(cnode));
     }
     this->replaceNodes(hashes.size(), new_nodes, hashes);
@@ -315,130 +372,22 @@ Status CryptoTree<CiphertextAndPayload>::Update(
     return OkStatus();
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// SERIALIZE
-////////////////////////////////////////////////////////////////////////////////
-
-Status CryptoTree<Element>::Serialize(PlaintextTree* tree) {
-    tree->set_stash_size(this->stash_size);
-    tree->set_node_size(this->node_size);
-    tree->set_actual_size(this->actual_size);
-    tree->set_depth(this->depth);
-
-    for (size_t i = 0; i < this->crypto_tree.size(); i++) {
-        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
-    }
-    return OkStatus();
-}
-
-Status CryptoTree<ElementAndPayload>::Serialize(PlaintextTree* tree) {
-    tree->set_stash_size(this->stash_size);
-    tree->set_node_size(this->node_size);
-    tree->set_actual_size(this->actual_size);
-    tree->set_depth(this->depth);
-
-    for (size_t i = 0; i < this->crypto_tree.size(); i++) {
-        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
-    }
-    return OkStatus();
-}
-
-Status CryptoTree<Ciphertext>::Serialize(EncryptedTree* tree) {
-    tree->set_stash_size(this->stash_size);
-    tree->set_node_size(this->node_size);
-    tree->set_actual_size(this->actual_size);
-    tree->set_depth(this->depth);
-
-    for (size_t i = 0; i < this->crypto_tree.size(); i++) {
-        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
-    }
-    return OkStatus();
-}
-
-
-Status CryptoTree<CiphertextAndPayload>::Serialize(EncryptedTree* tree) {
-    tree->set_stash_size(this->stash_size);
-    tree->set_node_size(this->node_size);
-    tree->set_actual_size(this->actual_size);
-    tree->set_depth(this->depth);
-
-    for (size_t i = 0; i < this->crypto_tree.size(); i++) {
-        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
-    }
-    return OkStatus();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// LOAD / DESERIALIZE
-////////////////////////////////////////////////////////////////////////////////
-
-Status CryptoTree<Element>::Load(const PlaintextTree& tree, Context* ctx) {
-    this->stash_size = tree.stash_size();
-    this->node_size = tree.node_size();
-    this->actual_size = tree.actual_size();
-    this->depth = tree.depth();
-
-    // reset the tree completely
-    this->crypto_tree.clear();
-
-    for (const PlaintextNode& node : tree.nodes()) {
-        ASSIGN_OR_RETURN(auto cnode, DeserializeNode(node, ctx));
-        this->crypto_tree.push_back(std::move(cnode));
-    }
-
-    return OkStatus();
-}
-
-Status CryptoTree<ElementAndPayload>::Load(const PlaintextTree& tree, Context* ctx) {
-    this->stash_size = tree.stash_size();
-    this->node_size = tree.node_size();
-    this->actual_size = tree.actual_size();
-    this->depth = tree.depth();
-
-    // reset the tree completely
-    this->crypto_tree.clear();
-
-    for (const PlaintextNode& node : tree.nodes()) {
-        ASSIGN_OR_RETURN(auto cnode, DeserializeNodeWithPayload(node, ctx));
-        this->crypto_tree.push_back(std::move(cnode));
-    }
-
-    return OkStatus();
-}
-
-// TODO: does cryptotree need inheritance split like the parties do?
-Status CryptoTree<Ciphertext>::Load(const EncryptedTree& tree, Context* ctx, ECGroup* group) {
-    this->stash_size = tree.stash_size();
-    this->node_size = tree.node_size();
-    this->actual_size = tree.actual_size();
-    this->depth = tree.depth();
-
-    // reset the tree completely
-    this->crypto_tree.clear();
-
-    for (const TreeNode& tnode : tree.nodes()) {
-        ASSIGN_OR_RETURN(auto cnode, DeserializeNode(tnode, group));
-        this->crypto_tree.push_back(std::move(cnode));
-    }
-
-    return OkStatus();
-}
-
-Status CryptoTree<CiphertextAndPayload>::Load(
-    const EncryptedTree& tree, Context* ctx, ECGroup* group
+Status CryptoTree<CiphertextAndElGamal>::Update(
+    Context* ctx,
+    ECGroup* group,
+    const TreeUpdates* updates
 ) {
-    this->stash_size = tree.stash_size();
-    this->node_size = tree.node_size();
-    this->actual_size = tree.actual_size();
-    this->depth = tree.depth();
+    std::vector<std::string> hashes(updates->hashes().begin(), updates->hashes().end());
 
-    // reset the tree completely
-    this->crypto_tree.clear();
-
-    for (const TreeNode& tnode : tree.nodes()) {
-        ASSIGN_OR_RETURN(auto cnode, DeserializeNode(tnode, ctx, group));
-        this->crypto_tree.push_back(std::move(cnode));
+    std::vector<CryptoNode<CiphertextAndElGamal>> new_nodes;
+    for (const TreeNode& tnode : updates->nodes()) {
+        ASSIGN_OR_RETURN(
+            CryptoNode<CiphertextAndElGamal> cnode,
+            DeserializeNode<CiphertextAndElGamal>(tnode, ctx, group)
+        );
+        new_nodes.push_back(std::move(cnode));
     }
+    this->replaceNodes(hashes.size(), new_nodes, hashes);
 
     return OkStatus();
 }
@@ -446,22 +395,6 @@ Status CryptoTree<CiphertextAndPayload>::Load(
 ////////////////////////////////////////////////////////////////////////////////
 // METHODS FOR DEBUGGING
 ////////////////////////////////////////////////////////////////////////////////
-
-std::string stringToHex(const std::string& input) {
-    std::stringstream hexStream;
-    auto i = 0;
-    for (unsigned char c : input) {
-        if (i < 2) {
-            i++;
-        } else if (i < 6) {
-            hexStream << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
-            i++;
-        } else {
-            break;
-        }
-    }
-    return hexStream.str();
-}
 
 Status CryptoTree<Element>::Print() {
     auto i = 0;
@@ -503,7 +436,6 @@ Status CryptoTree<ElementAndPayload>::Print() {
     return OkStatus();
 }
 
-
 Status CryptoTree<Ciphertext>::Print() {
     auto i = 0;
     for (const auto& node : this->crypto_tree) {
@@ -511,9 +443,7 @@ Status CryptoTree<Ciphertext>::Print() {
         if (node.node.size() <= 4) {
             std::cout << " : ";
             for (const Ciphertext& element : node.node) {
-                ASSIGN_OR_RETURN(std::string u, element.u.ToBytesUnCompressed());
-                ASSIGN_OR_RETURN(std::string e, element.e.ToBytesUnCompressed());
-                std::cout << "(" << stringToHex(u) <<  ", " << stringToHex(e) << ") ";
+                std::cout << "(" << element.u.Print() <<  ", " << element.e.Print() << ") ";
             }
         }
         std::cout << std::endl;
@@ -522,14 +452,27 @@ Status CryptoTree<Ciphertext>::Print() {
     return OkStatus();
 }
 
-Status CryptoTree<CiphertextAndPayload>::Print() {
+Status CryptoTree<CiphertextAndPaillier>::Print() {
     auto i = 0;
     for (const auto& node : this->crypto_tree) {
         std::cout << i << " : ";
         for (const auto& element : node.node) {
-            ASSIGN_OR_RETURN(std::string u, element.first.u.ToBytesUnCompressed());
-            ASSIGN_OR_RETURN(std::string e, element.first.e.ToBytesUnCompressed());
-            std::cout << "(" << stringToHex(u) <<  ", " << stringToHex(e) << ") ";
+            std::cout << "(" << element.first.u.Print() <<  ", ";
+            std::cout << element.first.e.Print() << ") ";
+        }
+        std::cout << std::endl;
+        i++;
+    }
+    return OkStatus();
+}
+
+Status CryptoTree<CiphertextAndElGamal>::Print() {
+    auto i = 0;
+    for (const auto& node : this->crypto_tree) {
+        std::cout << i << " : ";
+        for (const auto& element : node.node) {
+            std::cout << "(" << element.first.u.Print() <<  ", ";
+            std::cout << element.first.e.Print() << ") ";
         }
         std::cout << std::endl;
         i++;
@@ -538,10 +481,10 @@ Status CryptoTree<CiphertextAndPayload>::Print() {
 }
 
 
-
-template class BaseTree<Element>;
-template class BaseTree<Ciphertext>;
-template class BaseTree<ElementAndPayload>;
-template class BaseTree<CiphertextAndPayload>;
+template class BaseTree<Element, PlaintextTree>;
+template class BaseTree<ElementAndPayload, PlaintextTree>;
+template class BaseTree<Ciphertext, EncryptedTree>;
+template class BaseTree<CiphertextAndPaillier, EncryptedTree>;
+template class BaseTree<CiphertextAndElGamal, EncryptedTree>;
 
 } // namespace upsi

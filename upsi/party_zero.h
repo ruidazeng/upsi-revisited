@@ -74,59 +74,6 @@ class PartyZeroNoPayload : public Party<Element, Ciphertext>, public PartyZero {
         std::vector<std::vector<Element>> datasets;
 };
 
-class PartyZeroWithPayload : public Party<ElementAndPayload, Ciphertext>, public PartyZero {
-    public:
-        PartyZeroWithPayload(PSIParams* params) :
-            Party<ElementAndPayload, Ciphertext>(params), PartyZero(params) {}
-
-        virtual ~PartyZeroWithPayload() = default;
-
-        /**
-         * set the datasets variable based on the functionality
-         *
-         * this can't happen in the constructor for weird inheritance reasons
-         */
-        void LoadData(const std::vector<PartyZeroDataset>& datasets) override;
-
-        // set the payload given the element and its associated value
-        virtual ElementAndPayload GetPayload(BigNum element, BigNum value) = 0;
-
-        /**
-         * send tree updates & intersection candidates
-         */
-        Status SendMessageI(MessageSink<ClientMessage>* sink);
-
-        StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
-            std::vector<ElementAndPayload> elements
-        );
-
-        /**
-         * update their tree & (optionally) send follow up message
-         */
-        Status SendMessageIII(
-            const PartyOneMessage::MessageII& res,
-            MessageSink<ClientMessage>* sink
-        );
-
-        virtual StatusOr<PartyZeroMessage::MessageIII> GenerateMessageIII(
-            std::vector<CiphertextAndPayload> candidates
-        ) = 0;
-
-        /**
-         * compute the daily output from the other party's last message
-         */
-        virtual Status ProcessMessageIV(const PartyOneMessage::MessageIV& msg) = 0;
-
-        /**
-         * delegate incoming messages to other methods
-         */
-        Status Handle(const ServerMessage& res, MessageSink<ClientMessage>* sink) override;
-
-    protected:
-        // one dataset for each day
-        std::vector<std::vector<ElementAndPayload>> datasets;
-};
-
 class PartyZeroPSI : public PartyZeroNoPayload {
 
     public:
@@ -184,12 +131,66 @@ class PartyZeroCardinality : public PartyZeroNoPayload {
         int64_t cardinality = 0;
 };
 
+
+class PartyZeroWithPayload : public Party<ElementAndPayload, Ciphertext>, public PartyZero {
+    public:
+        PartyZeroWithPayload(PSIParams* params) :
+            Party<ElementAndPayload, Ciphertext>(params), PartyZero(params) {}
+
+        virtual ~PartyZeroWithPayload() = default;
+
+        /**
+         * set the datasets variable based on the functionality
+         *
+         * this can't happen in the constructor for weird inheritance reasons
+         */
+        void LoadData(const std::vector<PartyZeroDataset>& datasets) override;
+
+        // set the payload given the element and its associated value
+        virtual ElementAndPayload GetPayload(BigNum element, BigNum value) = 0;
+
+        /**
+         * send tree updates & intersection candidates
+         */
+        Status SendMessageI(MessageSink<ClientMessage>* sink);
+
+        virtual StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
+            std::vector<ElementAndPayload> elements
+        ) = 0;
+
+        /**
+         * update their tree & (optionally) send follow up message
+         */
+        virtual Status SendMessageIII(
+            const PartyOneMessage::MessageII& res,
+            MessageSink<ClientMessage>* sink
+        ) = 0;
+
+        /**
+         * compute the daily output from the other party's last message
+         */
+        virtual Status ProcessMessageIV(const PartyOneMessage::MessageIV& msg) = 0;
+
+        /**
+         * delegate incoming messages to other methods
+         */
+        Status Handle(const ServerMessage& res, MessageSink<ClientMessage>* sink) override;
+
+    protected:
+        // one dataset for each day
+        std::vector<std::vector<ElementAndPayload>> datasets;
+};
+
 class PartyZeroSum : public PartyZeroWithPayload {
 
     public:
-        PartyZeroSum(PSIParams* params) :
-            PartyZeroWithPayload(params),
-            sum_ciphertext(params->ctx->Zero()) { }
+        PartyZeroSum(PSIParams* params) : PartyZeroWithPayload(params) {
+            Status status = decrypter->InitDecryptExp(encrypter->getPublicKey(), MAX_SUM);
+            if (!status.ok()) {
+                std::cerr << status << std::endl;
+                throw std::runtime_error("[PartyOneSum] error initializing exponential elgamal");
+            }
+        }
 
         ~PartyZeroSum() override = default;
 
@@ -198,9 +199,13 @@ class PartyZeroSum : public PartyZeroWithPayload {
 
         Status Run(Connection* sink) override;
 
-        // TODO: what does this do?
-        StatusOr<PartyZeroMessage::MessageIII> GenerateMessageIII(
-            std::vector<CiphertextAndPayload> candidates
+        StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
+            std::vector<ElementAndPayload> elements
+        ) override;
+
+        Status SendMessageIII(
+            const PartyOneMessage::MessageII& res,
+            MessageSink<ClientMessage>* sink
         ) override;
 
         Status ProcessMessageIV(const PartyOneMessage::MessageIV& msg) override;
@@ -209,9 +214,6 @@ class PartyZeroSum : public PartyZeroWithPayload {
         void PrintResult() override;
 
     private:
-        // TODO: is this really necessary?
-        BigNum sum_ciphertext;
-
         uint64_t sum = 0;
         uint64_t cardinality = 0;
 };
@@ -229,9 +231,14 @@ class PartyZeroSecretShare : public PartyZeroWithPayload {
 
         Status Run(Connection* sink) override;
 
+        StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
+            std::vector<ElementAndPayload> elements
+        ) override;
+
         // sets our share & sends their share out
-        StatusOr<PartyZeroMessage::MessageIII> GenerateMessageIII(
-            std::vector<CiphertextAndPayload> candidates
+        Status SendMessageIII(
+            const PartyOneMessage::MessageII& res,
+            MessageSink<ClientMessage>* sink
         ) override;
 
         // there is no fourth message for secret share

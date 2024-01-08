@@ -15,6 +15,7 @@
 
 #include "upsi/crypto/ec_point.h"
 
+#include <iomanip>
 #include <string>
 #include <utility>
 #include <vector>
@@ -116,6 +117,30 @@ bool ECPoint::IsPointAtInfinity() const {
 
 bool ECPoint::CompareTo(const ECPoint& point) const {
   return 0 == EC_POINT_cmp(group_, point_.get(), point.point_.get(), bn_ctx_);
+}
+
+std::string ECPoint::Print() const {
+
+    if (IsPointAtInfinity()) {
+        return "INFINITY";
+    }
+
+    StatusOr<std::string> bytes = ToBytesUnCompressed();
+    if (!bytes.ok()) { return "<FAILED TO PRINT POINT>"; }
+
+    std::stringstream hexStream;
+    auto i = 0;
+    for (unsigned char c : bytes.value()) {
+        if (i < 2) {
+            i++;
+        } else if (i < 6) {
+            hexStream << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
+            i++;
+        } else {
+            break;
+        }
+    }
+    return hexStream.str();
 }
 
 }  // namespace upsi

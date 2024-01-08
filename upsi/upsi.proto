@@ -100,7 +100,8 @@ message PartyZeroMessage {
     oneof message_content {
         //StartProtocolRequest start = 1;
         MessageI message_i = 1;
-        MessageIII message_iii = 2;
+        MessageIII_SUM message_iii_sum = 2;
+        MessageIII_SS message_iii_ss = 3;
     }
 
     // For initiating the protocol.
@@ -114,7 +115,11 @@ message PartyZeroMessage {
         optional EncryptedSet candidates = 2;
     }
 
-    message MessageIII {
+    message MessageIII_SUM {
+        optional ElGamalCiphertext sum = 1;
+    }
+
+    message MessageIII_SS {
         repeated PaillierCiphertext payloads = 1;
     }
 }
@@ -145,7 +150,7 @@ message PartyOneMessage {
     }
 
     message MessageIV {
-        repeated PaillierCiphertext payloads = 1;
+        optional ElGamalCiphertext sum = 1;
     }
 }
 

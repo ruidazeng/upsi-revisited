@@ -212,6 +212,7 @@ cc_binary(
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_key_util",
         "//upsi/util:proto_util",
+        "//upsi/util:setup_util",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",

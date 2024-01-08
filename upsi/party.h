@@ -138,7 +138,7 @@ class Party {
                 if (!plaintext.ok()) {
                     throw std::runtime_error("[Party] error reading PlaintextTree");
                 }
-                Status load = this->my_tree.Load(plaintext.value(), this->ctx_);
+                Status load = this->my_tree.Deserialize(plaintext.value(), this->ctx_, this->group);
                 if (!load.ok()) {
                     std::cerr << load << std::endl;
                     throw std::runtime_error("[Party] error loading my tree");
@@ -148,7 +148,7 @@ class Party {
                 if (!encrypted.ok()) {
                     throw std::runtime_error("[Party] error reading EncryptedTree");
                 }
-                load = this->other_tree.Load(encrypted.value(), this->ctx_, this->group);
+                load = this->other_tree.Deserialize(encrypted.value(), this->ctx_, this->group);
                 if (!load.ok()) {
                     std::cerr << load << std::endl;
                     throw std::runtime_error("[Party] error loading other tree");

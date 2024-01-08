@@ -222,6 +222,27 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "setup_util",
+    srcs = ["setup_util.cc"],
+    hdrs = ["setup_util.h"],
+    deps = [
+        ":elgamal_key_util",
+        ":elgamal_proto_util",
+        ":proto_util",
+        ":status_includes",
+        "//upsi/crypto:bn_util",
+        "//upsi/crypto:ec_key_proto",
+        "//upsi/crypto:ec_util",
+        "//upsi/crypto:paillier",
+        "//upsi:utils",
+        "//upsi:data_util",
+        "//upsi:crypto_tree",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)
+
 cc_test(
     name = "elgamal_proto_util_test",
     srcs = ["elgamal_proto_util_test.cc"],
@@ -264,8 +285,3 @@ cc_test(
     ],
 )
 
-# cc_library(
-#     name = "hash",
-#     hdrs = ["hash.h"],
-#     deps = ["@openssl//:openssl"],
-# )

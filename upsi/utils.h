@@ -37,6 +37,8 @@ namespace upsi {
 	#define DEFAULT_NODE_SIZE 4
     #define DEFAULT_STASH_SIZE 147
 
+    #define MAX_SUM 50000
+
     #define ELEMENT_STR_LENGTH 16
 
 	#define DEBUG 1
@@ -50,8 +52,11 @@ namespace upsi {
     // type of an element with its associated payload
     typedef std::pair<Element, BigNum> ElementAndPayload;
 
-    // type of an encrypted element with its (also encrypted) associated payload
-    typedef std::pair<Ciphertext, BigNum> CiphertextAndPayload;
+    // type of an encrypted element with its associated el gamal payload
+    typedef std::pair<Ciphertext, Ciphertext> CiphertextAndElGamal;
+
+    // type of an encrypted element with its associated paillier payload
+    typedef std::pair<Ciphertext, BigNum> CiphertextAndPaillier;
 
     // protocol functionality options
     enum Functionality { PSI, CA, SUM, SS };
@@ -63,18 +68,9 @@ namespace upsi {
 
 	typedef std::string BinaryHash;
 
-    StatusOr<std::vector<Ciphertext>> DeserializeCiphertexts(
-        const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
-        Context* ctx,
-        ECGroup* group
-    );
-
-    StatusOr<std::vector<std::pair<Ciphertext, Ciphertext>>> DeserializeCiphertextAndElGamals(
-        const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
-        ECGroup* group
-    );
-
-    StatusOr<std::vector<CiphertextAndPayload>> DeserializeCiphertextAndPayloads(
+    // TODO: should this be somewhere else?
+    template<typename T>
+    StatusOr<std::vector<T>> DeserializeCiphertexts(
         const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
         Context* ctx,
         ECGroup* group

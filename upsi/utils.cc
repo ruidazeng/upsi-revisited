@@ -36,6 +36,7 @@ std::string AbslUnparseFlag(Functionality func) {
     }
 }
 
+template<>
 StatusOr<std::vector<Ciphertext>> DeserializeCiphertexts(
     const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
     Context* ctx,
@@ -57,8 +58,10 @@ StatusOr<std::vector<Ciphertext>> DeserializeCiphertexts(
     return ciphertexts;
 }
 
-StatusOr<std::vector<std::pair<Ciphertext, Ciphertext>>> DeserializeCiphertextAndElGamals(
+template<>
+StatusOr<std::vector<CiphertextAndElGamal>> DeserializeCiphertexts(
     const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
+    Context* ctx,
     ECGroup* group
 ) {
     std::vector<std::pair<Ciphertext, Ciphertext>> ciphertexts;
@@ -83,12 +86,13 @@ StatusOr<std::vector<std::pair<Ciphertext, Ciphertext>>> DeserializeCiphertextAn
     return ciphertexts;
 }
 
-StatusOr<std::vector<CiphertextAndPayload>> DeserializeCiphertextAndPayloads(
+template<>
+StatusOr<std::vector<CiphertextAndPaillier>> DeserializeCiphertexts(
     const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
     Context* ctx,
     ECGroup* group
 ) {
-    std::vector<CiphertextAndPayload> ciphertexts;
+    std::vector<CiphertextAndPaillier> ciphertexts;
     for (const EncryptedElement& element : serialized) {
         if (!element.has_paillier()) {
             return InvalidArgumentError(
@@ -154,11 +158,6 @@ BinaryHash computeBinaryHash(Ciphertext &elem) {
 ////////////////////////////////////////////////////////////////////////////////
 // ELEMENT COPY
 ////////////////////////////////////////////////////////////////////////////////
-template<>
-Ciphertext elementCopy(const Ciphertext &elem) {
-	Ciphertext rs = elgamal::CloneCiphertext(elem).value();
-	return rs;
-}
 
 template<>
 ElementAndPayload elementCopy(const ElementAndPayload& elem) {
@@ -172,7 +171,20 @@ Element elementCopy(const Element& elem) {
 }
 
 template<>
-CiphertextAndPayload elementCopy(const CiphertextAndPayload& elem) {
+Ciphertext elementCopy(const Ciphertext &elem) {
+	Ciphertext rs = elgamal::CloneCiphertext(elem).value();
+	return rs;
+}
+
+template<>
+CiphertextAndElGamal elementCopy(const CiphertextAndElGamal &elem) {
+	Ciphertext element = elgamal::CloneCiphertext(elem.first).value();
+	Ciphertext payload = elgamal::CloneCiphertext(elem.second).value();
+    return std::make_pair(std::move(element), std::move(payload));
+}
+
+template<>
+CiphertextAndPaillier elementCopy(const CiphertextAndPaillier& elem) {
 	Ciphertext copy = elgamal::CloneCiphertext(std::get<0>(elem)).value();
     return std::make_pair(std::move(copy), std::get<1>(elem));
 }

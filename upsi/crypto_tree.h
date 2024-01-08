@@ -10,7 +10,7 @@
 
 namespace upsi {
 
-template<typename T>
+template<typename T, typename S>
 class BaseTree
 {
     protected:
@@ -54,19 +54,21 @@ class BaseTree
         );
 		std::vector<T> getPath(Element element);
 
+        Status Serialize(S* tree);
+
+        Status Deserialize(const S& tree, Context* ctx, ECGroup* group);
+
         virtual Status Print() = 0;
 };
 
 template<typename T>
-class CryptoTree : public BaseTree<T> { };
+class CryptoTree { };
 
 template<>
-class CryptoTree<Element> : public BaseTree<Element>
+class CryptoTree<Element> : public BaseTree<Element, PlaintextTree>
 {
     public:
-        using BaseTree<Element>::BaseTree;
-
-        Status Load(const PlaintextTree& tree, Context* ctx);
+        using BaseTree<Element, PlaintextTree>::BaseTree;
 
         Status Update(
             Context* ctx,
@@ -75,19 +77,24 @@ class CryptoTree<Element> : public BaseTree<Element>
             TreeUpdates* updates
         );
 
-        Status Serialize(PlaintextTree* tree);
-
         Status Print() override;
 };
 
 template<>
-class CryptoTree<ElementAndPayload> : public BaseTree<ElementAndPayload>
+class CryptoTree<ElementAndPayload> : public BaseTree<ElementAndPayload, PlaintextTree>
 {
     public:
-        using BaseTree<ElementAndPayload>::BaseTree;
+        using BaseTree<ElementAndPayload, PlaintextTree>::BaseTree;
 
-        Status Load(const PlaintextTree& tree, Context* ctx);
+        // use for encrypting the payload with elgamal
+        Status Update(
+            Context* ctx,
+            ElGamalEncrypter* elgamal,
+            std::vector<ElementAndPayload>& elements,
+            TreeUpdates* updates
+        );
 
+        // use for encrypting the payload with paillier
         Status Update(
             Context* ctx,
             ElGamalEncrypter* elgamal,
@@ -96,37 +103,29 @@ class CryptoTree<ElementAndPayload> : public BaseTree<ElementAndPayload>
             TreeUpdates* updates
         );
 
-        Status Serialize(PlaintextTree* tree);
-
         Status Print() override;
 };
 
 template<>
-class CryptoTree<Ciphertext> : public BaseTree<Ciphertext>
+class CryptoTree<Ciphertext> : public BaseTree<Ciphertext, EncryptedTree>
 {
     public:
-        using BaseTree<Ciphertext>::BaseTree;
-
-        Status Load(const EncryptedTree& tree, Context* ctx, ECGroup* group);
+        using BaseTree<Ciphertext, EncryptedTree>::BaseTree;
 
         Status Update(
             Context* ctx,
             ECGroup* group,
             const TreeUpdates* updates
         );
-
-        Status Serialize(EncryptedTree* tree);
 
         Status Print();
 };
 
 template<>
-class CryptoTree<CiphertextAndPayload> : public BaseTree<CiphertextAndPayload>
+class CryptoTree<CiphertextAndPaillier> : public BaseTree<CiphertextAndPaillier, EncryptedTree>
 {
     public:
-        using BaseTree<CiphertextAndPayload>::BaseTree;
-
-        Status Load(const EncryptedTree& tree, Context* ctx, ECGroup* group);
+        using BaseTree<CiphertextAndPaillier, EncryptedTree>::BaseTree;
 
         Status Update(
             Context* ctx,
@@ -134,7 +133,20 @@ class CryptoTree<CiphertextAndPayload> : public BaseTree<CiphertextAndPayload>
             const TreeUpdates* updates
         );
 
-        Status Serialize(EncryptedTree* tree);
+        Status Print() override;
+};
+
+template<>
+class CryptoTree<CiphertextAndElGamal> : public BaseTree<CiphertextAndElGamal, EncryptedTree>
+{
+    public:
+        using BaseTree<CiphertextAndElGamal, EncryptedTree>::BaseTree;
+
+        Status Update(
+            Context* ctx,
+            ECGroup* group,
+            const TreeUpdates* updates
+        );
 
         Status Print() override;
 };

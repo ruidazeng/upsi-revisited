@@ -27,22 +27,22 @@ Status run() {
   shares.push_back(std::move(key_pair0.first));
   shares.push_back(std::move(key_pair1.first));
   ASSIGN_OR_RETURN(auto shared_pub, elgamal::GeneratePublicKeyFromShares(shares));
-  
+
   auto encrypter = ElGamalEncrypter(&group, std::move(shared_pub));
-  
+
   auto decrypter0 = ElGamalDecrypter(&group, std::move(key_pair0.second));
   auto decyrpter1 = ElGamalDecrypter(&group, std::move(key_pair1.second));
-  
+
   int num = rand() % 100;
   ASSIGN_OR_RETURN(auto x, encrypter.Encrypt(context.CreateBigNum(num)));
   ASSIGN_OR_RETURN(auto y, encrypter.Encrypt(context.CreateBigNum(num)));
   ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
   ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
-  
+
   BigNum mask = encrypte.CreateRandomMask();
-  
-  
-  
+
+
+
 }
 
 
