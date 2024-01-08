@@ -15,6 +15,7 @@
 
 #include "upsi/crypto/elgamal.h"
 
+#include <iomanip>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -145,6 +146,15 @@ ElGamalDecrypter::ElGamalDecrypter(
     std::unique_ptr<elgamal::PrivateKey> elgamal_private_key)
     : private_key_(std::move(elgamal_private_key)) {}
 
+Status ElGamalDecrypter::InitDecryptExp(const elgamal::PublicKey* pk, uint64_t exp_limit) {
+    ASSIGN_OR_RETURN(ECPoint g, pk->g.Clone());
+    for (uint64_t i = 0; i < exp_limit; i++) {
+        ASSIGN_OR_RETURN(ECPoint g_to_i, g.Mul(ctx_->CreateBigNum(i)));
+        exponents_.push_back(std::move(g_to_i));
+    }
+    return OkStatus();
+}
+
 StatusOr<ECPoint> ElGamalDecrypter::Decrypt(
     const elgamal::Ciphertext& ciphertext) const {
   ASSIGN_OR_RETURN(ECPoint u_to_x, ciphertext.u.Mul(private_key_->x));
@@ -158,6 +168,27 @@ StatusOr<elgamal::Ciphertext> ElGamalDecrypter::PartialDecrypt(
   ASSIGN_OR_RETURN(ECPoint clone_u, ciphertext.u.Clone());
   ASSIGN_OR_RETURN(ECPoint dec_e, ElGamalDecrypter::Decrypt(ciphertext));
   return {{std::move(clone_u), std::move(dec_e)}};
+}
+
+
+StatusOr<BigNum> ElGamalDecrypter::DecryptExp(const elgamal::Ciphertext& ciphertext) const {
+    if (this->exponents_.size() == 0) {
+        return InternalError(
+            "[ElGamalDecrypter::DecryptExp] did not initialize exponential decryption"
+        );
+    }
+    ASSIGN_OR_RETURN(ECPoint point, Decrypt(ciphertext));
+    for (size_t i = 0; i < this->exponents_.size(); i++) {
+        if (point == this->exponents_[i]) {
+            return ctx_->CreateBigNum(i);
+        }
+    }
+    std::cerr << "[ElGamalDecrypter::DecryptExp] failure: ";
+    std::cerr << point.Print() << std::endl;
+    return InvalidArgumentError(
+        "[ElGamalDecrypter::DecryptExp] message not within exp_limit (="
+        + std::to_string(exponents_.size()) + ")"
+    );
 }
 
 }  // namespace upsi

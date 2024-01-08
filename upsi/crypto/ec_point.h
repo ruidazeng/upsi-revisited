@@ -75,6 +75,9 @@ class ECPoint {
   // Returns an ECPoint that is a copy of this.
   StatusOr<ECPoint> Clone() const;
 
+  // for debugging purposes, output a human readable byte string
+  std::string Print() const;
+
  private:
   // Creates an ECPoint on the given group;
   ECPoint(const EC_GROUP* group, BN_CTX* bn_ctx);

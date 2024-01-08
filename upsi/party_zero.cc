@@ -113,64 +113,6 @@ Status PartyZeroWithPayload::SendMessageI(MessageSink<ClientMessage>* sink) {
     return sink->Send(msg);
 }
 
-StatusOr<PartyZeroMessage::MessageI> PartyZeroWithPayload::GenerateMessageI(
-    std::vector<ElementAndPayload> elements
-) {
-    PartyZeroMessage::MessageI msg;
-
-    // update our tree
-    RETURN_IF_ERROR(my_tree.Update(
-        this->ctx_, this->encrypter.get(), this->paillier.get(), elements, msg.mutable_updates()
-    ));
-
-    for (size_t i = 0; i < elements.size(); ++i) {
-        std::vector<Ciphertext> path = this->other_tree.getPath(elements[i].first);
-        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i].first));
-        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
-        ASSIGN_OR_RETURN(BigNum payload, paillier->Encrypt(elements[i].second));
-
-        for (size_t j = 0; j < path.size(); ++j) {
-            Ciphertext y = std::move(path[j]);
-
-            // homomorphically subtract x and rerandomize
-            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
-            ASSIGN_OR_RETURN(Ciphertext randomized, encrypter->ReRandomize(y_minus_x));
-
-            // add this to the message
-            auto candidate = msg.mutable_candidates()->add_elements();
-            ASSIGN_OR_RETURN(
-                *candidate->mutable_paillier()->mutable_element(),
-                elgamal_proto_util::SerializeCiphertext(randomized)
-            );
-            *candidate->mutable_paillier()->mutable_payload() = payload.ToBytes();
-        }
-    }
-
-    return msg;
-}
-
-Status PartyZeroWithPayload::SendMessageIII(
-    const PartyOneMessage::MessageII& res,
-    MessageSink<ClientMessage>* sink
-) {
-    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &res.updates()));
-
-    ASSIGN_OR_RETURN(
-        std::vector<CiphertextAndPayload> candidates,
-        DeserializeCiphertextAndPayloads(res.candidates().elements(), this->ctx_, this->group)
-    );
-
-    ClientMessage msg;
-
-    ASSIGN_OR_RETURN(
-        PartyZeroMessage::MessageIII req,
-        GenerateMessageIII(std::move(candidates))
-    );
-    *(msg.mutable_party_zero_msg()->mutable_message_iii()) = std::move(req);
-
-    return sink->Send(msg);
-}
-
 Status PartyZeroWithPayload::Handle(const ServerMessage& msg, MessageSink<ClientMessage>* sink) {
     if (protocol_finished()) {
         return InvalidArgumentError("[PartyZeroWithPayload] protocol is already complete");
@@ -193,7 +135,7 @@ Status PartyZeroWithPayload::Handle(const ServerMessage& msg, MessageSink<Client
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// GENERATE MESSAGE I (NO PAYLOADS)
+// GENERATE MESSAGE I
 ////////////////////////////////////////////////////////////////////////////////
 
 StatusOr<PartyZeroMessage::MessageI> PartyZeroPSI::GenerateMessageI(
@@ -274,18 +216,96 @@ StatusOr<PartyZeroMessage::MessageI> PartyZeroCardinality::GenerateMessageI(
     return msg;
 }
 
+StatusOr<PartyZeroMessage::MessageI> PartyZeroSum::GenerateMessageI(
+    std::vector<ElementAndPayload> elements
+) {
+    PartyZeroMessage::MessageI msg;
+
+    // update our tree
+    RETURN_IF_ERROR(my_tree.Update(
+        this->ctx_, this->encrypter.get(), elements, msg.mutable_updates()
+    ));
+
+    for (size_t i = 0; i < elements.size(); ++i) {
+        std::vector<Ciphertext> path = this->other_tree.getPath(elements[i].first);
+        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i].first));
+        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
+        ASSIGN_OR_RETURN(Ciphertext payload, encrypter->Encrypt(elements[i].second));
+
+        for (size_t j = 0; j < path.size(); ++j) {
+            Ciphertext y = std::move(path[j]);
+
+            // homomorphically subtract x and rerandomize
+            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
+            ASSIGN_OR_RETURN(Ciphertext randomized, encrypter->ReRandomize(y_minus_x));
+
+            // add this to the message
+            auto candidate = msg.mutable_candidates()->add_elements();
+            ASSIGN_OR_RETURN(
+                *candidate->mutable_elgamal()->mutable_element(),
+                elgamal_proto_util::SerializeCiphertext(randomized)
+            );
+            ASSIGN_OR_RETURN(
+                *candidate->mutable_elgamal()->mutable_payload(),
+                elgamal_proto_util::SerializeCiphertext(payload)
+            );
+        }
+    }
+
+    return msg;
+}
+
+StatusOr<PartyZeroMessage::MessageI> PartyZeroSecretShare::GenerateMessageI(
+    std::vector<ElementAndPayload> elements
+) {
+    PartyZeroMessage::MessageI msg;
+
+    // update our tree
+    RETURN_IF_ERROR(my_tree.Update(
+        this->ctx_, this->encrypter.get(), this->paillier.get(), elements, msg.mutable_updates()
+    ));
+
+    for (size_t i = 0; i < elements.size(); ++i) {
+        std::vector<Ciphertext> path = this->other_tree.getPath(elements[i].first);
+        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i].first));
+        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
+        ASSIGN_OR_RETURN(BigNum payload, paillier->Encrypt(elements[i].second));
+
+        for (size_t j = 0; j < path.size(); ++j) {
+            Ciphertext y = std::move(path[j]);
+
+            // homomorphically subtract x and rerandomize
+            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
+            ASSIGN_OR_RETURN(Ciphertext randomized, encrypter->ReRandomize(y_minus_x));
+
+            // add this to the message
+            auto candidate = msg.mutable_candidates()->add_elements();
+            ASSIGN_OR_RETURN(
+                *candidate->mutable_paillier()->mutable_element(),
+                elgamal_proto_util::SerializeCiphertext(randomized)
+            );
+            *candidate->mutable_paillier()->mutable_payload() = payload.ToBytes();
+        }
+    }
+
+    return msg;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
-// PROCESS MESSAGE II (NO PAYLOADS)
+// PROCESS MESSAGE II
 ////////////////////////////////////////////////////////////////////////////////
 
 Status PartyZeroPSI::ProcessMessageII(const PartyOneMessage::MessageII& res) {
 
     RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &res.updates()));
 
-
     ASSIGN_OR_RETURN(
         auto candidates,
-        DeserializeCiphertextAndElGamals(res.candidates().elements(), this->group)
+        DeserializeCiphertexts<CiphertextAndElGamal>(
+            res.candidates().elements(),
+            this->ctx_,
+            this->group
+        )
     );
 
     for (const std::pair<Ciphertext, Ciphertext>& candidate : candidates) {
@@ -308,7 +328,7 @@ Status PartyZeroCardinality::ProcessMessageII(const PartyOneMessage::MessageII& 
 
     ASSIGN_OR_RETURN(
         std::vector<Ciphertext> candidates,
-        DeserializeCiphertexts(res.candidates().elements(), this->ctx_, this->group)
+        DeserializeCiphertexts<Ciphertext>(res.candidates().elements(), this->ctx_, this->group)
     );
 
     for (const Ciphertext& candidate : candidates) {
@@ -321,6 +341,85 @@ Status PartyZeroCardinality::ProcessMessageII(const PartyOneMessage::MessageII& 
     // the day is over after the second message
     FinishDay();
     return OkStatus();
+}
+
+Status PartyZeroSum::SendMessageIII(
+    const PartyOneMessage::MessageII& res,
+    MessageSink<ClientMessage>* sink
+) {
+    // update their tree
+    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &res.updates()));
+
+    // deserialize candidates
+    ASSIGN_OR_RETURN(
+        std::vector<CiphertextAndElGamal> candidates,
+        DeserializeCiphertexts<CiphertextAndElGamal>(
+            res.candidates().elements(), this->ctx_, this->group
+        )
+    );
+
+    // compute ciphertext of intersection sum
+    ASSIGN_OR_RETURN(Ciphertext sum, encrypter->Encrypt(this->ctx_->Zero()));
+    for (size_t i = 0; i < candidates.size(); i++) {
+        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i].first));
+        if (plaintext.IsPointAtInfinity()) {
+            this->cardinality++;
+            ASSIGN_OR_RETURN(sum, elgamal::Mul(sum, candidates[i].second));
+        }
+    }
+
+    // send ciphertext for decryption
+    PartyZeroMessage::MessageIII_SUM req;
+    ASSIGN_OR_RETURN(
+        *req.mutable_sum(),
+        elgamal_proto_util::SerializeCiphertext(sum)
+    );
+
+    ClientMessage msg;
+    *(msg.mutable_party_zero_msg()->mutable_message_iii_sum()) = std::move(req);
+    return sink->Send(msg);
+}
+
+Status PartyZeroSecretShare::SendMessageIII(
+    const PartyOneMessage::MessageII& res,
+    MessageSink<ClientMessage>* sink
+) {
+    // update their tree
+    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &res.updates()));
+
+    // deserialize candidates
+    ASSIGN_OR_RETURN(
+        std::vector<CiphertextAndPaillier> candidates,
+        DeserializeCiphertexts<CiphertextAndPaillier>(
+            res.candidates().elements(), this->ctx_, this->group
+        )
+    );
+
+    // generate our shares and evaluate the ciphertexts for their shares
+    PartyZeroMessage::MessageIII_SS req;
+    for (size_t i = 0; i < candidates.size(); i++) {
+        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i].first));
+        if (plaintext.IsPointAtInfinity()) {
+            BigNum share = this->ctx_->GenerateRandLessThan(this->paillier->n);
+
+            // save -share as our share
+            shares.push_back(this->paillier->n - share);
+
+            // element + share is their share
+            ASSIGN_OR_RETURN(BigNum encrypted, this->paillier->Encrypt(share));
+            encrypted = paillier->Add(candidates[i].second, encrypted);
+            ASSIGN_OR_RETURN(BigNum partial, this->paillier->PartialDecrypt(encrypted));
+            *req.add_payloads()->mutable_ciphertext() = encrypted.ToBytes();
+            *req.add_payloads()->mutable_ciphertext() = partial.ToBytes();
+        }
+    }
+
+    // the day is over for us since there are no more incoming messages
+    FinishDay();
+
+    ClientMessage msg;
+    *(msg.mutable_party_zero_msg()->mutable_message_iii_ss()) = std::move(req);
+    return sink->Send(msg);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -376,92 +475,22 @@ Status PartyZeroSecretShare::Run(Connection* sink) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// GENERATE MESSAGE III
-////////////////////////////////////////////////////////////////////////////////
-
-StatusOr<PartyZeroMessage::MessageIII> PartyZeroSum::GenerateMessageIII(
-    std::vector<CiphertextAndPayload> candidates
-) {
-    PartyZeroMessage::MessageIII req;
-    BigNum ciphertext = this->ctx_->Zero();
-
-    for (size_t i = 0; i < candidates.size(); i++) {
-        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i].first));
-        if (plaintext.IsPointAtInfinity()) {
-            this->cardinality++;
-            if (ciphertext.IsZero()) {
-                ciphertext = candidates[i].second;
-            } else {
-                ciphertext = paillier->Add(ciphertext, candidates[i].second);
-            }
-        }
-    }
-
-    // if the intersection is empty today, send a random value
-    if (ciphertext.IsZero()) {
-        *req.add_payloads()->mutable_ciphertext() = (
-            this->ctx_->GenerateRandLessThan(paillier->n_squared_).ToBytes()
-        );
-    } else {
-        ASSIGN_OR_RETURN(BigNum randomized, this->paillier->ReRand(ciphertext));
-        *req.add_payloads()->mutable_ciphertext() = randomized.ToBytes();
-    }
-    this->sum_ciphertext = ciphertext;
-
-    return req;
-}
-
-StatusOr<PartyZeroMessage::MessageIII> PartyZeroSecretShare::GenerateMessageIII(
-    std::vector<CiphertextAndPayload> candidates
-) {
-    PartyZeroMessage::MessageIII req;
-
-    for (size_t i = 0; i < candidates.size(); i++) {
-        ASSIGN_OR_RETURN(ECPoint plaintext, decrypter->Decrypt(candidates[i].first));
-        if (plaintext.IsPointAtInfinity()) {
-            BigNum share = this->ctx_->GenerateRandLessThan(this->paillier->n);
-
-            // save -share as our share
-            shares.push_back(this->paillier->n - share);
-
-            // element + share is their share
-            ASSIGN_OR_RETURN(BigNum encrypted, this->paillier->Encrypt(share));
-            encrypted = paillier->Add(candidates[i].second, encrypted);
-            ASSIGN_OR_RETURN(BigNum partial, this->paillier->PartialDecrypt(encrypted));
-            *req.add_payloads()->mutable_ciphertext() = encrypted.ToBytes();
-            *req.add_payloads()->mutable_ciphertext() = partial.ToBytes();
-        }
-    }
-    // the day is over for us since there are no more incoming messages
-    FinishDay();
-    return req;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // PROCESS MESSAGE IV
 ////////////////////////////////////////////////////////////////////////////////
 
-Status PartyZeroSum::ProcessMessageIV(const PartyOneMessage::MessageIV& msg) {
+Status PartyZeroSum::ProcessMessageIV(const PartyOneMessage::MessageIV& res) {
+
+    ASSIGN_OR_RETURN(
+        Ciphertext ciphertext,
+        elgamal_proto_util::DeserializeCiphertext(this->group, res.sum())
+    );
+
+    ASSIGN_OR_RETURN(BigNum big, decrypter->DecryptExp(ciphertext));
+    ASSIGN_OR_RETURN(uint64_t sum, big.ToIntValue());
+
+    this->sum += sum;
 
     FinishDay();
-
-    // if the intersection was empty today, no need to decrypt
-    if (this->sum_ciphertext.IsZero()) {
-        return OkStatus();
-    }
-
-    for (auto payload : msg.payloads()) {
-        ASSIGN_OR_RETURN(
-            BigNum big,
-            this->paillier->Decrypt(
-                this->sum_ciphertext,
-                this->ctx_->CreateBigNum(payload.ciphertext())
-            )
-        );
-        ASSIGN_OR_RETURN(uint64_t sum, big.ToIntValue());
-        this->sum += sum;
-    }
-
     return OkStatus();
 }
 

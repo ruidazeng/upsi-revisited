@@ -403,11 +403,11 @@ StatusOr<std::vector<PartyZeroDataset>> ReadPartyZeroDataset(
 
     for (int day = 1; day <= days; day++) {
         std::cout << "[DataUtil] reading ";
-        std::cout << dir + prefix + "_" + std::to_string(day) + ".csv" << std::endl;
+        std::cout << dir + prefix + std::to_string(day) + ".csv" << std::endl;
 
         ASSIGN_OR_RETURN(
             datasets[day - 1],
-            ReadClientDatasetFromFile(dir + prefix + "_" + std::to_string(day) + ".csv", ctx)
+            ReadClientDatasetFromFile(dir + prefix + std::to_string(day) + ".csv", ctx)
         );
     }
 
@@ -426,11 +426,11 @@ StatusOr<std::vector<PartyOneDataset>> ReadPartyOneDataset(
 
     for (int day = 1; day <= days; day++) {
         std::cout << "[DataUtil] reading ";
-        std::cout << dir + prefix + "_" + std::to_string(day) + ".csv" << std::endl;
+        std::cout << dir + prefix + std::to_string(day) + ".csv" << std::endl;
 
         ASSIGN_OR_RETURN(
             datasets[day - 1],
-            ReadServerDatasetFromFile(dir + prefix + "_" + std::to_string(day) + ".csv", ctx)
+            ReadServerDatasetFromFile(dir + prefix + std::to_string(day) + ".csv", ctx)
         );
     }
 

@@ -35,10 +35,11 @@ using namespace upsi;
 ABSL_FLAG(int, party, 1, "which party to run");
 ABSL_FLAG(std::string, port, "0.0.0.0:10501", "listening port");
 ABSL_FLAG(std::string, data_dir, "data/", "name of directory for dataset files");
+ABSL_FLAG(std::string, out_dir, "out/", "name of directory for setup files");
 ABSL_FLAG(upsi::Functionality, func, upsi::Functionality::SUM, "desired protocol functionality");
 ABSL_FLAG(int, days, 10, "total days the protocol will run for");
 
-ABSL_FLAG(bool, initial_trees, true, "use initial trees stored on disk");
+ABSL_FLAG(bool, trees, true, "use initial trees stored on disk");
 
 Status RunPartyZero() {
     Context context;
@@ -46,15 +47,15 @@ Status RunPartyZero() {
     std::string prefix = "party_zero";
     PSIParams params(
         &context,
-        "out/shared.epub",
-        "out/" + prefix + ".ekey",
-        "out/" + prefix + ".pkey",
+        absl::GetFlag(FLAGS_out_dir) + "p0/shared.pub",
+        absl::GetFlag(FLAGS_out_dir) + "p0/elgamal.key",
+        absl::GetFlag(FLAGS_out_dir) + "p0/paillier.key",
         absl::GetFlag(FLAGS_days)
     );
 
-    if (absl::GetFlag(FLAGS_initial_trees)) {
-        params.my_tree_fn = "out/" + prefix + ".tree";
-        params.other_tree_fn = "out/party_one_encrypted.tree";
+    if (absl::GetFlag(FLAGS_trees)) {
+        params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/plaintext.tree";
+        params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/encrypted.tree";
     }
 
     // read in dataset
@@ -62,7 +63,7 @@ Status RunPartyZero() {
         auto dataset,
         ReadPartyZeroDataset(
             absl::GetFlag(FLAGS_data_dir),
-            prefix,
+            "p0/",
             absl::GetFlag(FLAGS_days),
             &context
         )
@@ -100,10 +101,8 @@ Status RunPartyZero() {
     );
     Connection sink(std::move(stub));
 
-    Timer timer("[PartyZero] Total");
     std::cout << "[PartyZero] starting protocol" << std::endl;
     RETURN_IF_ERROR(party_zero->Run(&sink));
-    timer.stop();
     party_zero->PrintResult();
 
     return OkStatus();
@@ -116,15 +115,15 @@ Status RunPartyOne() {
 
     PSIParams params(
         &context,
-        "out/shared.epub",
-        "out/" + prefix + ".ekey",
-        "out/" + prefix + ".pkey",
+        absl::GetFlag(FLAGS_out_dir) + "p1/shared.pub",
+        absl::GetFlag(FLAGS_out_dir) + "p1/elgamal.key",
+        absl::GetFlag(FLAGS_out_dir) + "p1/paillier.key",
         absl::GetFlag(FLAGS_days)
     );
 
-    if (absl::GetFlag(FLAGS_initial_trees)) {
-        params.my_tree_fn = "out/" + prefix + ".tree";
-        params.other_tree_fn = "out/party_zero_encrypted.tree";
+    if (absl::GetFlag(FLAGS_trees)) {
+        params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/plaintext.tree";
+        params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/encrypted.tree";
     }
 
     // read in dataset
@@ -132,7 +131,7 @@ Status RunPartyOne() {
         auto dataset,
         ReadPartyOneDataset(
             absl::GetFlag(FLAGS_data_dir),
-            prefix,
+            "p1/",
             absl::GetFlag(FLAGS_days),
             &context
         )
