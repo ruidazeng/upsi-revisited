@@ -51,7 +51,7 @@ class PartyOne : public BaseParty {
         }
 
         void PrintComm() {
-            unsigned long int total = 0;
+            unsigned long long total = 0;
             for (size_t day = 0; day < comm_.size(); day++) {
                 std::cout << "[PartyOne] Day " << std::to_string(day + 1) << " Comm (B):\t";
                 std::cout << comm_[day] << std::endl;
