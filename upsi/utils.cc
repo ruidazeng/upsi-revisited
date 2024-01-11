@@ -277,7 +277,7 @@ void Timer::print() {
     for (const auto& lap : laps) {
         average += lap.count();
         if (lap.count() < min) { min = lap.count(); }
-        else if (lap.count() > max) { max = lap.count(); }
+        if (lap.count() > max) { max = lap.count(); }
     }
     average /= laps.size();
 
