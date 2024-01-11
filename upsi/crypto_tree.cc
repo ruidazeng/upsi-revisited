@@ -152,8 +152,13 @@ std::vector<CryptoNode<T>> BaseTree<T, S>::insert(
 			}
 			if(u == 0) break;
 		}
+
 		assert(st > this->depth);
-	}
+        for (auto i = 0; i < this->depth + 2; i++) {
+            assert(tmp_elem[i].empty());
+        }
+    }
+
 	/*
 	for (size_t i = 0; i < crypto_tree.size(); ++i) {
 		std::cerr << crypto_tree[i].node.size() << " ";
