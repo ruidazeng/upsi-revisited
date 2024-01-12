@@ -5,6 +5,7 @@
 #include "upsi/crypto/elgamal.h"
 #include "upsi/crypto/ec_commutative_cipher.h"
 #include "upsi/crypto/paillier.h"
+#include "emp-sh2pc/emp-sh2pc.h"
 
 #include <algorithm>
 #include <bitset>
@@ -21,6 +22,7 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <emmintrin.h>
 
 // for printing to the command line in colors
 #define RED    "\033[0;31m"
@@ -39,18 +41,19 @@ namespace upsi {
     #define ELEMENT_STR_LENGTH 16
 
 	#define DEBUG 1
+	
+	#define GC_P0 emp::BOB //ALICE
+	#define GC_P1 emp::ALICE //BOB
 
     // type of elements in each party's sets
 	typedef BigNum Element;
 
-    // type of elements after encryption (i.e., just Ciphertext)
-    using elgamal::Ciphertext;
 
     // type of an element with its associated payload
     typedef std::pair<Element, BigNum> ElementAndPayload;
 
     // type of an encrypted element with its (also encrypted) associated payload
-    typedef std::pair<Ciphertext, BigNum> CiphertextAndPayload;
+    typedef std::pair<BigNum, BigNum> CiphertextAndPayload;
 
     // protocol functionality options
     enum Functionality { PSI, CA, SUM, SS };
@@ -62,29 +65,24 @@ namespace upsi {
 
 	typedef std::string BinaryHash;
 
-    StatusOr<std::vector<Ciphertext>> DeserializeCiphertexts(
-        const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
-        Context* ctx,
-        ECGroup* group
-    );
-
-    StatusOr<std::vector<std::pair<Ciphertext, Ciphertext>>> DeserializeCiphertextAndElGamals(
-        const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
-        ECGroup* group
-    );
-
     StatusOr<std::vector<CiphertextAndPayload>> DeserializeCiphertextAndPayloads(
         const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
         Context* ctx,
         ECGroup* group
     );
-
-    /**
-     * for a group with generator g, gives g^m
-     */
-    StatusOr<ECPoint> exponentiate(ECGroup* group, const BigNum& m);
+    
+    StatusOr<std::vector<Element>> DeserializeElement(
+		const EncryptedSet serialized,
+		Context* ctx,
+		ECGroup* group
+    );
 
 	std::string Byte2Binary(const std::string &byte_hash);
+	
+	void PadBytes(std::string& str, int len);
+	
+	void BigNum2block(BigNum x, emp::block* bl, int cnt_block);
+	BigNum block2BigNum(emp::block* bl, int cnt_block, Context* ctx);
 
 	template<typename T>
 	BinaryHash computeBinaryHash(T &elem);
@@ -92,6 +90,12 @@ namespace upsi {
 
 	template<typename T>
 	T elementCopy(const T &elem);
+	
+	uint64_t bytes2uint64(const std::string& str);
+	
+	uint64_t generateRandom64bits();
+	
+	uint64_t BigNum2uint64(const BigNum &x); //mod 2^64
 
 	BinaryHash generateRandomHash();
 
@@ -99,7 +103,8 @@ namespace upsi {
 
 	StatusOr<elgamal::Ciphertext> elgamalEncrypt(const ECGroup* ec_group, std::unique_ptr<elgamal::PublicKey> public_key, const BigNum& elem);
 
-	int64_t NumericString2uint(const std::string &str);
+	//int64_t NumericString2uint(const std::string &str);
+	//long long NumericString2ll(const std::string &str);
 
 	std::string GetRandomNumericString(size_t length, bool padding);
     std::string GetRandomSetElement();

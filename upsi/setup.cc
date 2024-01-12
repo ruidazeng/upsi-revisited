@@ -5,6 +5,7 @@
 #include "upsi/crypto/elgamal.h"
 #include "upsi/crypto/threshold_paillier.h"
 #include "upsi/util/elgamal_key_util.h"
+#include "upsi/util/proto_util.h"
 #include "utils.h"
 
 using namespace upsi;
@@ -20,12 +21,12 @@ ABSL_FLAG(std::string, shared_fn, "shared", "prefix for shared key file");
 ABSL_FLAG(int32_t, mod_length, 1536, "bit-length of Paillier modulus");
 ABSL_FLAG(int32_t, stat_param, 100, "statistical parameter for Paillier");
 
-ABSL_FLAG(int64_t, days, 10, "number of days the protocol is running for");
-ABSL_FLAG(int64_t, p0_size, 50, "total elements in party one's set across all days");
-ABSL_FLAG(int64_t, p1_size, 50, "total elements in party zero's set across all days");
-ABSL_FLAG(int64_t, shared_size, 25, "total elements in intersection across all days");
+ABSL_FLAG(int64_t, days, (1 << 8), "number of days the protocol is running for");
+ABSL_FLAG(int64_t, p0_size, (1 << 16), "total elements in party one's set across all days");
+ABSL_FLAG(int64_t, p1_size, (1 << 16), "total elements in party zero's set across all days");
+ABSL_FLAG(int64_t, shared_size, (1 << 8), "total elements in intersection across all days");
 
-ABSL_FLAG(int64_t, per_day, 0, "total elements in both sets each days");
+ABSL_FLAG(int64_t, per_day, (1<<8), "total elements in both sets each days");
 ABSL_FLAG(int64_t, max_value, 1000, "maximum number for UPSI-SUM values");
 
 Status GenerateJointData() {
@@ -187,48 +188,32 @@ Status GenerateData() {
 
 Status GenerateKeys() {
     Context ctx;
-
-    RETURN_IF_ERROR(
-        elgamal_key_util::GenerateElGamalKeyPair(
-            CURVE_ID,
-            absl::GetFlag(FLAGS_p0_fn) + ".epub",
-            absl::GetFlag(FLAGS_p0_fn) + ".ekey"
-        )
-    );
-
-    RETURN_IF_ERROR(
-        elgamal_key_util::GenerateElGamalKeyPair(
-            CURVE_ID,
-            absl::GetFlag(FLAGS_p1_fn) + ".epub",
-            absl::GetFlag(FLAGS_p1_fn) + ".ekey"
-        )
-    );
-
-    RETURN_IF_ERROR(
-        elgamal_key_util::ComputeJointElGamalPublicKey(
-            CURVE_ID,
-            {
-                absl::GetFlag(FLAGS_p0_fn) + ".epub",
-                absl::GetFlag(FLAGS_p1_fn) + ".epub"
-            },
-            absl::GetFlag(FLAGS_shared_fn) + ".epub"
-        )
-    );
-
-    RETURN_IF_ERROR(
-        GenerateThresholdPaillierKeys(
+    
+    ASSIGN_OR_RETURN(
+    	auto key0,
+        GeneratePaillierKeyPair(
             &ctx,
             absl::GetFlag(FLAGS_mod_length),
-            absl::GetFlag(FLAGS_stat_param),
-            absl::GetFlag(FLAGS_p0_fn) + ".pkey",
-            absl::GetFlag(FLAGS_p1_fn) + ".pkey"
+            1
         )
     );
+    ASSIGN_OR_RETURN(
+    	auto key1,
+        GeneratePaillierKeyPair(
+            &ctx,
+            absl::GetFlag(FLAGS_mod_length),
+            1
+        )
+    );
+    
+    //private key
+    RETURN_IF_ERROR(ProtoUtils::WriteProtoToFile(key0.second, absl::GetFlag(FLAGS_p0_fn) + ".pskey"));
+    RETURN_IF_ERROR(ProtoUtils::WriteProtoToFile(key1.second, absl::GetFlag(FLAGS_p1_fn) + ".pskey"));
+    //other party's public key
+    RETURN_IF_ERROR(ProtoUtils::WriteProtoToFile(key1.first, absl::GetFlag(FLAGS_p0_fn) + ".ppkey"));
+    RETURN_IF_ERROR(ProtoUtils::WriteProtoToFile(key0.first, absl::GetFlag(FLAGS_p1_fn) + ".ppkey"));
 
     std::cout << "[Setup] keys generated: ";
-    std::cout << absl::GetFlag(FLAGS_p0_fn) << ".ekey, ";
-    std::cout << absl::GetFlag(FLAGS_p1_fn) << ".ekey, ";
-    std::cout << absl::GetFlag(FLAGS_shared_fn) << ".epub, ";
     std::cout << absl::GetFlag(FLAGS_p0_fn) << ".pkey, ";
     std::cout << absl::GetFlag(FLAGS_p1_fn) << ".pkey" << std::endl;
     return OkStatus();

@@ -51,10 +51,21 @@ class UPSIRpcImpl : public UPSIRpc::Service {
   bool protocol_finished() {
     return protocol_server_impl_->protocol_finished();
   }
-
-  // void PrintResult() {
-  //   protocol_server_impl_->PrintResult(); 
-  // }
+  
+  void new_day() {
+  	protocol_server_impl_->day_finished = false;
+  }
+  
+  bool day_finished() {
+  	return protocol_server_impl_->day_finished;
+  }
+  
+  /*
+  StatusOr<uint64_t> GarbledCircuit() {
+  	return protocol_server_impl_->GarbledCircuit();
+  }
+  */
+  std::unique_ptr<PartyOne> getPartyOne() {return std::move(protocol_server_impl_);}
 
  private:
   std::unique_ptr<PartyOne> protocol_server_impl_;

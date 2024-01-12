@@ -46,3 +46,15 @@ pip_parse(
 load("@pip_deps//:requirements.bzl", "install_deps")
 
 install_deps()
+
+new_local_repository(
+	name = "emp-tool",
+	path = "/usr/local/lib",
+	build_file_content = """
+cc_library(
+	name = "emptool",
+	srcs = ["libemp-tool.so"],
+	visibility = ["//visibility:public"],
+	)
+""",
+)

@@ -34,59 +34,15 @@ class PartyZero : public Party {
         virtual Status Run(Connection* sink) = 0;
         virtual Status Handle(const ServerMessage& msg, MessageSink<ClientMessage>* sink) = 0;
         virtual void PrintResult() = 0;
+        virtual void UpdateResult(uint64_t cur_ans) = 0;
 };
 
-class PartyZeroNoPayload : public PartyZero {
-
+class PartyZeroCASUM : public PartyZero {
     public:
         // use default constructor
         using PartyZero::PartyZero;
 
-        virtual ~PartyZeroNoPayload() = default;
-
-        /**
-         * set the datasets variable based on the functionality
-         *
-         * this can't happen in the constructor for weird inheritance reasons
-         */
-        void LoadData(const std::vector<PartyZeroDataset>& datasets);
-
-        Status Run(Connection* sink) override;
-
-        /**
-         * send tree updates & intersection candidates
-         */
-        Status SendMessageI(MessageSink<ClientMessage>* sink);
-
-        virtual StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
-            std::vector<Element> elements
-        ) = 0;
-
-        /**
-         * update their tree & compute cardinality
-         */
-        virtual Status ProcessMessageII(const PartyOneMessage::MessageII& res) = 0;
-
-        /**
-         * delegate incoming messages to other methods
-         */
-        Status Handle(const ServerMessage& res, MessageSink<ClientMessage>* sink) override;
-
-    protected:
-        // one dataset for each day
-        std::vector<std::vector<Element>> datasets;
-
-        // our plaintext tree & their encrypted tree
-        CryptoTree<Element> my_tree;
-        CryptoTree<Ciphertext> other_tree;
-};
-
-class PartyZeroWithPayload : public PartyZero {
-    public:
-        // use default constructor
-        using PartyZero::PartyZero;
-
-        virtual ~PartyZeroWithPayload() = default;
+        virtual ~PartyZeroCASUM() = default;
 
         /**
          * set the datasets variable based on the functionality
@@ -97,6 +53,8 @@ class PartyZeroWithPayload : public PartyZero {
 
         // set the payload given the element and its associated value
         virtual ElementAndPayload GetPayload(BigNum element, BigNum value) = 0;
+        
+        Status Run(Connection* sink) override;
 
         /**
          * send tree updates & intersection candidates
@@ -108,156 +66,52 @@ class PartyZeroWithPayload : public PartyZero {
         );
 
         /**
-         * update their tree & (optionally) send follow up message
+         * update their tree & send follow up message
          */
-        Status SendMessageIII(
+        Status ProcessMessageII(
             const PartyOneMessage::MessageII& res,
             MessageSink<ClientMessage>* sink
         );
-
-        virtual StatusOr<PartyZeroMessage::MessageIII> GenerateMessageIII(
-            std::vector<CiphertextAndPayload> candidates
-        ) = 0;
-
-        /**
-         * compute the daily output from the other party's last message
-         */
-        virtual Status ProcessMessageIV(const PartyOneMessage::MessageIV& msg) = 0;
+        
 
         /**
          * delegate incoming messages to other methods
          */
         Status Handle(const ServerMessage& res, MessageSink<ClientMessage>* sink) override;
+        
+        void PrintResult() override;
+        
+        void UpdateResult(uint64_t cur_ans) override;
 
     protected:
         // one dataset for each day
         std::vector<std::vector<ElementAndPayload>> datasets;
 
-        // our plaintext tree & their encrypted tree
-        CryptoTree<ElementAndPayload> my_tree;
-        CryptoTree<Ciphertext> other_tree;
+        uint64_t result = 0;
 };
 
-class PartyZeroPSI : public PartyZeroNoPayload {
+class PartyZeroCardinality : public PartyZeroCASUM {
 
     public:
         // use default constructor
-        using PartyZeroNoPayload::PartyZeroNoPayload;
-
-        virtual ~PartyZeroPSI() = default;
-
-        StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
-            std::vector<Element> elements
-        ) override;
-
-        /**
-         * update their tree & compute cardinality
-         */
-        Status ProcessMessageII(const PartyOneMessage::MessageII& res) override;
-
-        /**
-         * print the cardinality & the intersection (if it's small enough)
-         */
-        void PrintResult() override;
-
-    private:
-        // maps g^x to x
-        std::map<std::string, std::string> group_mapping;
-
-        // elements in the intersection
-        std::vector<std::string> intersection; 
-};
-
-
-class PartyZeroCardinality : public PartyZeroNoPayload {
-
-    public:
-        // use default constructor
-        using PartyZeroNoPayload::PartyZeroNoPayload;
+        using PartyZeroCASUM::PartyZeroCASUM;
 
         virtual ~PartyZeroCardinality() = default;
-
-        StatusOr<PartyZeroMessage::MessageI> GenerateMessageI(
-            std::vector<Element> elements
-        ) override;
-
-        /**
-         * update their tree & compute cardinality
-         */
-        Status ProcessMessageII(const PartyOneMessage::MessageII& res) override;
-
-        /**
-         * print cardinality
-         */
-        void PrintResult() override;
-
-    protected:
-        int64_t cardinality = 0;
+		
+		ElementAndPayload GetPayload(BigNum element, BigNum value) override;
+        
 };
 
-class PartyZeroSum : public PartyZeroWithPayload {
+class PartyZeroSum : public PartyZeroCASUM {
 
     public:
-        PartyZeroSum(
-            Context* ctx,
-            std::string epk_fn,
-            std::string esk_fn,
-            std::string psk_fn,
-            int total_days
-        ) : PartyZeroWithPayload(ctx, epk_fn, esk_fn, psk_fn, total_days), 
-            sum_ciphertext(ctx->Zero()) { }
+        using PartyZeroCASUM::PartyZeroCASUM;
 
         ~PartyZeroSum() override = default;
 
         // set the payload to be the value
         ElementAndPayload GetPayload(BigNum element, BigNum value) override;
 
-        Status Run(Connection* sink) override;
-
-        // TODO: what does this do?
-        StatusOr<PartyZeroMessage::MessageIII> GenerateMessageIII(
-            std::vector<CiphertextAndPayload> candidates
-        ) override;
-
-        Status ProcessMessageIV(const PartyOneMessage::MessageIV& msg) override;
-
-        // print cardinality & sum
-        void PrintResult() override;
-
-    private:
-        // TODO: is this really necessary?
-        BigNum sum_ciphertext;
-
-        uint64_t sum = 0;
-        uint64_t cardinality = 0;
-};
-
-class PartyZeroSecretShare : public PartyZeroWithPayload {
-
-    public:
-        // use the default constructor
-        using PartyZeroWithPayload::PartyZeroWithPayload;
-
-        ~PartyZeroSecretShare() override = default;
-
-        // set the payload to be the element itself
-        ElementAndPayload GetPayload(BigNum element, BigNum value) override;
-
-        Status Run(Connection* sink) override;
-
-        // sets our share & sends their share out
-        StatusOr<PartyZeroMessage::MessageIII> GenerateMessageIII(
-            std::vector<CiphertextAndPayload> candidates
-        ) override;
-
-        // there is no fourth message for secret share
-        Status ProcessMessageIV(const PartyOneMessage::MessageIV& msg) override;
-
-        // print cardinality 
-        void PrintResult() override;
-
-        // the output secret shares
-        std::vector<Element> shares;
 };
 
 }  // namespace upsi

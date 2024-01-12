@@ -49,10 +49,14 @@ cc_library(
 cc_library(
     name = "party",
     hdrs = ["party.h"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         "//upsi/crypto:elgamal",
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_key_util",
+		"@emp-tool//:emptool",
     ],
 )
 
@@ -61,6 +65,9 @@ cc_library(
     name = "party_zero",
     srcs = ["party_zero.cc"],
     hdrs = ["party_zero.h"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         ":connection",
         ":crypto_tree",
@@ -76,6 +83,7 @@ cc_library(
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_key_util",
         "//upsi/util:status_includes",
+		"@emp-tool//:emptool",
     ],
 )
 
@@ -83,6 +91,9 @@ cc_library(
     name = "party_one",
     srcs = ["party_one.cc"],
     hdrs = ["party_one.h"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         ":crypto_tree",
         ":data_util",
@@ -97,6 +108,7 @@ cc_library(
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_key_util",
         "//upsi/util:status_includes",
+		"@emp-tool//:emptool",
     ],
 )
 
@@ -104,6 +116,9 @@ cc_library(
     name = "data_util",
     srcs = ["data_util.cc"],
     hdrs = ["data_util.h"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         ":upsi_proto",
     	":utils",
@@ -118,6 +133,9 @@ cc_library(
     name = "upsi_rpc_impl",
     srcs = ["upsi_rpc_impl.cc"],
     hdrs = ["upsi_rpc_impl.h"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         ":message_sink",
         ":upsi_proto",
@@ -130,6 +148,9 @@ cc_library(
 cc_binary(
     name = "run",
     srcs = ["run.cc"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         ":connection",
         ":data_util",
@@ -143,6 +164,7 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/strings",
+		"@emp-tool//:emptool",
     ],
 )
 
@@ -166,10 +188,14 @@ cc_library(
     name = "utils",
     srcs = ["utils.cc"],
     hdrs = ["utils.h"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         "//upsi/crypto:ec_commutative_cipher",
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_proto_util",
+		"@emp-tool//:emptool",
     ],
 )
 
@@ -177,6 +203,9 @@ cc_library(
     name = "crypto_node",
     srcs = ["crypto_node.cc"],
     hdrs = ["crypto_node.h"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         ":utils",
         ":upsi_proto",
@@ -190,6 +219,9 @@ cc_library(
     name = "crypto_tree",
     srcs = ["crypto_tree.cc"],
     hdrs = ["crypto_tree.h"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         ":crypto_node",
         ":utils",
@@ -203,6 +235,9 @@ cc_library(
 cc_binary(
     name = "setup",
     srcs = ["setup.cc"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
     deps = [
         ":data_util",
         ":utils",
@@ -214,4 +249,16 @@ cc_binary(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
     ],
+)
+
+cc_binary(
+	name = "gc_test",
+	srcs = ["gc_test.cc"],
+	copts = ["-maes", "-mssse3", "-fpermissive"],
+	linkopts= ["-pthread", "-lssl", "-lcrypto"],
+	linkstatic = 1,
+	deps = [
+		"@emp-tool//:emptool",
+        	":utils",
+	]
 )
