@@ -26,340 +26,104 @@
 namespace upsi {
 
 ////////////////////////////////////////////////////////////////////////////////
-// WITH PAYLOAD CLASS METHODS
+// LOAD DATA
 ////////////////////////////////////////////////////////////////////////////////
 
-StatusOr<PartyOneMessage::MessageII> PartyOneWithPayload::GenerateMessageII(
-    const PartyZeroMessage::MessageI& request,
-    std::vector<Element> elements
-) {
-    PartyOneMessage::MessageII response;
-
-    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
-
-    ASSIGN_OR_RETURN(
-        std::vector<CiphertextAndPayload> candidates,
-        DeserializeCiphertextAndPayloads(request.candidates().elements(), this->ctx_, this->group)
-    );
-
-    for (size_t i = 0; i < elements.size(); ++i) {
-        std::vector<CiphertextAndPayload> path = this->other_tree.getPath(elements[i]);
-        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i]));
-        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
-
-        for (size_t j = 0; j < path.size(); ++j) {
-            Ciphertext y = std::move(path[j].first);
-            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
-            candidates.push_back(
-                std::make_pair(
-                    std::move(y_minus_x), 
-                    path[j].second
-                )
+void PartyOneCASUM::LoadData(const std::vector<PartyOneDataset>& datasets) {
+    this->datasets.resize(this->total_days);
+    for (auto day = 0; day < this->total_days; day++) {
+        std::vector<ElementAndPayload> dailyset;
+        for (size_t i = 0; i < datasets[day].size(); i++) {
+            dailyset.push_back(
+                GetPayload(datasets[day][i])
             );
         }
+        this->datasets[day] = dailyset;
     }
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::shuffle(candidates.begin(), candidates.end(), gen);
-
-    for (size_t i = 0; i < candidates.size(); i++) {
-        BigNum mask = this->encrypter->CreateRandomMask();
-        ASSIGN_OR_RETURN(
-            candidates[i].first, 
-            elgamal::Exp(candidates[i].first, mask)
-        );
-    }
-
-    for (size_t i = 0; i < candidates.size(); i++) {
-        auto candidate = response.mutable_candidates()->add_elements();
-        ASSIGN_OR_RETURN(candidates[i].first, decrypter->PartialDecrypt(candidates[i].first));
-        ASSIGN_OR_RETURN(
-            *candidate->mutable_paillier()->mutable_element(),
-            elgamal_proto_util::SerializeCiphertext(candidates[i].first)
-        );
-        // TODO: rerandomize the payload
-        *candidate->mutable_paillier()->mutable_payload() = candidates[i].second.ToBytes();
-    }
-
-    // update our tree
-    RETURN_IF_ERROR(my_tree.Update(
-        this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
-    ));
-
-    return response;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// CARDINALITY
-////////////////////////////////////////////////////////////////////////////////
-
-StatusOr<PartyOneMessage::MessageII> PartyOnePSI::GenerateMessageII(
-    const PartyZeroMessage::MessageI& request,
-    std::vector<Element> elements
-) {
-    PartyOneMessage::MessageII response;
-
-    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
-
-    ASSIGN_OR_RETURN(
-        auto candidates,
-        DeserializeCiphertextAndElGamals(request.candidates().elements(), this->group)
-    );
-
-    for (size_t i = 0; i < elements.size(); ++i) {
-        std::vector<Ciphertext> path = this->other_tree.getPath(elements[i]);
-        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i]));
-        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
-
-        for (size_t j = 0; j < path.size(); ++j) {
-            Ciphertext y = std::move(path[j]);
-            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
-            candidates.push_back(std::make_pair(
-                std::move(y_minus_x), std::move(y)
-            ));
-        }
-    }
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::shuffle(candidates.begin(), candidates.end(), gen);
-
-    for (size_t i = 0; i < candidates.size(); i++) {
-        BigNum alpha = this->encrypter->CreateRandomMask();
-        BigNum beta = this->encrypter->CreateRandomMask();
-        ASSIGN_OR_RETURN(
-            candidates[i].first, 
-            elgamal::Exp(candidates[i].first, alpha)
-        );
-        ASSIGN_OR_RETURN(
-            Ciphertext mask,
-            elgamal::Exp(candidates[i].first, beta)
-        );
-        ASSIGN_OR_RETURN(
-            candidates[i].second,
-            elgamal::Mul(candidates[i].second, mask)
-        );
-    }
-
-    for (size_t i = 0; i < candidates.size(); i++) {
-        auto candidate = response.mutable_candidates()->add_elements();
-        ASSIGN_OR_RETURN(candidates[i].first, decrypter->PartialDecrypt(candidates[i].first));
-        ASSIGN_OR_RETURN(candidates[i].second, decrypter->PartialDecrypt(candidates[i].second));
-        ASSIGN_OR_RETURN(
-            *candidate->mutable_elgamal()->mutable_element(),
-            elgamal_proto_util::SerializeCiphertext(candidates[i].first)
-        );
-        ASSIGN_OR_RETURN(
-            *candidate->mutable_elgamal()->mutable_payload(),
-            elgamal_proto_util::SerializeCiphertext(candidates[i].second)
-        );
-    }
-
-    // update our tree
-    RETURN_IF_ERROR(my_tree.Update(
-        this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
-    ));
-
-    return response;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// CARDINALITY
-////////////////////////////////////////////////////////////////////////////////
-
-StatusOr<PartyOneMessage::MessageII> PartyOneCardinality::GenerateMessageII(
-    const PartyZeroMessage::MessageI& request,
-    std::vector<Element> elements
-) {
-    PartyOneMessage::MessageII response;
-
-    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
-
-    ASSIGN_OR_RETURN(
-        std::vector<Ciphertext> candidates,
-        DeserializeCiphertexts(request.candidates().elements(), this->ctx_, this->group)
-    );
-
-    for (size_t i = 0; i < elements.size(); ++i) {
-        std::vector<Ciphertext> path = this->other_tree.getPath(elements[i]);
-        ASSIGN_OR_RETURN(Ciphertext x, encrypter->Encrypt(elements[i]));
-        ASSIGN_OR_RETURN(Ciphertext minus_x, elgamal::Invert(x));
-
-        for (size_t j = 0; j < path.size(); ++j) {
-            Ciphertext y = std::move(path[j]);
-            ASSIGN_OR_RETURN(Ciphertext y_minus_x, elgamal::Mul(y, minus_x));
-            candidates.push_back(std::move(y_minus_x));
-        }
-    }
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::shuffle(candidates.begin(), candidates.end(), gen);
-
-    for (size_t i = 0; i < candidates.size(); i++) {
-        BigNum mask = this->encrypter->CreateRandomMask();
-        ASSIGN_OR_RETURN(
-            candidates[i], 
-            elgamal::Exp(candidates[i], mask)
-        );
-    }
-
-    for (size_t i = 0; i < candidates.size(); i++) {
-        auto candidate = response.mutable_candidates()->add_elements();
-        ASSIGN_OR_RETURN(candidates[i], decrypter->PartialDecrypt(candidates[i]));
-        ASSIGN_OR_RETURN(
-            *candidate->mutable_no_payload()->mutable_element(),
-            elgamal_proto_util::SerializeCiphertext(candidates[i])
-        );
-    }
-
-    // update our tree
-    RETURN_IF_ERROR(my_tree.Update(
-        this->ctx_, this->encrypter.get(), elements, response.mutable_updates()
-    ));
-
-    return response;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// PROCESS MESSAGE III
-////////////////////////////////////////////////////////////////////////////////
-
-StatusOr<PartyOneMessage::MessageIV> PartyOneSum::ProcessMessageIII(
-    const PartyZeroMessage::MessageIII& msg
-) {
-    PartyOneMessage::MessageIV res;
-
-    for (auto payload : msg.payloads()) {
-        ASSIGN_OR_RETURN(
-            BigNum partial, 
-            this->paillier->PartialDecrypt(this->ctx_->CreateBigNum(payload.ciphertext()))
-        );
-        *res.add_payloads()->mutable_ciphertext() = partial.ToBytes();
-    }
-
-    return res;
-}
-
-StatusOr<PartyOneMessage::MessageIV> PartyOneSecretShare::ProcessMessageIII(
-    const PartyZeroMessage::MessageIII& msg
-) {
-    for (auto i = 0; i < msg.payloads().size(); i += 2) {
-        ASSIGN_OR_RETURN(
-            BigNum share, this->paillier->Decrypt(
-                this->ctx_->CreateBigNum(msg.payloads().at(i).ciphertext()),
-                this->ctx_->CreateBigNum(msg.payloads().at(i + 1).ciphertext())
-            )
-        );
-        shares.push_back(share);
-    }
-
-    // still have to return something even if it isn't sent
-    PartyOneMessage::MessageIV res;
-    return res;
+ElementAndPayload PartyOneCASUM::GetPayload(BigNum element) {
+	long long ele = element.ToIntValue().value();
+	if(ele >= 0) return std::make_pair(element, ctx_->One());
+	return std::make_pair(ctx_->CreateBigNum(-ele), ctx_->Zero() - ctx_->One());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // HANDLE
 ////////////////////////////////////////////////////////////////////////////////
 
-Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMessage>* sink) {
+Status PartyOneCASUM::Handle(const ClientMessage& req, MessageSink<ServerMessage>* sink) {
     if (protocol_finished()) {
-        return InvalidArgumentError("[PartyOneWithPayload] protocol is already complete");
+        return InvalidArgumentError("[PartyOneCASUM] protocol is already complete");
     } else if (!req.has_party_zero_msg()) {
-        return InvalidArgumentError("[PartyOneWithPayload] incorrect message type");
+        return InvalidArgumentError("[PartyOneCASUM] incorrect message type");
     }
     const PartyZeroMessage& msg = req.party_zero_msg();
 
     ServerMessage res;
 
     if (msg.has_message_i()) {
+    	std::cerr<<"Handle m1...\n";
         ASSIGN_OR_RETURN(
             auto message_ii,
             GenerateMessageII(msg.message_i(), datasets[current_day])
         );
         *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
         FinishDay();
+        day_finished = true;
+        std::cerr<<"done...\n";
     } else {
         return InvalidArgumentError(
-            "[PartyOneWithPayload] received a party zero message of unknown type"
+            "[PartyOneCASUM] received a party zero message of unknown type"
         );
     }
-    std::cout << "[PartyOneNoPartyLoad] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
-    this->total_cost += res.ByteSizeLong();
-    return sink->Send(res);
+
+    RETURN_IF_ERROR(sink->Send(res));
+    return OkStatus();
 }
 
 
-Status PartyOneSum::Handle(const ClientMessage& req, MessageSink<ServerMessage>* sink) {
-    if (protocol_finished()) {
-        return InvalidArgumentError("[PartyOneWithPayload] protocol is already complete");
-    } else if (!req.has_party_zero_msg()) {
-        return InvalidArgumentError("[PartyOneWithPayload] incorrect message type");
-    }
-    const PartyZeroMessage& msg = req.party_zero_msg();
+////////////////////////////////////////////////////////////////////////////////
+// GENARATE MESSAGES
+////////////////////////////////////////////////////////////////////////////////
 
-    ServerMessage res;
-
-    if (msg.has_message_i()) {
-        ASSIGN_OR_RETURN(
-            auto message_ii,
-            GenerateMessageII(msg.message_i(), datasets[current_day])
-        );
-        *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
-    } else if (msg.has_message_iii()) {
-        ASSIGN_OR_RETURN(
-            auto message_iv,
-            ProcessMessageIII(msg.message_iii())
-        );
-        *(res.mutable_party_one_msg()->mutable_message_iv()) = std::move(message_iv);
-        FinishDay();
-    } else {
-        return InvalidArgumentError(
-            "[PartyOneWithPayload] received a party zero message of unknown type"
-        );
-    }
-    std::cout << "[PartyOneSum] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
-    this->total_cost += res.ByteSizeLong();
-    return sink->Send(res);
-}
-
-Status PartyOneSecretShare::Handle(
-    const ClientMessage& req, 
-    MessageSink<ServerMessage>* sink
+StatusOr<PartyOneMessage::MessageII> PartyOneCASUM::GenerateMessageII(
+    const PartyZeroMessage::MessageI& request,
+    std::vector<ElementAndPayload> elements
 ) {
-    if (protocol_finished()) {
-        return InvalidArgumentError("[PartyOneWithPayload] protocol is already complete");
-    } else if (!req.has_party_zero_msg()) {
-        return InvalidArgumentError("[PartyOneWithPayload] incorrect message type");
-    }
-    const PartyZeroMessage& msg = req.party_zero_msg();
 
-    ServerMessage res;
+	ResetGarbledCircuit();
+	
+    PartyOneMessage::MessageII response;
 
-    if (msg.has_message_i()) {
-        ASSIGN_OR_RETURN(
-            auto message_ii,
-            GenerateMessageII(msg.message_i(), datasets[current_day])
-        );
-        *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
-        std::cout << "[PartyOneSecretShare] Day " + std::to_string(this->current_day) + " (B): " << res.ByteSizeLong() << std::endl;
-        this->total_cost += res.ByteSizeLong();
-        return sink->Send(res);
-    } else if (msg.has_message_iii()) {
-        auto status = ProcessMessageIII(msg.message_iii());
-        if (!status.ok()) { return status.status(); }
-        std::clog << "[PartyOne] finished day " << this->current_day << std::endl;
-        FinishDay();
-        return OkStatus();
-    } else {
-        return InvalidArgumentError(
-            "[PartyOneWithPayload] received a party zero message of unknown type"
-        );
+    RETURN_IF_ERROR(other_tree.Update(this->ctx_, this->group, &request.updates()));
+
+    ASSIGN_OR_RETURN(
+        std::vector<Element> candidates,
+        DeserializeElement(request.candidates(), this->ctx_, this->group)
+    );
+    
+    RETURN_IF_ERROR(CombinePathResponder(candidates));
+
+    // update our tree
+    RETURN_IF_ERROR(my_tree.Update(
+        this->ctx_, this->my_paillier.get(), elements, response.mutable_updates()
+    ));
+    
+     for (size_t i = 0; i < elements.size(); ++i) {
+        
+        std::vector<Element> cur_msg;
+        ASSIGN_OR_RETURN(cur_msg , CombinePathInitiator(elements[i]));
+		
+        for (size_t j = 0; j < cur_msg.size(); ++j) {
+            // add this to the message
+            response.mutable_candidates()->add_elements(cur_msg[j].ToBytes());
+            //*candidate->mutable_payload() = cur_msg[j].second.ToBytes();
+        }
     }
+
+    return response;
 }
+
 
 }  // namespace upsi

@@ -148,7 +148,7 @@ auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
                              int64_t max_associated_value)
     -> StatusOr<std::tuple<
         std::vector<std::string>,
-        std::pair<std::vector<std::string>, std::vector<int64_t>>, int64_t>> {
+        std::pair<std::vector<std::string>, std::vector<int64_t>>, int64_t>> { //TODO: addition & deletion
   // Check parameters
   if (intersection_size < 0 || server_data_size < 0 || client_data_size < 0 ||
       max_associated_value < 0) {
@@ -177,14 +177,14 @@ auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
   std::vector<std::string> common_identifiers;
   common_identifiers.reserve(intersection_size);
   for (int64_t i = 0; i < intersection_size; i++) {
-    common_identifiers.push_back(GetRandomSetElement());
+    common_identifiers.push_back("+" + GetRandomSetElement());
   }
 
   // Generate remaining random identifiers for the server, and shuffle.
   std::vector<std::string> server_identifiers = common_identifiers;
   server_identifiers.reserve(server_data_size);
   for (int64_t i = intersection_size; i < server_data_size; i++) {
-    server_identifiers.push_back(GetRandomSetElement());
+    server_identifiers.push_back("+" + GetRandomSetElement());
   }
   std::shuffle(server_identifiers.begin(), server_identifiers.end(), gen);
 
@@ -192,7 +192,7 @@ auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
   std::vector<std::string> client_identifiers = common_identifiers;
   client_identifiers.reserve(client_data_size);
   for (int64_t i = intersection_size; i < client_data_size; i++) {
-    client_identifiers.push_back(GetRandomSetElement());
+    client_identifiers.push_back("+" + GetRandomSetElement());
   }
   std::shuffle(client_identifiers.begin(), client_identifiers.end(), gen);
 
@@ -321,7 +321,7 @@ StatusOr<std::vector<BigNum>> ReadServerDatasetFromFile(
           " comma-separated items (file: ", server_data_filename, ")"));
     }
     server_data.push_back(
-        context->CreateBigNum(std::stoull(columns[0]))
+        context->CreateBigNum(std::stoll(columns[0])) //positive: add, negative: delete
     );
     line_number++;
   }
@@ -366,7 +366,7 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
           " comma-separated items (file: ", client_data_filename, ")"));
     }
     client_identifiers.push_back(
-        context->CreateBigNum(std::stoull(columns[0]))
+        context->CreateBigNum(std::stoll(columns[0])) //positive: add, negative: delete
     );
     int64_t parsed_associated_value;
     if (!absl::SimpleAtoi(columns[1], &parsed_associated_value) ||

@@ -61,17 +61,6 @@ class BaseTree
 template<class T>
 class CryptoTree : public BaseTree<T> { };
 
-template<>
-class CryptoTree<Element> : public BaseTree<Element>
-{
-    public:
-        Status Update(
-            Context* ctx,
-            ElGamalEncrypter* elgamal,
-            std::vector<Element>& elements, 
-            TreeUpdates* updates
-        );
-};
 
 template<>
 class CryptoTree<ElementAndPayload> : public BaseTree<ElementAndPayload>
@@ -79,24 +68,17 @@ class CryptoTree<ElementAndPayload> : public BaseTree<ElementAndPayload>
     public:
         Status Update(
             Context* ctx,
-            ElGamalEncrypter* elgamal,
-            ThresholdPaillier* paillier,
+            PrivatePaillier* paillier,
             std::vector<ElementAndPayload>& elements, 
             TreeUpdates* updates
         );
-};
-
-template<>
-class CryptoTree<Ciphertext> : public BaseTree<Ciphertext>
-{
-    public:
         Status Update(
             Context* ctx,
             ECGroup* group,
             const TreeUpdates* updates
         );
 };
-
+/*
 template<>
 class CryptoTree<CiphertextAndPayload> : public BaseTree<CiphertextAndPayload>
 {
@@ -107,7 +89,7 @@ class CryptoTree<CiphertextAndPayload> : public BaseTree<CiphertextAndPayload>
             const TreeUpdates* updates
         );
 };
-
+*/
 }      // namespace upsi
 #endif // CRYPTOTREE_H_
 

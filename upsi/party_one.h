@@ -39,159 +39,42 @@ class PartyOne : public Party {
 
         virtual ~PartyOne() = default;
 
+		virtual void LoadData(const std::vector<PartyOneDataset>& datasets) = 0;
         // the methods to define for subclasses
         virtual Status Handle(const ClientMessage& msg, MessageSink<ServerMessage>* sink) = 0;
 
-        // by default party one has no output => by default party one prints the communication costs
+        // by default party one has no output
         virtual void PrintResult() { }
+        
+        bool day_finished;
 };
 
-class PartyOneNoPayload : public PartyOne {
+class PartyOneCASUM : public PartyOne {
     public:
-        PartyOneNoPayload(
-            Context* ctx,
-            std::string epk_fn,
-            std::string esk_fn,
-            std::string psk_fn,
-            const std::vector<PartyOneDataset>& datasets,
-            int total_days
-        ) : PartyOne(ctx, epk_fn, esk_fn, psk_fn, total_days), datasets(datasets) { }
+        using PartyOne::PartyOne;
 
-        ~PartyOneNoPayload() override = default;
+        ~PartyOneCASUM() override = default;
+        
+        void LoadData(const std::vector<PartyOneDataset>& datasets) override;
+        
+        ElementAndPayload GetPayload(BigNum element);
 
         /**
          * update their tree, compute candidates, & send tree updates
          */
-        virtual StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
+        StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
             const PartyZeroMessage::MessageI& msg,
-            std::vector<Element> elements
-        ) = 0;
-
-        /**
-         * delegate incoming messages to other methods
-         */
+            std::vector<ElementAndPayload> elements
+        );
+        
         Status Handle(const ClientMessage& request, MessageSink<ServerMessage>* sink) override;
 
     protected:
         // one dataset for each day
-        std::vector<std::vector<Element>> datasets;
+        std::vector<std::vector<ElementAndPayload>> datasets;
 
-        // our plaintext tree & their encrypted tree
-        CryptoTree<Element> my_tree;
-        CryptoTree<Ciphertext> other_tree;
 };
 
-class PartyOneWithPayload : public PartyOne {
-    public:
-        PartyOneWithPayload(
-            Context* ctx,
-            std::string epk_fn,
-            std::string esk_fn,
-            std::string psk_fn,
-            const std::vector<PartyOneDataset>& datasets,
-            int total_days
-        ) : PartyOne(ctx, epk_fn, esk_fn, psk_fn, total_days), datasets(datasets) { }
-
-        ~PartyOneWithPayload() override = default;
-
-        /**
-         * update their tree, compute candidates, & send tree updates
-         */
-        StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
-            const PartyZeroMessage::MessageI& msg,
-            std::vector<Element> elements
-        );
-
-        /**
-         * process the last incoming message & (optionally) respond
-         */
-        virtual StatusOr<PartyOneMessage::MessageIV> ProcessMessageIII(
-            const PartyZeroMessage::MessageIII& msg
-        ) = 0;
-
-    protected:
-        // one dataset for each day
-        std::vector<std::vector<Element>> datasets;
-
-        // our plaintext tree & their encrypted tree
-        CryptoTree<Element> my_tree;
-        CryptoTree<CiphertextAndPayload> other_tree;
-};
-
-class PartyOnePSI : public PartyOneNoPayload {
-
-    public:
-
-        using PartyOneNoPayload::PartyOneNoPayload;
-
-        ~PartyOnePSI() override = default;
-
-        /**
-         * update their tree, compute candidates, & send tree updates
-         */
-        StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
-            const PartyZeroMessage::MessageI& msg,
-            std::vector<Element> elements
-        );
-};
-
-class PartyOneCardinality : public PartyOneNoPayload {
-
-    public:
-
-        using PartyOneNoPayload::PartyOneNoPayload;
-
-        ~PartyOneCardinality() override = default;
-
-        /**
-         * update their tree, compute candidates, & send tree updates
-         */
-        StatusOr<PartyOneMessage::MessageII> GenerateMessageII(
-            const PartyZeroMessage::MessageI& msg,
-            std::vector<Element> elements
-        );
-};
-
-class PartyOneSum : public PartyOneWithPayload {
-
-    public:
-        // use the default constructor
-        using PartyOneWithPayload::PartyOneWithPayload;
-
-        /**
-         * receive our secret shares
-         */
-        StatusOr<PartyOneMessage::MessageIV> ProcessMessageIII(
-            const PartyZeroMessage::MessageIII& msg
-        ) override;
-
-        /**
-         * delegate incoming messages to other methods
-         */
-        Status Handle(const ClientMessage& request, MessageSink<ServerMessage>* sink) override;
-};
-
-class PartyOneSecretShare : public PartyOneWithPayload {
-
-    public:
-        // use the default constructor
-        using PartyOneWithPayload::PartyOneWithPayload;
-
-        // the output secret shares
-        std::vector<Element> shares;
-
-        /**
-         * receive our secret shares
-         */
-        StatusOr<PartyOneMessage::MessageIV> ProcessMessageIII(
-            const PartyZeroMessage::MessageIII& msg
-        ) override;
-
-        /**
-         * delegate incoming messages to other methods
-         */
-        Status Handle(const ClientMessage& request, MessageSink<ServerMessage>* sink) override;
-};
 
 }  // namespace upsi
 

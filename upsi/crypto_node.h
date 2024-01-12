@@ -45,16 +45,9 @@ template<typename T>
             Status serialize(TreeNode* obj);
     };
 
-StatusOr<CryptoNode<Ciphertext>> EncryptNode(
-    Context* ctx, 
-    ElGamalEncrypter* encrypter,
-    const CryptoNode<Element>& node
-);
-
 StatusOr<CryptoNode<CiphertextAndPayload>> EncryptNode(
     Context* ctx, 
-    ElGamalEncrypter* elgamal,
-    ThresholdPaillier* paillier,
+    PrivatePaillier* paillier,
     const CryptoNode<ElementAndPayload>& node
 );
 

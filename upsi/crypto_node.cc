@@ -63,12 +63,7 @@ bool CryptoNode<T>::addElement(T &elem) {
 ////////////////////////////////////////////////////////////////////////////////
 // CRYPTONODE::PAD()
 ////////////////////////////////////////////////////////////////////////////////
-template<>
-void CryptoNode<Element>::pad(Context* ctx) {
-    while (node.size() < node_size) {
-        node.push_back(GetRandomPadElement(ctx));
-    }
-}
+
 
 template<>
 void CryptoNode<ElementAndPayload>::pad(Context* ctx) {
@@ -77,43 +72,24 @@ void CryptoNode<ElementAndPayload>::pad(Context* ctx) {
     }
 }
 
-template<>
-void CryptoNode<Ciphertext>::pad(Context* ctx) {
-    throw std::runtime_error("not implemented (yet)");
-}
-
-template<>
-void CryptoNode<CiphertextAndPayload>::pad(Context* ctx) {
-    throw std::runtime_error("not implemented (yet)");
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // ENCRYPT NODE
 ////////////////////////////////////////////////////////////////////////////////
-StatusOr<CryptoNode<Ciphertext>> EncryptNode(
-    Context* ctx,
-    ElGamalEncrypter* encrypter,
-    const CryptoNode<Element>& node
-) {
-    CryptoNode<Ciphertext> encrypted(node.node_size);
-    for (size_t i = 0; i < node.node.size(); i++) {
-        ASSIGN_OR_RETURN(Ciphertext ciphertext, encrypter->Encrypt(node.node[i]));
-        encrypted.addElement(ciphertext);
-    }
-    return encrypted;
-}
+
 
 StatusOr<CryptoNode<CiphertextAndPayload>> EncryptNode(
     Context* ctx,
-    ElGamalEncrypter* elgamal,
-    ThresholdPaillier* paillier,
+    PrivatePaillier* paillier,
     const CryptoNode<ElementAndPayload>& node
 ) {
     CryptoNode<CiphertextAndPayload> encrypted(node.node_size);
     for (size_t i = 0; i < node.node.size(); i++) {
-        ASSIGN_OR_RETURN(Ciphertext ciphertext, elgamal->Encrypt(std::get<0>(node.node[i])));
-        ASSIGN_OR_RETURN(BigNum payload, paillier->Encrypt(std::get<1>(node.node[i])));
-        CiphertextAndPayload pair = std::make_pair(std::move(ciphertext), std::move(payload));
+        ASSIGN_OR_RETURN(BigNum element, paillier->Encrypt(std::get<0>(node.node[i])));
+        BigNum value = std::get<1>(node.node[i]);
+        if(!value.IsNonNegative()) value = paillier->n() + value;
+        ASSIGN_OR_RETURN(BigNum payload, paillier->Encrypt(value));
+        CiphertextAndPayload pair = std::make_pair(std::move(element), std::move(payload));
         encrypted.addElement(pair);
     }
     return encrypted;
@@ -122,45 +98,18 @@ StatusOr<CryptoNode<CiphertextAndPayload>> EncryptNode(
 ////////////////////////////////////////////////////////////////////////////////
 // CRYPTONODE::SERIALIZE()
 ////////////////////////////////////////////////////////////////////////////////
-template<>
-Status CryptoNode<Element>::serialize(TreeNode* obj) {
-    throw std::runtime_error("[CryptoNode<Element>] not implemented");
-}
-
-template<>
-Status CryptoNode<ElementAndPayload>::serialize(TreeNode* obj) {
-    throw std::runtime_error("[CryptoNode<ElementAndPayload>] not implemented");
-}
-
-template<>
-Status CryptoNode<Ciphertext>::serialize(TreeNode* obj) {
-    for (const Ciphertext& elem : node) {
-        EncryptedElement* ee = obj->add_elements();
-        ASSIGN_OR_RETURN(
-            *ee->mutable_no_payload()->mutable_element(), 
-            elgamal_proto_util::SerializeCiphertext(elem)
-        );
-    }
-    return OkStatus();
-}
 
 template<>
 Status CryptoNode<CiphertextAndPayload>::serialize(TreeNode* obj) {
     for (const CiphertextAndPayload& elem : node) {
         EncryptedElement* ee = obj->add_elements();
-        ASSIGN_OR_RETURN(
-            *ee->mutable_paillier()->mutable_element(), 
-            elgamal_proto_util::SerializeCiphertext(std::get<0>(elem))
-        );
-
-        *ee->mutable_paillier()->mutable_payload() = std::get<1>(elem).ToBytes();
+        *ee->mutable_element() = std::get<0>(elem).ToBytes();
+        *ee->mutable_payload() = std::get<1>(elem).ToBytes();
     }
     return OkStatus();
 }
 
-template class CryptoNode<Element>;
-template class CryptoNode<Ciphertext>;
 template class CryptoNode<ElementAndPayload>;
-template class CryptoNode<CiphertextAndPayload>;
+//template class CryptoNode<CiphertextAndPayload>;
 
 } // namespace upsi
