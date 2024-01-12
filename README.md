@@ -55,28 +55,24 @@ Again, you can use `--help` to see all options for `run`.
 
 These instructions are for setting up the project on a completely new machine on Google Cloud.
 
-First, you will need to setup an `ssh` key. You can use an existing key or generate a new one using:
-```bash
-ssh-keygen -t ed25519 -C "<your@email>"
-```
-To add the key, go to the VM instance on the Google Cloud console, click "EDIT" in the top bar, scroll down to the **SSH
-Keys** section, and add the contents of the `.pub` file to a new key.
+First, you will need to `ssh` onto the machine. To add a new key to a Google Cloud VM, go to the VM instance on the
+Google Cloud console, click "EDIT" in the top bar, scroll down to the **SSH Keys** section, and add the contents of the
+`.pub` file to a new key.
 
 You should then be able to ssh into the machine however you'd like with the username `upsi` (assuming you've used the
 `id_upsi` key — other keys may have another username). The IP address can be found on the VM page under **Network
 interfaces** as _External IP address_.
 
-To clone the repository the machine will need `git` installed and an authorized key to access GitHub. To install `git`,
-you should be able to run
+Once you've `ssh`'d onto the machine you will need to clone the repository, which requies the VM to have an authorized
+key to access Github. Start by installing `git`:
 ```bash
-sudo apt-get install git
+sudo apt-get install git -y
 ```
-To setup a new key, you can create one by running the following:
+Then setup a new key on the machine:
 ```bash
 ssh-keygen -t ed25519 -C "<your@email>"
 ```
-and adding the contents of the `.pub` file to your GitHub account (under *Settings > SSH and GPG keys*). `upsi-2` has
-`id_github` as its key for connecting to GitHub using Max's account.
+and add the contents of the `.pub` file to your GitHub account (under *Settings > SSH and GPG keys*).
 
 Before you clone or pull the repository, you may need to add the ssh key to the ssh agent. This can be done by running
 the following command:
@@ -84,25 +80,5 @@ the following command:
 eval $(ssh-agent); ssh-add ~/.ssh/id_github
 ```
 
-To install Bazel, you can run the commands in [Using Bazel's apt repository](https://bazel.build/install/ubuntu).:
-```bash
-sudo apt install apt-transport-https curl gnupg -y
-curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg
-sudo mv bazel-archive-keyring.gpg /usr/share/keyrings
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-
-sudo apt update && sudo apt install bazel-6.4.0
-sudo update-alternatives --install /usr/bin/bazel bazel /usr/bin/bazel-6.4.0 10
-```
-Note that since our project is pinned to Bazel 6.4.0 you need to install that version specifically.
-
-You will also need to install `python` and `pip` for the build system to work.
-```bash
-sudo apt-get install python-pip
-sudo apt-get install python3-distutils
-```
-
-To use `network_setup.sh`, you will also need to ensure the VM has `tc` setup:
-```bash
-sudo update-alternatives --install /usr/bin/tc tc /usr/sbin/tc 10
-```
+Once you've cloned the repository, you can download build dependencies and fully build the project by running the
+`build.sh` script.
