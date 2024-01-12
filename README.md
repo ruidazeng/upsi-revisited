@@ -1,85 +1,73 @@
 # UPSI Project
 
-## How to run the protocol
+## Building the Project
 
-In order to run Updatable Private Set Intersection, you need to install Bazel, if you
-don't have it already.
-[Follow the instructions for your platform on the Bazel website.](https://docs.bazel.build/versions/master/install.html)
-
-You also need to install Git, if you don't have it already.
-[Follow the instructions for your platform on the Git website.](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-
-Once you've installed Bazel and Git, open a Terminal and clone the Private Join
-and Compute repository into a local folder:
-
-```shell
-git clone https://github.com/ruidazeng/upsi-new.git
-```
-
-Navigate into the `upsi-new` folder you just created, and build
-the Updatable Private Set Intersection library and dependencies using Bazel:
-
+The project build is managed by `bazel` and is set up to run on `v6.4`. To build the project, simply run the following
+from the `upsi-new` directory:
 ```bash
-cd upsi-new
 bazel build //upsi:all
 ```
 
-Before running the protocol, first run the `setup` binary to generate encryption keys for the parties.
+## Running the Protocol
 
-Make sure the directory has a folder named `data` which holds all the generated dummy data.
-
-Arguments we can use to specify the properties of the data generated includes `days`, `p0_size`, `p1_size`, `shared_size`, `per_day`, and `max_value`.
-
-(Note: the number of elements in the intersection is randomly generated regardless of `shared_size`).
-
+Before running the protocol, use the `setup` binary to generate encryption keys and mock input sets. By default, the keys
+will be put in `out/` and the input sets will be put in `data/`. For example, to generate input datasets with 256
+elements for eight days, you would run
 ```bash
-mkdir data
-./bazel-bin/upsi/setup
+./bazel-bin/upsi/setup --days=8 --daily_size=256
+```
+If you don't want to start the protocol from the beginning, but want the parties to already have built up their
+datasets, you can add `--start_size=` to specify how many elements should be in their trees (e.g., to simulate running
+the protocol after 100 days where each day the parties input 64 elements, you would have `--start_size=64000`).
+
+> [!IMPORTANT]
+> If you want to run the protocol to output a secret sharing of the intersection, you will need to add `--func=SS` to
+> the `setup` command. Setting up the initial trees requires encrypting elements, which for secret sharing must be
+> Paillier encryption whereas all other functionalities use El Gamal (and so El Gamal is the default). If you are
+> starting from day 1 (i.e., `--start_size=0`), then technically this can be ignored.
+
+Additional options can be found by running
+```bash
+./bazel-bin/upsi/setup --help
 ```
 
-To run the protocol, have two instances (terminals) open. First we initialize Party 1 using:
-
+Once you've generated the keys and data sets, you can run the protocol like so
 ```bash
-./bazel-bin/upsi/run --party=1 --func=CA
+./bazel-bin/upsi/run --party=1 --days=8 --func=CA
 ```
-
-Then we initialize Party 0 using:
+and
 ```bash
-./bazel-bin/upsi/run --party=0 --func=CA
+./bazel-bin/upsi/run --party=0 --days=8 --func=CA
 ```
+where `--func` specifies which output functionality you want to run. The functionality options are `CA` for cardinality,
+`PSI` for regular PSI, `SUM` for the cardinality and sum of associated values, and `SS` is for intersection secret share.
+Again, you can use `--help` to see all options for `run`.
 
-Arguments we can use to specify the properties of the two parties includes `party`, `port`, `dir`, `func`, `days`.
-
-`func` will specify the desired protocol functionality:
-
-`CA`: cardinality
-
-`SUM`: sum
-
-`SS`: secret sharing
+> [!NOTE]
+> You must run `run --party=1` before `run --party=0` as it acts as the server and listens for connections on the
+> specified port.
 
 ## Setting Up on Google Cloud
-
-> [!NOTE] 
-> There is already a VM setup in the UPSI project on Google Cloud called `upsi-2` that has cloned the repository and
-> installed bazel. Given the `id_upsi` ssh key, you should be able to connect and directly run the project there. 
-> 
-> The following instructions are for setting up a new machine.
 
 > [!IMPORTANT]
 > If you are setting up a new VM, it needs to be set to have Debian 10 (buster) as its boot disk. Otherwise the
 > build will not work.
 
-First, you will need to setup an ssh key. Ideally you will use the `id_upsi` key that we all already have. To add a key, 
-go to the VM instance on the Google Cloud console, click "EDIT" in the top bar, scroll down to the **SSH Keys** section,
-and add the contents of `id_upsi.pub` to a new key. 
+These instructions are for setting up the project on a completely new machine on Google Cloud.
+
+First, you will need to setup an `ssh` key. You can use an existing key or generate a new one using:
+```bash
+ssh-keygen -t ed25519 -C "<your@email>"
+```
+To add the key, go to the VM instance on the Google Cloud console, click "EDIT" in the top bar, scroll down to the **SSH
+Keys** section, and add the contents of the `.pub` file to a new key.
 
 You should then be able to ssh into the machine however you'd like with the username `upsi` (assuming you've used the
 `id_upsi` key — other keys may have another username). The IP address can be found on the VM page under **Network
 interfaces** as _External IP address_.
 
 To clone the repository the machine will need `git` installed and an authorized key to access GitHub. To install `git`,
-you should be able to run 
+you should be able to run
 ```bash
 sudo apt-get install git
 ```
@@ -91,10 +79,9 @@ and adding the contents of the `.pub` file to your GitHub account (under *Settin
 `id_github` as its key for connecting to GitHub using Max's account.
 
 Before you clone or pull the repository, you may need to add the ssh key to the ssh agent. This can be done by running
-the following commands:
+the following command:
 ```bash
-eval $(ssh-agent)
-ssh-add ~/.ssh/id_github
+eval $(ssh-agent); ssh-add ~/.ssh/id_github
 ```
 
 To install Bazel, you can run the commands in [Using Bazel's apt repository](https://bazel.build/install/ubuntu).:
@@ -109,26 +96,13 @@ sudo update-alternatives --install /usr/bin/bazel bazel /usr/bin/bazel-6.4.0 10
 ```
 Note that since our project is pinned to Bazel 6.4.0 you need to install that version specifically.
 
-You will also need to install `python` and `pip` for the build system to work. 
+You will also need to install `python` and `pip` for the build system to work.
 ```bash
 sudo apt-get install python-pip
 sudo apt-get install python3-distutils
 ```
 
-## Threshold Paillier
-Two party threshold Paillier is in `upsi/crypto/threshold_paillier.h`.
-
-To run the associated tests:
+To use `network_setup.sh`, you will also need to ensure the VM has `tc` setup:
 ```bash
-bazel test //upsi/crypto:threshold_paillier_test
+sudo update-alternatives --install /usr/bin/tc tc /usr/sbin/tc 10
 ```
-It will take around two minutes.
-
-There are only four functions of note:
- 1. `GenerateThresholdPaillierKeys` generates two keys, one for each party.
- 2. `Encrypt` encrypts a message using either party's key
- 3. `PartialDecrypt` takes a ciphertext and partially decrypts it with one party's key.
- 4. `Decrypt` takes a ciphertext and the other party's partial decryption and recovers the message.
-Essentially of the elements involved are `BigNum`s (e.g., message, ciphertext, key components).
-
-To see how one would use these functions, check the tests in `threshold_paillier_test.cc`.

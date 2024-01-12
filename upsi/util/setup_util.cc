@@ -92,7 +92,8 @@ Status GenerateData(
     uint32_t daily_size,
     int32_t shared_size,
     int32_t max_value,
-    Functionality func
+    Functionality func,
+    bool expected
 ) {
     std::cout << "[Setup] generating mock data" << std::flush;
     uint32_t total = start_size + (days * daily_size);
@@ -171,6 +172,8 @@ Status GenerateData(
             )
         );
     }
+
+    if (!expected) { return OkStatus(); }
 
     // calculate what the running cardinality / sum is as of day 1
     auto initial_ca = 0;

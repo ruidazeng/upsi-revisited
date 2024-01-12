@@ -13,8 +13,8 @@
 
 using namespace upsi;
 
-ABSL_FLAG(bool, keys_only, false, "only generate keys");
-ABSL_FLAG(bool, data_only, false, "only generate data");
+ABSL_FLAG(bool, keys, true, "generate new encryption keys");
+ABSL_FLAG(bool, data, true, "generate the dataset");
 
 ABSL_FLAG(std::string, data_dir, "data/", "name of directory for dataset files");
 ABSL_FLAG(std::string, out_dir, "out/", "name of directory for keys & trees");
@@ -28,20 +28,24 @@ ABSL_FLAG(int32_t, stat_param, 100, "statistical parameter for Paillier");
 
 ABSL_FLAG(uint32_t, days, 10, "number of days the protocol is running for");
 
-ABSL_FLAG(uint32_t, daily_size, 0, "total elements in each set on each day");
-ABSL_FLAG(uint32_t, start_size, 0, "size of the initial trees");
+ABSL_FLAG(uint32_t, daily_size, 64, "total elements in each set on each day");
+ABSL_FLAG(uint32_t, start_size, 65279, "size of the initial trees");
 ABSL_FLAG(int32_t, shared_size, -1, "total elements in intersection across all days");
+
+ABSL_FLAG(int32_t, max_value, 100, "maximum number for UPSI-SUM values");
 
 // this only matters for secret sharing which requires paillier encryption on the trees
 ABSL_FLAG(Functionality, func, Functionality::CA, "which functionality to prepare for");
-ABSL_FLAG(int32_t, max_value, 1000, "maximum number for UPSI-SUM values");
+
+ABSL_FLAG(bool, expected, true, "compute expected cardinality and sum");
+
 
 int main(int argc, char** argv) {
     absl::ParseCommandLine(argc, argv);
 
     Context ctx;
 
-    if (!absl::GetFlag(FLAGS_data_only)) {
+    if (absl::GetFlag(FLAGS_keys)) {
         auto status = GenerateKeys(
             &ctx,
             absl::GetFlag(FLAGS_out_dir) + "p0/",
@@ -56,7 +60,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (!absl::GetFlag(FLAGS_keys_only)) {
+    if (absl::GetFlag(FLAGS_data)) {
         auto status = GenerateData(
             &ctx,
             absl::GetFlag(FLAGS_out_dir) + "p0/",
@@ -68,7 +72,8 @@ int main(int argc, char** argv) {
             absl::GetFlag(FLAGS_daily_size),
             absl::GetFlag(FLAGS_shared_size),
             absl::GetFlag(FLAGS_max_value),
-            absl::GetFlag(FLAGS_func)
+            absl::GetFlag(FLAGS_func),
+            absl::GetFlag(FLAGS_expected)
         );
         if (!status.ok()) {
             std::cerr << "[Setup] failure generating datasets" << std::endl;

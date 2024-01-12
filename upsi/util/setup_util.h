@@ -27,7 +27,8 @@ Status GenerateData(
     uint32_t daily_size,    // number of elements in each day's data
     int32_t shared_size,    // number of elements in intersection (including trees)
     int32_t max_value,      // maximum size of sum values
-    Functionality func      // which functionality to generate data for
+    Functionality func,     // which functionality to generate data for
+    bool expected = true    // calculate expected cardinality and sum
 );
 
 // create plaintext and encrypted trees with the given data
