@@ -106,7 +106,6 @@ cc_library(
     deps = [
         ":bn_util",
         ":ec_util",
-        "//upsi:upsi_proto",
         "//upsi/util:status_includes",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",

@@ -256,6 +256,8 @@ class PrivatePaillier {
   // Returns INVALID_ARGUMENT status when the ciphertext is < 0 or >= n^(s+1).
   StatusOr<BigNum> Decrypt(const BigNum& ciphertext) const;
 
+  const BigNum& n() const { return n_to_s_; }
+
  private:
   friend class PrivatePaillierWithRand;
   // Factory class for creating BigNums and holding the temporary values for

@@ -342,6 +342,34 @@ Status CryptoTree<ElementAndPayload>::Update(
     return OkStatus();
 }
 
+Status CryptoTree<ElementAndPayload>::Update(
+    Context* ctx,
+    PrivatePaillier* paillier,
+    std::vector<ElementAndPayload>& elements,
+    TreeUpdates* updates
+) {
+    std::vector<std::string> hashes;
+
+    std::vector<CryptoNode<ElementAndPayload>> nodes = InsertWithDeletions(elements, hashes);
+
+    for (size_t i = 0; i < nodes.size(); i++) {
+        nodes[i].pad(ctx);
+
+        ASSIGN_OR_RETURN(
+            CryptoNode<PaillierPair> ciphertext,
+            EncryptNode(ctx, paillier, nodes[i])
+        );
+
+        RETURN_IF_ERROR(SerializeNode(&ciphertext, updates->add_nodes()));
+    }
+
+    for (const std::string &hash : hashes) {
+        updates->add_hashes(hash);
+    }
+
+    return OkStatus();
+}
+
 Status CryptoTree<Ciphertext>::Update(
     Context* ctx,
     ECGroup* group,
@@ -395,6 +423,126 @@ Status CryptoTree<CiphertextAndElGamal>::Update(
     this->replaceNodes(hashes.size(), new_nodes, hashes);
 
     return OkStatus();
+}
+
+Status CryptoTree<PaillierPair>::Update(
+    Context* ctx,
+    ECGroup* group,
+    const TreeUpdates* updates
+) {
+    std::vector<std::string> hashes(updates->hashes().begin(), updates->hashes().end());
+
+    std::vector<CryptoNode<PaillierPair>> new_nodes;
+    for (const TreeNode& tnode : updates->nodes()) {
+        ASSIGN_OR_RETURN(
+            CryptoNode<PaillierPair> cnode,
+            DeserializeNode<PaillierPair>(tnode, ctx, group)
+        );
+        new_nodes.push_back(std::move(cnode));
+    }
+    this->replaceNodes(hashes.size(), new_nodes, hashes);
+
+    return OkStatus();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// FOR DELETION
+////////////////////////////////////////////////////////////////////////////////
+
+std::vector<CryptoNode<ElementAndPayload>> CryptoTree<ElementAndPayload>::InsertWithDeletions(
+    std::vector<ElementAndPayload> &elem,
+    std::vector<std::string> &hsh
+) {
+	int new_elem_cnt = elem.size();
+
+	// add new layer when tree is full
+	while(new_elem_cnt + this->actual_size >= (1 << (this->depth + 1))) addNewLayer();
+	// no need to tell the receiver the new depth of tree?
+
+	// get the node indices in random paths
+	std::vector<int> ind;
+
+	// generate hash
+	generateRandomHash(new_elem_cnt, hsh);
+	int *leaf_ind = generateRandomPaths(new_elem_cnt, ind, hsh);
+
+	/*
+		To compute lca of x , y:
+		let t be the leftmost 1 of (x xor y), steps = log2(t) + 1
+		lca = x / 2t = x >> steps
+	*/
+	for (int o = 0; o < new_elem_cnt; ++o) {
+		// extract all elements in the path and empty the origin node
+		std::vector<ElementAndPayload> tmp_elem[this->depth + 2];
+		std::vector<ElementAndPayload> unique_elem[this->depth + 2];
+
+		//std::cerr << "************leaf ind = " << leaf_ind[o] << std::endl;
+		for (int u = leaf_ind[o]; ; u >>= 1) {
+			std::vector<ElementAndPayload> tmp_node;
+			crypto_tree[u].copyElementsTo(tmp_node);
+			if(u == 0) tmp_node.push_back(std::move(elementCopy(elem[o])));
+
+			int tmp_node_size = tmp_node.size();
+			//std::cerr << "tmp_node size  = " << tmp_node_size << std::endl;
+
+			for (int i = 0; i < tmp_node_size; ++i) {
+				int x = computeIndex(computeBinaryHash(tmp_node[i]));
+				//if(u == 0 && i == 0) std::cerr<<"index is " << x << std::endl;
+				int steps = 0;
+				if(x != leaf_ind[o]) steps = 32 - __builtin_clz(x ^ leaf_ind[o]);
+				tmp_elem[steps].push_back(std::move(tmp_node[i]));
+				//std::cerr << "add " << x << " to " << (x >> steps) << std::endl;
+			}
+
+			crypto_tree[u].clear();
+			if(u == 0) break;
+		}
+
+		for (int i = 0; i <= this->depth + 1; ++i) {
+			std::sort(tmp_elem[i].begin(), tmp_elem[i].end());
+			int cnt_vct = tmp_elem[i].size();
+			for (int j = 0; j < cnt_vct; ++j) {
+				BigNum cur_elem = tmp_elem[i][j].first;
+				BigNum val = tmp_elem[i][j].second;
+				while(j + 1 < cnt_vct && tmp_elem[i][j + 1].first == cur_elem) {
+					++j;
+					val += tmp_elem[i][j].second;
+				}
+				//val = val.Mod(my_paillier->n());
+				unique_elem[i].push_back(std::make_pair(cur_elem, val));
+			}
+		}
+
+		//fill the path
+		int st = 0;
+		for (int u = leaf_ind[o], steps = 0; ; u >>= 1, ++steps) {
+			while(st <= steps && unique_elem[st].empty()) ++st;
+			while(st <= steps) {
+				ElementAndPayload cur_elem = std::move(elementCopy(unique_elem[st].back()));
+				if(crypto_tree[u].addElement(cur_elem)) unique_elem[st].pop_back();
+				else break;
+				while(st <= steps && unique_elem[st].empty()) ++st;
+			}
+			if(u == 0) break;
+		}
+		assert(st > this->depth);
+	}
+	/*
+	for (size_t i = 0; i < crypto_tree.size(); ++i) {
+		std::cerr << crypto_tree[i].node.size() << " ";
+	} std::cerr << std::endl;*/
+
+	delete [] leaf_ind;
+
+	// update actual_size
+	this->actual_size += new_elem_cnt;
+
+	int node_cnt = ind.size();
+	std::vector<CryptoNode<ElementAndPayload>> rs;
+	for (int i = 0; i < node_cnt; ++i) {
+        rs.push_back(crypto_tree[ind[i]].copy());
+    }
+	return rs;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -485,11 +633,33 @@ Status CryptoTree<CiphertextAndElGamal>::Print() {
     return OkStatus();
 }
 
+Status CryptoTree<PaillierPair>::Print() {
+    auto i = 0;
+    std::cout << "[CryptoTree] depth = " << depth << ", actual_size = " << actual_size << std::endl;
+    for (const auto& node : this->crypto_tree) {
+        for (auto e = 1; 1 << e <= i; e++) {
+            std::cout << "\t";
+        }
+        std::cout << i << " (" << node.node.size() << ")";
+        if (node.node.size() <= 4) {
+            std::cout << " : ";
+            for (const PaillierPair& element : node.node) {
+                std::cout << element.first.ToDecimalString() << ", ";
+            }
+        }
+        std::cout << std::endl;
+        i++;
+    }
+    return OkStatus();
+}
+
+
 
 template class BaseTree<Element, PlaintextTree>;
 template class BaseTree<ElementAndPayload, PlaintextTree>;
 template class BaseTree<Ciphertext, EncryptedTree>;
 template class BaseTree<CiphertextAndPaillier, EncryptedTree>;
 template class BaseTree<CiphertextAndElGamal, EncryptedTree>;
+template class BaseTree<PaillierPair, EncryptedTree>;
 
 } // namespace upsi

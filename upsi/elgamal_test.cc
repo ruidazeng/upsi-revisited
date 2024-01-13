@@ -9,10 +9,9 @@
 #include "upsi/crypto/paillier.h"
 #include "upsi/crypto/threshold_paillier.h"
 #include "upsi/crypto_tree.h"
-#include "upsi/data_util.h"
-#include "upsi/message_sink.h"
+#include "upsi/network/message_sink.h"
 #include "upsi/protocol_client.h"
-#include "upsi/upsi.pb.h"
+#include "upsi/network/upsi.pb.h"
 #include "upsi/util/status.inc"
 #include "upsi/utils.h"
 

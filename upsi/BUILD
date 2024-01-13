@@ -16,136 +16,26 @@ load("@com_github_grpc_grpc//bazel:grpc_build_system.bzl", "grpc_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
-grpc_proto_library(
-    name = "upsi_proto",
-    srcs = ["upsi.proto"],
-    deps = [
-        "//upsi/crypto:elgamal_proto"
-    ],
-)
-
 cc_library(
-    name = "message_sink",
-    hdrs = ["message_sink.h"],
+    name = "params",
+    hdrs = ["params.h"],
     deps = [
-        ":upsi_proto",
-        "//upsi/util:status_includes",
-        "@com_google_absl//absl/memory",
-    ],
-)
-
-cc_library(
-    name = "connection",
-    hdrs = ["connection.h"],
-    deps = [
-        ":upsi_proto",
-        "@com_github_grpc_grpc//:grpc",
-        "@com_github_grpc_grpc//:grpc++",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "party",
-    hdrs = ["party.h"],
-    deps = [
-        ":crypto_tree",
-        "//upsi/crypto:elgamal",
-        "//upsi/crypto:paillier",
-        "//upsi/util:elgamal_key_util",
-    ],
-)
-
-
-cc_library(
-    name = "party_zero",
-    srcs = ["party_zero.cc"],
-    hdrs = ["party_zero.h"],
-    deps = [
-        ":connection",
-        ":crypto_tree",
-        ":data_util",
-        ":message_sink",
-        ":party",
-        ":upsi_proto",
-        ":utils",
         "//upsi/crypto:bn_util",
-        "//upsi/crypto:ec_commutative_cipher",
-        "//upsi/crypto:ec_point_util",
-        "//upsi/crypto:elgamal",
-        "//upsi/crypto:paillier",
-        "//upsi/util:elgamal_key_util",
-        "//upsi/util:status_includes",
     ],
 )
 
 cc_library(
-    name = "party_one",
-    srcs = ["party_one.cc"],
-    hdrs = ["party_one.h"],
+    name = "roles",
+    hdrs = ["roles.h"],
     deps = [
+        ":params",
         ":crypto_tree",
-        ":data_util",
-        ":message_sink",
-        ":party",
-        ":upsi_proto",
-        ":utils",
         "//upsi/crypto:bn_util",
-        "//upsi/crypto:ec_commutative_cipher",
-        "//upsi/crypto:ec_point_util",
-        "//upsi/crypto:elgamal",
-        "//upsi/crypto:paillier",
-        "//upsi/util:elgamal_key_util",
+        "//upsi/crypto:ec_util",
+        "//upsi/network:upsi_proto",
+        "//upsi/network:connection",
+        "//upsi/network:message_sink",
         "//upsi/util:status_includes",
-    ],
-)
-
-cc_library(
-    name = "data_util",
-    srcs = ["data_util.cc"],
-    hdrs = ["data_util.h"],
-    deps = [
-        ":upsi_proto",
-    	":utils",
-        "//upsi/crypto:bn_util",
-        "//upsi/util:status_includes",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "upsi_rpc_impl",
-    srcs = ["upsi_rpc_impl.cc"],
-    hdrs = ["upsi_rpc_impl.h"],
-    deps = [
-        ":crypto_tree",
-        ":message_sink",
-        ":party",
-        ":party_one",
-        ":upsi_proto",
-        "//upsi/util:status_includes",
-        "@com_github_grpc_grpc//:grpc++",
-    ],
-)
-
-cc_binary(
-    name = "run",
-    srcs = ["run.cc"],
-    deps = [
-        ":connection",
-        ":data_util",
-        ":party_one",
-        ":party_zero",
-        ":upsi_proto",
-        ":upsi_rpc_impl",
-        "@com_github_grpc_grpc//:grpc",
-        "@com_github_grpc_grpc//:grpc++",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -154,8 +44,8 @@ cc_binary(
     srcs = ["test.cc"],
     deps = [
         ":crypto_tree",
-        ":data_util",
-        ":upsi_proto",
+        "//upsi/network:upsi_proto",
+        "//upsi/util:data_util",
         "//upsi/util:elgamal_proto_util",
         "//upsi/util:proto_util",
         "@com_google_absl//absl/base",
@@ -167,6 +57,7 @@ cc_library(
     srcs = ["utils.cc"],
     hdrs = ["utils.h"],
     deps = [
+        "//upsi/network:upsi_proto",
         "//upsi/crypto:ec_commutative_cipher",
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_proto_util",
@@ -179,9 +70,9 @@ cc_library(
     hdrs = ["crypto_node.h"],
     deps = [
         ":utils",
-        ":upsi_proto",
         "//upsi/crypto:ec_commutative_cipher",
         "//upsi/crypto:paillier",
+        "//upsi/network:upsi_proto",
         "//upsi/util:elgamal_proto_util",
     ],
 )
@@ -197,24 +88,5 @@ cc_library(
         "//upsi/crypto:elgamal",
         "//upsi/crypto:paillier",
         "//upsi/util:elgamal_proto_util",
-    ],
-)
-
-cc_binary(
-    name = "setup",
-    srcs = ["setup.cc"],
-    deps = [
-        ":crypto_tree",
-        ":data_util",
-        ":upsi_proto",
-        ":utils",
-        "//upsi/crypto:elgamal",
-        "//upsi/crypto:paillier",
-        "//upsi/util:elgamal_key_util",
-        "//upsi/util:proto_util",
-        "//upsi/util:setup_util",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
     ],
 )

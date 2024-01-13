@@ -33,7 +33,7 @@ Status TestElGamal() {
         auto esk0, ProtoUtils::ReadProtoFromFile<ElGamalSecretKey>("out/party_one.ekey")
     );
     ElGamalDecrypter partialer = ElGamalDecrypter(
-        elgamal_proto_util::DeserializePrivateKey(&ctx, esk0).value()
+        &ctx, elgamal_proto_util::DeserializePrivateKey(&ctx, esk0).value()
     );
 
     ASSIGN_OR_RETURN(
@@ -41,7 +41,7 @@ Status TestElGamal() {
     );
 
     ElGamalDecrypter decrypter = ElGamalDecrypter(
-        elgamal_proto_util::DeserializePrivateKey(&ctx, esk1).value()
+        &ctx, elgamal_proto_util::DeserializePrivateKey(&ctx, esk1).value()
     );
 
     Timer expsetup("[Test] Exp ElGamal Setup");

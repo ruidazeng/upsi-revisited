@@ -1,54 +1,37 @@
-/*
- * Copyright 2019 Google LLC.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-#include "upsi/party_zero.h"
-
+#include "upsi/addition/party_zero.h"
 
 #include "absl/memory/memory.h"
 
-#include "upsi/connection.h"
+#include "upsi/network/connection.h"
 #include "upsi/crypto/ec_point_util.h"
 #include "upsi/crypto/elgamal.h"
+#include "upsi/roles.h"
+#include "upsi/util/data_util.h"
 #include "upsi/util/elgamal_proto_util.h"
 #include "upsi/util/proto_util.h"
 #include "upsi/utils.h"
 
 namespace upsi {
+namespace addonly {
 
 ////////////////////////////////////////////////////////////////////////////////
 // WITHOUT PAYLOAD CLASS METHODS
 ////////////////////////////////////////////////////////////////////////////////
 
-void PartyZeroNoPayload::LoadData(const std::vector<PartyZeroDataset>& datasets) {
+void PartyZeroNoPayload::LoadData(const std::vector<Dataset>& datasets) {
     this->datasets.resize(this->total_days);
     for (auto day = 0; day < this->total_days; day++) {
-        std::vector<Element> dailyset;
-        for (size_t i = 0; i < datasets[day].first.size(); i++) {
-            dailyset.push_back(datasets[day].first[i]);
-        }
-        this->datasets[day] = dailyset;
+        this->datasets[day] = datasets[day].Elements();
     }
 }
 
 Status PartyZeroNoPayload::Run(Connection* sink) {
     Timer timer("[PartyZero] Daily Comp");
-    while (!protocol_finished()) {
+    while (!ProtocolFinished()) {
         Timer day("[PartyZero] Day " + std::to_string(this->current_day) + " Comp");
         timer.lap();
         RETURN_IF_ERROR(SendMessageI(sink));
-        ServerMessage message_ii = sink->last_server_response();
+        ServerMessage message_ii = sink->GetResponse();
         RETURN_IF_ERROR(Handle(message_ii, sink));
         timer.stop();
         day.stop();
@@ -70,7 +53,7 @@ Status PartyZeroNoPayload::Handle(
     const ServerMessage& msg,
     MessageSink<ClientMessage>* sink
 ) {
-    if (protocol_finished()) {
+    if (ProtocolFinished()) {
         return InvalidArgumentError("[PartyZeroWithPayload] protocol is already complete");
     } else if (!msg.has_party_one_msg()) {
         return InvalidArgumentError("[PartyZeroWithPayload] incorrect message type");
@@ -91,16 +74,15 @@ Status PartyZeroNoPayload::Handle(
 // WITH PAYLOAD CLASS METHODS
 ////////////////////////////////////////////////////////////////////////////////
 
-void PartyZeroWithPayload::LoadData(const std::vector<PartyZeroDataset>& datasets) {
+void PartyZeroWithPayload::LoadData(const std::vector<Dataset>& datasets) {
     this->datasets.resize(this->total_days);
     for (auto day = 0; day < this->total_days; day++) {
-        std::vector<ElementAndPayload> dailyset;
-        for (size_t i = 0; i < datasets[day].first.size(); i++) {
-            dailyset.push_back(
-                GetPayload(datasets[day].first[i], datasets[day].second[i])
+        std::vector<ElementAndPayload> dailyset = datasets[day].ElementsAndValues();
+        for (const ElementAndPayload& element : dailyset) {
+            this->datasets[day].push_back(
+                GetPayload(element.first, element.second)
             );
         }
-        this->datasets[day] = dailyset;
     }
 }
 
@@ -114,7 +96,7 @@ Status PartyZeroWithPayload::SendMessageI(MessageSink<ClientMessage>* sink) {
 }
 
 Status PartyZeroWithPayload::Handle(const ServerMessage& msg, MessageSink<ClientMessage>* sink) {
-    if (protocol_finished()) {
+    if (ProtocolFinished()) {
         return InvalidArgumentError("[PartyZeroWithPayload] protocol is already complete");
     } else if (!msg.has_party_one_msg()) {
         return InvalidArgumentError("[PartyZeroWithPayload] incorrect message type");
@@ -440,15 +422,15 @@ ElementAndPayload PartyZeroSecretShare::GetPayload(BigNum element, BigNum value)
 
 Status PartyZeroSum::Run(Connection* sink) {
     Timer timer("[PartyZero] Daily Comp");
-    while (!protocol_finished()) {
+    while (!ProtocolFinished()) {
         Timer day("[PartyZero] Day " + std::to_string(this->current_day) + " Comp");
         timer.lap();
         RETURN_IF_ERROR(SendMessageI(sink));
 
-        ServerMessage message_ii = sink->last_server_response();
+        ServerMessage message_ii = sink->GetResponse();
         RETURN_IF_ERROR(Handle(message_ii, sink));
 
-        ServerMessage message_iv = sink->last_server_response();
+        ServerMessage message_iv = sink->GetResponse();
         RETURN_IF_ERROR(Handle(message_iv, sink));
         timer.stop();
         day.stop();
@@ -459,12 +441,12 @@ Status PartyZeroSum::Run(Connection* sink) {
 
 Status PartyZeroSecretShare::Run(Connection* sink) {
     Timer timer("[PartyZero] Daily Comp");
-    while (!protocol_finished()) {
+    while (!ProtocolFinished()) {
         Timer day("[PartyZero] Day " + std::to_string(this->current_day) + " Comp");
         timer.lap();
         RETURN_IF_ERROR(SendMessageI(sink));
 
-        ServerMessage message_ii = sink->last_server_response();
+        ServerMessage message_ii = sink->GetResponse();
 
         RETURN_IF_ERROR(Handle(message_ii, sink));
         timer.stop();
@@ -525,4 +507,5 @@ void PartyZeroSecretShare::PrintResult() {
     std::cout << "[PartyZero] CARDINALITY = " << this->shares.size() << std::endl;
 }
 
+}  // namespace addonly
 }  // namespace upsi
