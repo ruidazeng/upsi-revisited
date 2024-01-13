@@ -13,24 +13,26 @@
  * limitations under the License.
  */
 
-#include "upsi/party_one.h"
+#include "upsi/addition/party_one.h"
 
 #include "absl/memory/memory.h"
 
 #include "upsi/crypto/ec_point_util.h"
 #include "upsi/crypto/elgamal.h"
+#include "upsi/roles.h"
 #include "upsi/util/elgamal_proto_util.h"
 #include "upsi/util/proto_util.h"
 #include "upsi/utils.h"
 
 namespace upsi {
+namespace addonly {
 
 ////////////////////////////////////////////////////////////////////////////////
 // HANDLE
 ////////////////////////////////////////////////////////////////////////////////
 
 Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMessage>* sink) {
-    if (protocol_finished()) {
+    if (ProtocolFinished()) {
         return InvalidArgumentError("[PartyOneNoPayload] protocol is already complete");
     } else if (!req.has_party_zero_msg()) {
         return InvalidArgumentError("[PartyOneNoPayload] incorrect message type");
@@ -59,7 +61,7 @@ Status PartyOneNoPayload::Handle(const ClientMessage& req, MessageSink<ServerMes
 
 
 Status PartyOneSum::Handle(const ClientMessage& req, MessageSink<ServerMessage>* sink) {
-    if (protocol_finished()) {
+    if (ProtocolFinished()) {
         return InvalidArgumentError("[PartyOneSum] protocol is already complete");
     } else if (!req.has_party_zero_msg()) {
         return InvalidArgumentError("[PartyOneSum] incorrect message type");
@@ -97,7 +99,7 @@ Status PartyOneSecretShare::Handle(
     const ClientMessage& req,
     MessageSink<ServerMessage>* sink
 ) {
-    if (protocol_finished()) {
+    if (ProtocolFinished()) {
         return InvalidArgumentError("[PartyOneSecretShare] protocol is already complete");
     } else if (!req.has_party_zero_msg()) {
         return InvalidArgumentError("[PartyOneSecretShare] incorrect message type");
@@ -440,4 +442,5 @@ Status PartyOneSecretShare::ProcessMessageIII(
     return OkStatus();
 }
 
+}  // namespace addonly
 }  // namespace upsi

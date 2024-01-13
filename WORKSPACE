@@ -23,7 +23,7 @@ pjc_deps()
 # must be included separately, since we need to load transitive deps of grpc.
 http_archive(
     name = "com_github_grpc_grpc",
-    sha256 = "feaeeb315133ea5e3b046c2c0231f5b86ef9d297e536a14b73e0393335f8b157", 
+    sha256 = "feaeeb315133ea5e3b046c2c0231f5b86ef9d297e536a14b73e0393335f8b157",
     strip_prefix = "grpc-1.51.3",
     urls = [
         "https://github.com/grpc/grpc/archive/v1.51.3.tar.gz",
@@ -46,3 +46,15 @@ pip_parse(
 load("@pip_deps//:requirements.bzl", "install_deps")
 
 install_deps()
+
+new_local_repository(
+	name = "emp-tool",
+	path = "/usr/local/lib",
+	build_file_content = """
+cc_library(
+	name = "emptool",
+	srcs = ["libemp-tool.so"],
+	visibility = ["//visibility:public"],
+	)
+""",
+)

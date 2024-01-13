@@ -1,15 +1,15 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 
-#include "crypto/elgamal.h"
-#include "crypto/threshold_paillier.h"
-#include "crypto_tree.h"
-#include "data_util.h"
-#include "util/elgamal_key_util.h"
-#include "util/elgamal_proto_util.h"
-#include "util/proto_util.h"
-#include "util/setup_util.h"
-#include "utils.h"
+#include "upsi/crypto/elgamal.h"
+#include "upsi/crypto/threshold_paillier.h"
+#include "upsi/crypto_tree.h"
+#include "upsi/util/data_util.h"
+#include "upsi/util/elgamal_key_util.h"
+#include "upsi/util/elgamal_proto_util.h"
+#include "upsi/util/proto_util.h"
+#include "upsi/util/setup_util.h"
+#include "upsi/utils.h"
 
 using namespace upsi;
 
@@ -34,9 +34,6 @@ ABSL_FLAG(int32_t, shared_size, -1, "total elements in intersection across all d
 
 ABSL_FLAG(int32_t, max_value, 100, "maximum number for UPSI-SUM values");
 
-// this only matters for secret sharing which requires paillier encryption on the trees
-ABSL_FLAG(Functionality, func, Functionality::CA, "which functionality to prepare for");
-
 ABSL_FLAG(bool, expected, true, "compute expected cardinality and sum");
 
 
@@ -46,7 +43,7 @@ int main(int argc, char** argv) {
     Context ctx;
 
     if (absl::GetFlag(FLAGS_keys)) {
-        auto status = GenerateKeys(
+        auto status = GeneratePaillierKeys(
             &ctx,
             absl::GetFlag(FLAGS_out_dir) + "p0/",
             absl::GetFlag(FLAGS_out_dir) + "p1/",
@@ -61,7 +58,7 @@ int main(int argc, char** argv) {
     }
 
     if (absl::GetFlag(FLAGS_data)) {
-        auto status = GenerateData(
+        auto status = GenerateDeletionData(
             &ctx,
             absl::GetFlag(FLAGS_out_dir) + "p0/",
             absl::GetFlag(FLAGS_out_dir) + "p1/",
@@ -72,7 +69,6 @@ int main(int argc, char** argv) {
             absl::GetFlag(FLAGS_daily_size),
             absl::GetFlag(FLAGS_shared_size),
             absl::GetFlag(FLAGS_max_value),
-            absl::GetFlag(FLAGS_func),
             absl::GetFlag(FLAGS_expected)
         );
         if (!status.ok()) {

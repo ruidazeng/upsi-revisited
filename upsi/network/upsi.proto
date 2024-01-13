@@ -19,6 +19,12 @@ package upsi;
 
 import "upsi/crypto/elgamal.proto";
 
+// the basic interface
+service UPSIRpc {
+    rpc Handle(ClientMessage) returns (ServerMessage) {}
+}
+
+
 /*
  * PROTOCOL DATA TYPES
  */
@@ -27,6 +33,8 @@ message EncryptedElement {
         NoPayload no_payload = 1;
         PaillierPayload paillier = 2;
         ElGamalPayload elgamal = 3;
+        DeletionElement deletion = 4;
+        OnlyPaillier only_paillier = 5;
     }
 
     message NoPayload {
@@ -41,6 +49,15 @@ message EncryptedElement {
     message ElGamalPayload {
         optional ElGamalCiphertext element = 1;
         optional ElGamalCiphertext payload = 2;
+    }
+
+    message DeletionElement {
+        optional bytes element = 1;
+        optional bytes payload = 2;
+    }
+
+    message OnlyPaillier {
+        optional bytes element = 1;
     }
 }
 
@@ -159,9 +176,4 @@ message ServerMessage {
         PartyOneMessage
             party_one_msg = 1;
     }
-}
-
-// the gRPC interface
-service UPSIRpc {
-    rpc Handle(ClientMessage) returns (ServerMessage) {}
 }

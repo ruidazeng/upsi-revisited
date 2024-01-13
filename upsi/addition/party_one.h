@@ -1,51 +1,28 @@
-/*
- * Copyright 2019 Google LLC.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-#ifndef PARTYONE_H_
-#define PARTYONE_H_
+#pragma once
 
 #include "src/google/protobuf/message_lite.h"
 
+#include "upsi/addition/party.h"
 #include "upsi/crypto/context.h"
-#include "upsi/crypto/ec_commutative_cipher.h"
-#include "upsi/crypto/elgamal.h"
-#include "upsi/crypto/paillier.h"
-#include "upsi/crypto/threshold_paillier.h"
-#include "upsi/crypto_tree.h"
-#include "upsi/data_util.h"
-#include "upsi/message_sink.h"
-#include "upsi/party.h"
-#include "upsi/upsi.pb.h"
+#include "upsi/network/message_sink.h"
+#include "upsi/roles.h"
+#include "upsi/network/upsi.pb.h"
+#include "upsi/util/data_util.h"
 #include "upsi/util/status.inc"
 #include "upsi/utils.h"
 
 namespace upsi {
+namespace addonly {
 
-class PartyOne : public BaseParty {
+class PartyOne : public Server {
     public:
-        // use base constructor
-        using BaseParty::BaseParty;
-
-        PartyOne(PSIParams* params, const std::vector<PartyOneDataset>& datasets)
-            : BaseParty(params), datasets(datasets), comm_(params->total_days) {};
-
-        // the methods to define for subclasses
-        virtual Status Handle(const ClientMessage& msg, MessageSink<ServerMessage>* sink) = 0;
-
-        // by default this party has no result
-        virtual void PrintResult() { }
+        PartyOne(PSIParams* params, const std::vector<Dataset>& datasets)
+            : Server(params), datasets(params->total_days), comm_(params->total_days)
+        {
+            for (int day = 0; day < params->total_days; day++) {
+                this->datasets[day] = datasets[day].Elements();
+            }
+        };
 
         void AddComm(const google::protobuf::Message& msg) {
             comm_[current_day] += msg.ByteSizeLong();
@@ -71,7 +48,7 @@ class PartyOne : public BaseParty {
 
 class PartyOneNoPayload : public Party<Element, Ciphertext>, public PartyOne {
     public:
-        PartyOneNoPayload(PSIParams* params, const std::vector<PartyOneDataset>& datasets) :
+        PartyOneNoPayload(PSIParams* params, const std::vector<Dataset>& datasets) :
             Party<Element, Ciphertext>(params), PartyOne(params, datasets) {}
 
         virtual ~PartyOneNoPayload() = default;
@@ -123,8 +100,9 @@ class PartyOneCardinality : public PartyOneNoPayload {
 
 class PartyOneSum : public Party<Element, CiphertextAndElGamal>, public PartyOne {
     public:
-        PartyOneSum(PSIParams* params, const std::vector<PartyOneDataset>& datasets) :
-            Party<Element, CiphertextAndElGamal>(params), PartyOne(params, datasets) {}
+        PartyOneSum(PSIParams* params, const std::vector<Dataset>& datasets) :
+            Party<Element, CiphertextAndElGamal>(params),
+            PartyOne(params, datasets) {}
 
         ~PartyOneSum() = default;
 
@@ -151,8 +129,9 @@ class PartyOneSum : public Party<Element, CiphertextAndElGamal>, public PartyOne
 
 class PartyOneSecretShare : public Party<Element, CiphertextAndPaillier>, public PartyOne {
     public:
-        PartyOneSecretShare(PSIParams* params, const std::vector<PartyOneDataset>& datasets) :
-            Party<Element, CiphertextAndPaillier>(params), PartyOne(params, datasets) {}
+        PartyOneSecretShare(PSIParams* params, const std::vector<Dataset>& datasets) :
+            Party<Element, CiphertextAndPaillier>(params),
+            PartyOne(params, datasets) {}
 
         ~PartyOneSecretShare() = default;
 
@@ -178,6 +157,5 @@ class PartyOneSecretShare : public Party<Element, CiphertextAndPaillier>, public
         std::vector<Element> shares;
 };
 
+}  // namespace only
 }  // namespace upsi
-
-#endif  // PARTYONE_H_

@@ -1,11 +1,11 @@
-#ifndef CRYPTOTREE_H_
-#define CRYPTOTREE_H_
+#pragma once
 
 #include "upsi/crypto/elgamal.h"
 #include "upsi/crypto/ec_group.h"
+#include "upsi/crypto/paillier.h"
 #include "upsi/crypto/threshold_paillier.h"
 #include "upsi/crypto_node.h"
-#include "upsi/upsi.pb.h"
+#include "upsi/network/upsi.pb.h"
 #include "upsi/utils.h"
 
 namespace upsi {
@@ -86,6 +86,10 @@ class CryptoTree<ElementAndPayload> : public BaseTree<ElementAndPayload, Plainte
     public:
         using BaseTree<ElementAndPayload, PlaintextTree>::BaseTree;
 
+        std::vector<CryptoNode<ElementAndPayload>> InsertWithDeletions(
+            std::vector<ElementAndPayload> &elem, std::vector<BinaryHash> &hsh
+        );
+
         // use for encrypting the payload with elgamal
         Status Update(
             Context* ctx,
@@ -99,6 +103,14 @@ class CryptoTree<ElementAndPayload> : public BaseTree<ElementAndPayload, Plainte
             Context* ctx,
             ElGamalEncrypter* elgamal,
             ThresholdPaillier* paillier,
+            std::vector<ElementAndPayload>& elements,
+            TreeUpdates* updates
+        );
+
+        // use for encrypting both element and payload with paillier
+        Status Update(
+            Context* ctx,
+            PrivatePaillier* paillier,
             std::vector<ElementAndPayload>& elements,
             TreeUpdates* updates
         );
@@ -151,6 +163,19 @@ class CryptoTree<CiphertextAndElGamal> : public BaseTree<CiphertextAndElGamal, E
         Status Print() override;
 };
 
-}      // namespace upsi
-#endif // CRYPTOTREE_H_
+template<>
+class CryptoTree<PaillierPair> : public BaseTree<PaillierPair, EncryptedTree>
+{
+    public:
+        using BaseTree<PaillierPair, EncryptedTree>::BaseTree;
 
+        Status Update(
+            Context* ctx,
+            ECGroup* group,
+            const TreeUpdates* updates
+        );
+
+        Status Print() override;
+};
+
+}      // namespace upsi

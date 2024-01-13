@@ -143,12 +143,14 @@ BigNum ElGamalEncrypter::CreateRandomMask() const {
 ////////////////////////////////////////////////////////////////////////////////
 
 ElGamalDecrypter::ElGamalDecrypter(
-    std::unique_ptr<elgamal::PrivateKey> elgamal_private_key)
-    : private_key_(std::move(elgamal_private_key)) {}
+    Context* ctx,
+    std::unique_ptr<elgamal::PrivateKey> elgamal_private_key
+) : private_key_(std::move(elgamal_private_key)), ctx_(ctx) {}
 
 Status ElGamalDecrypter::InitDecryptExp(const elgamal::PublicKey* pk, uint64_t exp_limit) {
     ASSIGN_OR_RETURN(ECPoint g, pk->g.Clone());
     for (uint64_t i = 0; i < exp_limit; i++) {
+        BigNum bn = ctx_->CreateBigNum(i);
         ASSIGN_OR_RETURN(ECPoint g_to_i, g.Mul(ctx_->CreateBigNum(i)));
         exponents_.push_back(std::move(g_to_i));
     }

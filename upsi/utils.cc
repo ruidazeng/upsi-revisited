@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iomanip>
 
+#include "upsi/network/upsi.pb.h"
 #include "upsi/util/elgamal_proto_util.h"
 
 
@@ -14,6 +15,7 @@ bool AbslParseFlag(absl::string_view text, Functionality* func, std::string* err
     else if (text == "CA") { *func = Functionality::CA; }
     else if (text == "SUM") { *func = Functionality::SUM; }
     else if (text == "SS") { *func = Functionality::SS; }
+    else if (text == "DEL") { *func = Functionality::DEL; }
     else {
         *err = "unknown functionality";
         return false;
@@ -31,6 +33,8 @@ std::string AbslUnparseFlag(Functionality func) {
             return "SUM";
         case Functionality::SS:
             return "SS";
+        case Functionality::DEL:
+            return "DEL";
         default:
             return "CA";
     }
@@ -114,6 +118,27 @@ StatusOr<std::vector<CiphertextAndPaillier>> DeserializeCiphertexts(
     return ciphertexts;
 }
 
+template<>
+StatusOr<std::vector<BigNum>> DeserializeCiphertexts(
+    const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
+    Context* ctx,
+    ECGroup* group
+) {
+    std::vector<BigNum> ciphertexts;
+    for (const EncryptedElement& element : serialized) {
+        if (!element.has_only_paillier()) {
+            return InvalidArgumentError(
+                "[Utils] attempting to parse message without El Gamal payload"
+            );
+        }
+        ciphertexts.push_back(
+            ctx->CreateBigNum(element.only_paillier().element())
+        );
+    }
+    return ciphertexts;
+}
+
+
 StatusOr<ECPoint> exponentiate(ECGroup* group, const BigNum& m) {
     ASSIGN_OR_RETURN(ECPoint generator, group->GetPointAtInfinity());
     return generator.Mul(m);
@@ -187,6 +212,11 @@ template<>
 CiphertextAndPaillier elementCopy(const CiphertextAndPaillier& elem) {
 	Ciphertext copy = elgamal::CloneCiphertext(std::get<0>(elem)).value();
     return std::make_pair(std::move(copy), std::get<1>(elem));
+}
+
+template<>
+PaillierPair elementCopy(const PaillierPair& elem) {
+    return PaillierPair(elem.first, elem.second);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

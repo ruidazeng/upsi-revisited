@@ -1,8 +1,9 @@
 #ifndef CryptoNode_H
 #define CryptoNode_H
 
+#include "upsi/crypto/paillier.h"
 #include "upsi/crypto/threshold_paillier.h"
-#include "upsi/upsi.pb.h"
+#include "upsi/network/upsi.pb.h"
 #include "upsi/utils.h"
 
 namespace upsi {
@@ -47,6 +48,7 @@ Status SerializeNode(CryptoNode<ElementAndPayload>* cnode, PlaintextNode* pnode)
 Status SerializeNode(CryptoNode<Ciphertext>* cnode, TreeNode* tnode);
 Status SerializeNode(CryptoNode<CiphertextAndPaillier>* cnode, TreeNode* tnode);
 Status SerializeNode(CryptoNode<CiphertextAndElGamal>* cnode, TreeNode* tnode);
+Status SerializeNode(CryptoNode<PaillierPair>* cnode, TreeNode* tnode);
 
 template<typename T>
 StatusOr<CryptoNode<T>> DeserializeNode(const PlaintextNode& pnode, Context* ctx, ECGroup* group);
@@ -70,6 +72,12 @@ StatusOr<CryptoNode<CiphertextAndPaillier>> EncryptNode(
     Context* ctx,
     ElGamalEncrypter* elgamal,
     ThresholdPaillier* paillier,
+    const CryptoNode<ElementAndPayload>& node
+);
+
+StatusOr<CryptoNode<PaillierPair>> EncryptNode(
+    Context* ctx,
+    PrivatePaillier* paillier,
     const CryptoNode<ElementAndPayload>& node
 );
 

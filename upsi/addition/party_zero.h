@@ -1,36 +1,27 @@
-#ifndef PARTYZERO_H_
-#define PARTYZERO_H_
+#pragma once
 
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include "upsi/connection.h"
-#include "upsi/crypto/context.h"
-#include "upsi/crypto/ec_commutative_cipher.h"
-#include "upsi/crypto/elgamal.h"
-#include "upsi/crypto/threshold_paillier.h"
-#include "upsi/crypto_tree.h"
-#include "upsi/data_util.h"
-#include "upsi/message_sink.h"
-#include "upsi/party.h"
-#include "upsi/upsi.pb.h"
+#include "upsi/addition/party.h"
+#include "upsi/network/connection.h"
+#include "upsi/network/message_sink.h"
+#include "upsi/roles.h"
+#include "upsi/network/upsi.pb.h"
+#include "upsi/util/data_util.h"
 #include "upsi/util/status.inc"
 #include "upsi/utils.h"
 
 namespace upsi {
+namespace addonly {
 
-class PartyZero : public BaseParty {
+class PartyZero : public Client {
     public:
-        // use base constructor
-        using BaseParty::BaseParty;
+        using Client::Client;
 
-        // the methods to define for subclasses
-        virtual void LoadData(const std::vector<PartyZeroDataset>& datasets) = 0;
-        virtual Status Run(Connection* sink) = 0;
-        virtual Status Handle(const ServerMessage& msg, MessageSink<ClientMessage>* sink) = 0;
-        virtual void PrintResult() = 0;
+        /**
+         * set the datasets variable based on the functionality
+         *
+         * this can't happen in the constructor for weird inheritance reasons
+         */
+        virtual void LoadData(const std::vector<Dataset>& datasets) = 0;
 };
 
 class PartyZeroNoPayload : public Party<Element, Ciphertext>, public PartyZero {
@@ -41,14 +32,9 @@ class PartyZeroNoPayload : public Party<Element, Ciphertext>, public PartyZero {
 
         virtual ~PartyZeroNoPayload() = default;
 
-        /**
-         * set the datasets variable based on the functionality
-         *
-         * this can't happen in the constructor for weird inheritance reasons
-         */
-        void LoadData(const std::vector<PartyZeroDataset>& datasets);
-
         Status Run(Connection* sink) override;
+
+        void LoadData(const std::vector<Dataset>& datasets) override;
 
         /**
          * send tree updates & intersection candidates
@@ -132,7 +118,9 @@ class PartyZeroCardinality : public PartyZeroNoPayload {
 };
 
 
-class PartyZeroWithPayload : public Party<ElementAndPayload, Ciphertext>, public PartyZero {
+class PartyZeroWithPayload : public Party<ElementAndPayload, Ciphertext>,
+                             public PartyZero
+{
     public:
         PartyZeroWithPayload(PSIParams* params) :
             Party<ElementAndPayload, Ciphertext>(params), PartyZero(params) {}
@@ -144,7 +132,7 @@ class PartyZeroWithPayload : public Party<ElementAndPayload, Ciphertext>, public
          *
          * this can't happen in the constructor for weird inheritance reasons
          */
-        void LoadData(const std::vector<PartyZeroDataset>& datasets) override;
+        void LoadData(const std::vector<Dataset>& datasets) override;
 
         // set the payload given the element and its associated value
         virtual ElementAndPayload GetPayload(BigNum element, BigNum value) = 0;
@@ -251,6 +239,5 @@ class PartyZeroSecretShare : public PartyZeroWithPayload {
         std::vector<Element> shares;
 };
 
+}  // namespace addonly
 }  // namespace upsi
-
-#endif  // PARTYZERO_H_

@@ -19,18 +19,19 @@
 #include "include/grpcpp/server_builder.h"
 #include "include/grpcpp/server_context.h"
 #include "include/grpcpp/support/status.h"
-#include "include/grpcpp/support/status.h"
-#include "upsi/connection.h"
-#include "upsi/data_util.h"
-#include "upsi/party_one.h"
-#include "upsi/party_zero.h"
-#include "upsi/upsi.grpc.pb.h"
-#include "upsi/upsi.pb.h"
-#include "upsi/upsi_rpc_impl.h"
+#include "upsi/addition/party_one.h"
+#include "upsi/addition/party_zero.h"
+#include "upsi/network/connection.h"
+#include "upsi/roles.h"
+#include "upsi/network/service.h"
+#include "upsi/network/upsi.grpc.pb.h"
+#include "upsi/network/upsi.pb.h"
 #include "upsi/util/status.inc"
+#include "upsi/util/data_util.h"
 #include "upsi/utils.h"
 
 using namespace upsi;
+using namespace upsi::addonly;
 
 ABSL_FLAG(int, party, 1, "which party to run");
 ABSL_FLAG(std::string, port, "0.0.0.0:10501", "listening port");
@@ -44,7 +45,6 @@ ABSL_FLAG(bool, trees, true, "use initial trees stored on disk");
 Status RunPartyZero() {
     Context context;
 
-    std::string prefix = "party_zero";
     PSIParams params(
         &context,
         absl::GetFlag(FLAGS_out_dir) + "p0/shared.pub",
@@ -59,14 +59,8 @@ Status RunPartyZero() {
     }
 
     // read in dataset
-    ASSIGN_OR_RETURN(
-        auto dataset,
-        ReadPartyZeroDataset(
-            absl::GetFlag(FLAGS_data_dir),
-            "p0/",
-            absl::GetFlag(FLAGS_days),
-            &context
-        )
+    auto dataset = ReadDailyDatasets(
+        &context, absl::GetFlag(FLAGS_data_dir) + "p0/", absl::GetFlag(FLAGS_days)
     );
 
     std::unique_ptr<PartyZero> party_zero;
@@ -111,8 +105,6 @@ Status RunPartyZero() {
 Status RunPartyOne() {
     Context context;
 
-    std::string prefix = "party_one";
-
     PSIParams params(
         &context,
         absl::GetFlag(FLAGS_out_dir) + "p1/shared.pub",
@@ -127,17 +119,11 @@ Status RunPartyOne() {
     }
 
     // read in dataset
-    ASSIGN_OR_RETURN(
-        auto dataset,
-        ReadPartyOneDataset(
-            absl::GetFlag(FLAGS_data_dir),
-            "p1/",
-            absl::GetFlag(FLAGS_days),
-            &context
-        )
+    auto dataset = ReadDailyDatasets(
+        &context, absl::GetFlag(FLAGS_data_dir) + "p1/", absl::GetFlag(FLAGS_days)
     );
 
-    std::unique_ptr<PartyOne> party_one;
+    std::shared_ptr<PartyOne> party_one;
     switch (absl::GetFlag(FLAGS_func)) {
         case Functionality::PSI:
             party_one = std::make_unique<PartyOnePSI>(&params, std::move(dataset));
@@ -155,7 +141,7 @@ Status RunPartyOne() {
             return InvalidArgumentError("unimplemented functionality");
     }
     // setup connection
-    UPSIRpcImpl service(std::move(party_one));
+    UPSIService service(party_one);
     ::grpc::ServerBuilder builder;
     builder.SetMaxSendMessageSize(1024 * 1024 * 1024);
     builder.SetMaxMessageSize(1024 * 1024 * 1024);
@@ -175,10 +161,10 @@ Status RunPartyOne() {
         grpc_server_ptr->Wait();
     }, grpc_server.get());
 
-    while (!service.protocol_finished()) { }
+    while (!service.ProtocolFinished()) { }
 
-    service.PrintComm();
-    service.PrintResult();
+    party_one->PrintComm();
+    party_one->PrintResult();
 
     // shut down server
     grpc_server->Shutdown();

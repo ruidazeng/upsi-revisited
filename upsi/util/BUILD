@@ -227,6 +227,7 @@ cc_library(
     srcs = ["setup_util.cc"],
     hdrs = ["setup_util.h"],
     deps = [
+        ":data_util",
         ":elgamal_key_util",
         ":elgamal_proto_util",
         ":proto_util",
@@ -236,10 +237,36 @@ cc_library(
         "//upsi/crypto:ec_util",
         "//upsi/crypto:paillier",
         "//upsi:utils",
-        "//upsi:data_util",
         "//upsi:crypto_tree",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+cc_library(
+    name = "data_util",
+    srcs = ["data_util.cc"],
+    hdrs = ["data_util.h"],
+    deps = [
+        "//upsi:utils",
+        "//upsi/crypto:bn_util",
+        "//upsi/network:upsi_proto",
+        "//upsi/util:status_includes",
+        "@com_google_absl//absl/container:btree",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "gc_util",
+    srcs = ["gc_util.cc"],
+    hdrs = ["gc_util.h"],
+    copts = ["-maes", "-mssse3", "-fpermissive"],
+    linkopts= ["-pthread", "-lssl", "-lcrypto"],
+    linkstatic = 1,
+    deps = [
+        "//upsi/crypto:bn_util",
+        "@emp-tool//:emptool",
     ],
 )
 

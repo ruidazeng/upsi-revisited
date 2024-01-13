@@ -42,7 +42,6 @@
 
 #include "upsi/crypto/ec_group.h"
 #include "upsi/crypto/ec_point.h"
-#include "upsi/upsi.pb.h"
 #include "upsi/util/status.inc"
 
 namespace upsi {
@@ -146,7 +145,9 @@ class ElGamalDecrypter {
   // Creates a ElGamalDecrypter object from a given private key.
   // Takes ownership of the private key.
   explicit ElGamalDecrypter(
-      std::unique_ptr<elgamal::PrivateKey> elgamal_private_key);
+      Context* ctx,
+      std::unique_ptr<elgamal::PrivateKey> elgamal_private_key
+  );
 
   // initialize exponential decryption (required to use DecryptExp)
   Status InitDecryptExp(const elgamal::PublicKey* pk, uint64_t exp_limit);

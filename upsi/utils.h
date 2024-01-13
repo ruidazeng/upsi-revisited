@@ -2,9 +2,10 @@
 #define UTILS_HPP
 
 #include "upsi/crypto/context.h"
-#include "upsi/crypto/elgamal.h"
 #include "upsi/crypto/ec_commutative_cipher.h"
+#include "upsi/crypto/elgamal.h"
 #include "upsi/crypto/paillier.h"
+#include "upsi/network/upsi.pb.h"
 
 #include <algorithm>
 #include <bitset>
@@ -58,8 +59,17 @@ namespace upsi {
     // type of an encrypted element with its associated paillier payload
     typedef std::pair<Ciphertext, BigNum> CiphertextAndPaillier;
 
+    // type of where both element and payload are encrypted with paillier
+    // (note this is not a std::pair because it would clash with ElementAndPayload)
+    class PaillierPair {
+        public:
+            BigNum first;
+            BigNum second;
+            PaillierPair(BigNum first, BigNum second) : first(first), second(second) { }
+    };
+
     // protocol functionality options
-    enum Functionality { PSI, CA, SUM, SS };
+    enum Functionality { PSI, CA, SUM, SS, DEL };
 
     // these allow us to have a Functionality command line flag
     bool AbslParseFlag(absl::string_view text, Functionality* func, std::string* err);
@@ -68,7 +78,7 @@ namespace upsi {
 
 	typedef std::string BinaryHash;
 
-    // TODO: should this be somewhere else?
+    // TODO: should these be somewhere else?
     template<typename T>
     StatusOr<std::vector<T>> DeserializeCiphertexts(
         const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
