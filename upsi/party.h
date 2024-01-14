@@ -18,6 +18,7 @@ class Party {
         
         //garbled circuit IO
         emp::NetIO * gc_io_;
+        emp::IKNP<NetIO> * ot_sender, *ot_receiver;
 
         // paillier encryption tool
         std::unique_ptr<PrivatePaillier> my_paillier;
@@ -75,7 +76,7 @@ class Party {
         }
         
         void GarbledCircuitPartySetup(int gc_p) {this->gc_party = gc_p;}
-        void GarbledCircuitIOSetup(emp::NetIO * io) {this->gc_io_ = io;}
+        void GarbledCircuitIOSetup(emp::NetIO * io, emp::IKNP<NetIO> * ot_s, emp::IKNP<NetIO> * ot_r) {this->gc_io_ = io; this->ot_sender = ot_s, this->ot_receiver = ot_r;}
         
         void ResetGarbledCircuit() {
         	gc_x.clear();
@@ -150,8 +151,6 @@ class Party {
 			
 			BigNum rs = ctx_->Zero();
 			
-			emp::OTNP<NetIO> ot(gc_io_);
-			
 			int len = 0, cnt_block = 0;
 			BigNum cur_n = ctx_->Zero();
 			if(is_sender) cur_n = other_paillier->n();
@@ -188,13 +187,13 @@ class Party {
 					
 					//std::cerr << my_bit[i];
 					
-					if(my_bit[i] == 0) ot.send(block_eq, block_neq, cnt_block);
-					else ot.send(block_neq, block_eq, cnt_block);
+					if(my_bit[i] == 0) ot_sender->send(block_eq, block_neq, cnt_block);
+					else ot_sender->send(block_neq, block_eq, cnt_block);
 					rs = rs + beta;
 				}
 				else {
 					memset(chosen_bit, my_bit[i], sizeof(chosen_bit));
-					ot.recv(block_eq, chosen_bit, cnt_block);
+					ot_receiver->recv(block_eq, chosen_bit, cnt_block);
 					/*
 					std::cerr << cnt_block << std::endl;
 					for (int j = 0; j < cnt_block; ++j) {emp::operator<<(std::cerr, block_eq[j]); std::cerr << " ";}
@@ -216,8 +215,8 @@ class Party {
 				rs_ = -rs_; //negative mod 2^64
 			}
 			else {
-				rs_ = BigNum2uint64(rs);
 				//std::cerr<<"positive\n";
+				rs_ = BigNum2uint64(rs);
 			}
 			//std::cerr<<(long long)rs_<<std::endl;
 				
@@ -226,7 +225,6 @@ class Party {
 		
 		StatusOr<uint64_t> GarbledCircuit() {
 			//std::cerr<<"garbled circuit...\n";
-			emp::setup_semi_honest(gc_io_, gc_party);
 			uint64_t rs1, rs2;
 			if(gc_party == emp::ALICE) {
 				ASSIGN_OR_RETURN(rs1, GarbledCircuit(false));
@@ -236,7 +234,6 @@ class Party {
 				ASSIGN_OR_RETURN(rs1, GarbledCircuit(true));
 				ASSIGN_OR_RETURN(rs2, GarbledCircuit(false));
 			}
-			finalize_semi_honest();
 			return rs1 + rs2;
 		}
 
