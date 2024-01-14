@@ -144,6 +144,7 @@ std::vector<CryptoNode<T>> BaseTree<T>::insert(
 			if(u == 0) break;
 		}
 		
+		Context ctx;
 		for (int i = 0; i <= this->depth + 1; ++i) {
 			std::sort(tmp_elem[i].begin(), tmp_elem[i].end());
 			int cnt_vct = tmp_elem[i].size();
@@ -155,11 +156,11 @@ std::vector<CryptoNode<T>> BaseTree<T>::insert(
 					val += tmp_elem[i][j].second;
 				}
 				//val = val.Mod(my_paillier->n());
-				unique_elem[i].push_back(std::make_pair(cur_elem, val));
+				if(val != ctx.Zero()) unique_elem[i].push_back(std::make_pair(cur_elem, val));
 			}
 			
 		}
-
+		
 		//fill the path
 		int st = 0;
 		for (int u = leaf_ind[o], steps = 0; ; u >>= 1, ++steps) {

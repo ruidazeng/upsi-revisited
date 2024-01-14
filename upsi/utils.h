@@ -42,8 +42,8 @@ namespace upsi {
 
 	#define DEBUG 1
 	
-	#define GC_P0 emp::BOB //ALICE
-	#define GC_P1 emp::ALICE //BOB
+	#define GC_P0 emp::BOB //BOB
+	#define GC_P1 emp::ALICE //ALICE
 
     // type of elements in each party's sets
 	typedef BigNum Element;

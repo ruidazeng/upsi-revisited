@@ -66,7 +66,7 @@ Status PartyZeroCASUM::Handle(const ServerMessage& msg, MessageSink<ClientMessag
 
     if (msg.party_one_msg().has_message_ii()) {
         RETURN_IF_ERROR(ProcessMessageII(msg.party_one_msg().message_ii(), sink));
-        std::cerr<<"done...\n";
+        //std::cerr<<"done...\n";
     } else {
         return InvalidArgumentError(
             "[PartyZeroCASUM] received a party one message of unknown type"

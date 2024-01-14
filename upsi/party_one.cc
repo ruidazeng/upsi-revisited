@@ -63,7 +63,7 @@ Status PartyOneCASUM::Handle(const ClientMessage& req, MessageSink<ServerMessage
     ServerMessage res;
 
     if (msg.has_message_i()) {
-    	std::cerr<<"Handle m1...\n";
+    	//std::cerr<<"Handle m1...\n";
         ASSIGN_OR_RETURN(
             auto message_ii,
             GenerateMessageII(msg.message_i(), datasets[current_day])
@@ -71,7 +71,7 @@ Status PartyOneCASUM::Handle(const ClientMessage& req, MessageSink<ServerMessage
         *(res.mutable_party_one_msg()->mutable_message_ii()) = std::move(message_ii);
         FinishDay();
         day_finished = true;
-        std::cerr<<"done...\n";
+        //std::cerr<<"done...\n";
     } else {
         return InvalidArgumentError(
             "[PartyOneCASUM] received a party zero message of unknown type"

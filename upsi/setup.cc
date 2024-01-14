@@ -21,12 +21,12 @@ ABSL_FLAG(std::string, shared_fn, "shared", "prefix for shared key file");
 ABSL_FLAG(int32_t, mod_length, 1536, "bit-length of Paillier modulus");
 ABSL_FLAG(int32_t, stat_param, 100, "statistical parameter for Paillier");
 
-ABSL_FLAG(int64_t, days, (1 << 8), "number of days the protocol is running for");
-ABSL_FLAG(int64_t, p0_size, (1 << 16), "total elements in party one's set across all days");
-ABSL_FLAG(int64_t, p1_size, (1 << 16), "total elements in party zero's set across all days");
-ABSL_FLAG(int64_t, shared_size, (1 << 8), "total elements in intersection across all days");
+ABSL_FLAG(int64_t, days, 3, "number of days the protocol is running for");
+ABSL_FLAG(int64_t, p0_size, 30, "total elements in party one's set across all days");
+ABSL_FLAG(int64_t, p1_size, 30, "total elements in party zero's set across all days");
+ABSL_FLAG(int64_t, shared_size, 24, "total elements in intersection across all days");
 
-ABSL_FLAG(int64_t, per_day, (1<<8), "total elements in both sets each days");
+ABSL_FLAG(int64_t, per_day, 10, "total elements in both sets each days");
 ABSL_FLAG(int64_t, max_value, 1000, "maximum number for UPSI-SUM values");
 
 Status GenerateJointData() {

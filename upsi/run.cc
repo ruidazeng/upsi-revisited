@@ -39,7 +39,7 @@ ABSL_FLAG(std::string, gc_IP, "127.0.0.1", "garbled circuit IP");
 ABSL_FLAG(int, gc_port, 1025, "garbled circuit port");
 ABSL_FLAG(std::string, dir, "data/", "name of directory for dataset files");
 ABSL_FLAG(upsi::Functionality, func, upsi::Functionality::SUM, "desired protocol functionality");
-ABSL_FLAG(int, days, (1<<8), "total days the protocol will run for");
+ABSL_FLAG(int, days, 3, "total days the protocol will run for");
 
 Status RunPartyZero() {
     Context context;
@@ -88,10 +88,19 @@ Status RunPartyZero() {
 
     ::grpc::ChannelArguments args;
     args.SetInt(GRPC_ARG_MAX_RECEIVE_MESSAGE_LENGTH, 1024 * 1024 * 1024);
+	
+	emp::NetIO * gc_io = new emp::NetIO("127.0.0.1", absl::GetFlag(FLAGS_gc_port));
+	//gc_io->set_nodelay();
+	emp::IKNP<NetIO> * ot_s = new emp::IKNP<NetIO>(gc_io);
+	emp::IKNP<NetIO> * ot_r = new emp::IKNP<NetIO>(gc_io);
+	party_zero->GarbledCircuitIOSetup(gc_io, ot_s, ot_r);
+	emp::setup_semi_honest(gc_io, GC_P0);
+	
+    gc_io->flush();
 
     std::cout << "[PartyZero] starting protocol" << std::endl;
     Timer timer("[PartyZero] Total");
-    Timer daily("[PartyZero] Daily");
+    Timer daily("[PartyZero] gRPC");
     Timer garbled("[PartyZero] Garbled Circuit");
     int total_days = absl::GetFlag(FLAGS_days);
     for (int i = 0; i < total_days; ++i) {
@@ -111,26 +120,25 @@ Status RunPartyZero() {
     	daily.stop(); 
     	first_phase.stop();
     	
-		emp::NetIO * gc_io = new emp::NetIO("127.0.0.1", absl::GetFlag(FLAGS_gc_port));
-		gc_io->set_nodelay();
 		Timer second_phase("[PartyZero] second phase");
         garbled.lap();
-		party_zero->GarbledCircuitIOSetup(gc_io);
     	ASSIGN_OR_RETURN(uint64_t rs, party_zero->GarbledCircuit());
     	uint64_t other_rs;
     	gc_io->recv_data(&other_rs, sizeof(uint64_t));
+        gc_io->flush();
     	party_zero->UpdateResult(rs + other_rs);
         garbled.stop();
         second_phase.stop();
     	party_zero->PrintResult();
-    	delete gc_io;
     }
     daily.print();
     garbled.print();
     timer.stop();
     party_zero->PrintResult();
-    
-
+	finalize_semi_honest();
+    delete gc_io;
+    delete ot_s;
+    delete ot_r;
     return OkStatus();
 }
 
@@ -179,8 +187,17 @@ Status RunPartyOne() {
     party_one->LoadData(dataset);
     party_one->GarbledCircuitPartySetup(GC_P1);
     
+	emp::NetIO * gc_io = new emp::NetIO(nullptr, absl::GetFlag(FLAGS_gc_port));
+	//gc_io->set_nodelay();
+	emp::IKNP<NetIO> * ot_s = new emp::IKNP<NetIO>(gc_io);
+	emp::IKNP<NetIO> * ot_r = new emp::IKNP<NetIO>(gc_io);
+	party_one->GarbledCircuitIOSetup(gc_io, ot_s, ot_r);
+	emp::setup_semi_honest(gc_io, GC_P1);
+    gc_io->flush();
+    
     int total_days = absl::GetFlag(FLAGS_days);
     for (int i = 0; i < total_days; ++i) {
+		//std::this_thread::sleep_for(std::chrono::seconds(1));
 		// setup connection
 		UPSIRpcImpl service(std::move(party_one));
 		::grpc::ServerBuilder builder;
@@ -212,16 +229,18 @@ Status RunPartyOne() {
 		
 		party_one = service.getPartyOne();
 		
-		emp::NetIO * gc_io = new emp::NetIO(nullptr, absl::GetFlag(FLAGS_gc_port));
-		gc_io->set_nodelay();
-		party_one->GarbledCircuitIOSetup(gc_io);
 		
 		ASSIGN_OR_RETURN(uint64_t rs, party_one->GarbledCircuit());
+        gc_io->flush();
 		gc_io->send_data(&rs, sizeof(uint64_t));
-    	delete gc_io;
+        gc_io->flush();
 	}
     std::cout << "[PartyOne] completed protocol and shut down" << std::endl;
     
+	finalize_semi_honest();
+    delete gc_io;
+    delete ot_s;
+    delete ot_r;
 
     return OkStatus();
 }
