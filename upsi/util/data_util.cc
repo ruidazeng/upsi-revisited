@@ -231,19 +231,32 @@ std::vector<Dataset> ReadDailyDatasets(Context* ctx, std::string dir, int days) 
     return datasets;
 }
 
-std::tuple<std::vector<Dataset>, std::vector<Dataset>, int64_t> GenerateAddOnlySets(
+////////////////////////////////////////////////////////////////////////////////
+// MOCK ADDITION DATA HELPERS
+////////////////////////////////////////////////////////////////////////////////
+
+std::tuple<
+    Dataset, std::vector<Dataset>,
+    Dataset, std::vector<Dataset>,
+    int64_t
+> GenerateAddOnlySets(
     Context* ctx,
-    std::vector<uint32_t> sizes,
+    uint32_t days,
+    uint32_t daily_size,
+    uint32_t start_size,
     uint32_t shared_size,
     uint32_t max_value
 ) {
-    uint32_t total_size = std::accumulate(sizes.begin(), sizes.end(), static_cast<uint32_t>(0));
+    uint32_t total_size = start_size + (days * daily_size);
+
     if (shared_size > total_size) {
-        throw std::runtime_error("[GenerateAddOnlySets] intersection larger than party's sets");
-    }
-    if (max_value > 0 && shared_size > std::numeric_limits<int64_t>::max() / max_value) {
         throw std::runtime_error(
-            "[GenerateAddOnlySets] shared_size * max_value is larger than int64_t::max"
+            "[DataUtil] intersection larger than party's sets : "
+            + std::to_string(shared_size) + " vs. " + std::to_string(total_size)
+        );
+    } else if (max_value > 0 && shared_size > std::numeric_limits<int64_t>::max() / max_value) {
+        throw std::runtime_error(
+            "[DataUtil] shared_size * max_value is larger than int64_t::max"
         );
     }
     std::random_device rd;
@@ -279,101 +292,176 @@ std::tuple<std::vector<Dataset>, std::vector<Dataset>, int64_t> GenerateAddOnlyS
     }
 
     size_t i = 0;
-    std::vector<Dataset> p0_datasets;
-    std::vector<Dataset> p1_datasets;
-    for (size_t day = 0; day < sizes.size(); day++) {
-        std::vector<std::string> p0_daily(sizes[day]);
-        std::vector<int64_t> p0_daily_values(sizes[day]);
-        std::vector<std::string> p1_daily(sizes[day]);
-        for (size_t j = 0; j < sizes[day]; j++, i++) {
-            p0_daily[j] = p0_set[i];
-            p0_daily_values[j] = p0_values[i];
-            p1_daily[j] = p1_set[i];
-        }
-        Dataset p0_dataset(ctx, p0_daily, p0_daily_values);
-        p0_datasets.push_back(p0_dataset);
-
-        Dataset p1_dataset(ctx, p1_daily);
-        p1_datasets.push_back(p1_dataset);
+    Dataset p0_tree(ctx), p1_tree(ctx);
+    for (; i < start_size; i++) {
+        p0_tree.elements.push_back(p0_set[i]);
+        p1_tree.elements.push_back(p1_set[i]);
+        p0_tree.values.push_back(p0_values[i]);
     }
 
-    return std::make_tuple(p0_datasets, p1_datasets, sum);
+    std::vector<Dataset> p0_days, p1_days;
+    for (uint32_t day = 0; day < days; day++) {
+        Dataset p0_daily(ctx), p1_daily(ctx);
+        for (uint32_t j = 0; j < daily_size; j++, i++) {
+            p0_daily.elements.push_back(p0_set[i]);
+            p1_daily.elements.push_back(p1_set[i]);
+            p0_daily.values.push_back(p0_values[i]);
+        }
+        p0_days.push_back(p0_daily);
+        p1_days.push_back(p1_daily);
+    }
+
+    return std::make_tuple(p0_tree, p0_days, p1_tree, p1_days, sum);
 }
 
-std::tuple<std::vector<Dataset>, std::vector<Dataset>, int64_t> GenerateDeletionSets(
-    Context* ctx,
-    std::vector<uint32_t> sizes,
-    uint32_t shared_size,
-    uint32_t max_value
-) {
-    uint32_t total_size = std::accumulate(sizes.begin(), sizes.end(), static_cast<uint32_t>(0));
-    if (shared_size > total_size) {
-        throw std::runtime_error("[GenerateDeletionSets] intersection larger than party's sets");
-    }
-    if (max_value > 0 && shared_size > std::numeric_limits<int64_t>::max() / max_value) {
-        throw std::runtime_error(
-            "[GenerateDeletionSets] shared_size * max_value is larger than int64_t::max"
-        );
-    }
+////////////////////////////////////////////////////////////////////////////////
+// MOCK DELETION DATA HELPERS
+////////////////////////////////////////////////////////////////////////////////
+
+namespace {
+
+std::pair<std::string, int64_t> sample(std::map<std::string, int64_t>& map) {
+    if (map.empty()) { throw std::runtime_error("[DataUtil] sampling empty set"); };
     std::random_device rd;
     std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, map.size() - 1);
 
-    // elements shared between parties
-    std::vector<std::string> intersection(shared_size);
-    for (int64_t i = 0; i < shared_size; i++) {
-        intersection[i] = GetRandomSetElement();
-    }
+    auto it = map.begin();
+    std::advance(it, dis(gen));
+    std::pair<std::string, int64_t> rs = *it;
+    map.erase(it);
+    return rs;
+}
 
-    // copy shared elements, fill to total_size, and shuffle so shared aren't all at the front
-    std::vector<std::string> p0_set = intersection;
-    std::vector<std::string> p1_set = intersection;
-    for (int64_t i = shared_size; i < total_size; i++) {
-        p0_set.push_back(GetRandomSetElement());
-        p1_set.push_back(GetRandomSetElement());
-    }
-    std::shuffle(p0_set.begin(), p0_set.end(), gen);
-    std::shuffle(p1_set.begin(), p1_set.end(), gen);
+// generate some days
+std::vector<Dataset> GenerateDeletionDays(
+    Context* ctx,
+    uint32_t daily_size,
+    uint32_t daily_del,
+    uint32_t total_size,
+    std::map<std::string, int64_t>& universe,
+    std::map<std::string, int64_t>& current
+) {
+    std::vector<Dataset> datasets;
+    size_t ops = 0;
+    for (uint32_t day = 0; day < total_size / daily_size; day++) {
+        Dataset daily(ctx);
 
-    // presumably for faster lookup
-    absl::btree_set<std::string> p1_btree(p1_set.begin(), p1_set.end());
-
-    // generate associated values for p0 and keep track of the expected sum
-    std::vector<int64_t> p0_values(total_size);
-    int64_t sum = 0;
-    for (int64_t i = 0; i < total_size; i++) {
-        p0_values[i] = (
-            ctx->GenerateRandBetween(
-                ctx->One(),
-                ctx->CreateBigNum(max_value)
-            ).ToIntValue().value()
-        );
-        if (p1_btree.count(p0_set[i]) > 0) { sum += p0_values[i]; }
-    }
-
-    size_t i = 0;
-    std::vector<Dataset> p0_datasets;
-    std::vector<Dataset> p1_datasets;
-    for (size_t day = 0; day < sizes.size(); day++) {
-        std::vector<std::string> p0_daily(sizes[day]);
-        std::vector<int64_t> p0_daily_values(sizes[day]);
-        std::vector<std::string> p1_daily(sizes[day]);
-        std::vector<int64_t> p1_daily_values(sizes[day]);
-        for (size_t j = 0; j < sizes[day]; j++, i++) {
-            p0_daily[j] = p0_set[i];
-            p0_daily_values[j] = p0_values[i];
-            p1_daily[j] = p1_set[i];
-
-            // TODO (max): this needs to be much more sophisticated
-            p1_daily_values[j] = 1;
+        uint32_t i = 0;
+        // deletions if they are possible
+        for (; i < daily_del && !current.empty(); i++, ops++) {
+            auto element = sample(current);
+            daily.elements.push_back(element.first);
+            daily.values.push_back(-element.second);
         }
-        Dataset p0_dataset(ctx, p0_daily, p0_daily_values);
-        p0_datasets.push_back(p0_dataset);
 
-        Dataset p1_dataset(ctx, p1_daily, p1_daily_values);
-        p1_datasets.push_back(p1_dataset);
+        // additions otherwise
+        for (; i < daily_size; i++, ops++) {
+            auto element = sample(universe);
+            daily.elements.push_back(element.first);
+            daily.values.push_back(element.second);
+            current[element.first] = element.second;
+        }
+        datasets.push_back(daily);
     }
 
-    return std::make_tuple(p0_datasets, p1_datasets, sum);
+    // in case total_size < daily_size, makes sure there is first day
+    if (datasets.empty()) {
+        Dataset day(ctx);
+        datasets.push_back(day);
+    }
+
+    // if the start_size isn't a multiple of daily_size, add extra additions to the first day to
+    // get to the desired start_size
+    for (; ops < total_size; ops++) {
+        auto element = sample(universe);
+        datasets[0].elements.push_back(element.first);
+        datasets[0].values.push_back(element.second);
+        current[element.first] = element.second;
+    }
+    return datasets;
+}
+
+}  // namespace
+
+std::tuple<
+    std::vector<Dataset>, std::vector<Dataset>,
+    std::vector<Dataset>, std::vector<Dataset>,
+    uint64_t
+> GenerateDeletionSets(
+    Context* ctx,
+    uint32_t days,
+    uint32_t daily_size,
+    uint32_t start_size,
+    uint32_t max_value,
+    Functionality func
+) {
+    uint32_t total_size = start_size + (days * daily_size);
+    BigNum max_value_bn = ctx->CreateBigNum(max_value);
+
+    // at most 1/4 of the operations per day are deletions
+    uint32_t daily_del = daily_size / 4;
+
+    std::map<std::string, int64_t> p0_universe;
+    std::map<std::string, int64_t> p1_universe;
+
+    uint64_t i = 0;
+
+    // shared elements
+    for (; i < total_size / 3; i++) {
+        std::string element = GetRandomSetElement();
+        if (func == Functionality::CA) {
+            p0_universe[element] = 1;
+        } else if (func == Functionality::SUM) {
+            p0_universe[element] = ctx->GenerateRandBetween(
+                ctx->One(), max_value_bn
+            ).ToIntValue().value();
+        } else {
+            throw std::runtime_error("[DataUtil] incorrect functionality provided");
+        }
+        p1_universe[element] = 1;
+    }
+
+    // different elements
+    for (; i < total_size; i++) {
+        if (func == Functionality::CA) {
+            p0_universe[GetRandomSetElement()] = 1;
+        } else if (func == Functionality::SUM) {
+            p0_universe[GetRandomSetElement()] = ctx->GenerateRandBetween(
+                ctx->One(), max_value_bn
+            ).ToIntValue().value();
+        } else {
+            throw std::runtime_error("[DataUtil] incorrect functionality provided");
+        }
+        p1_universe[GetRandomSetElement()] = 1;
+    }
+
+    std::map<std::string, int64_t> p0_endset, p1_endset;
+
+    // generate daily data sets that will be put into the tree
+    std::vector<Dataset> p0_tree = GenerateDeletionDays(
+        ctx, daily_size, daily_del, start_size, p0_universe, p0_endset
+    );
+    std::vector<Dataset> p1_tree = GenerateDeletionDays(
+        ctx, daily_size, daily_del, start_size, p1_universe, p1_endset
+    );
+
+    // generate daily data sets that will be put into the tree
+    std::vector<Dataset> p0_days = GenerateDeletionDays(
+        ctx, daily_size, daily_del, daily_size * days, p0_universe, p0_endset
+    );
+    std::vector<Dataset> p1_days = GenerateDeletionDays(
+        ctx, daily_size, daily_del, daily_size * days, p1_universe, p1_endset
+    );
+
+    uint64_t sum = 0;
+    for (const auto& element : p0_endset) {
+        if (p1_endset.find(element.first) != p1_endset.end()) {
+            sum += element.second;
+        }
+    }
+
+    return std::make_tuple(p0_tree, p0_days, p1_tree, p1_days, sum);
 }
 
 }  // namespace upsi

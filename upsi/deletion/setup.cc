@@ -27,15 +27,54 @@ ABSL_FLAG(int32_t, mod_length, 1536, "bit-length of Paillier modulus");
 ABSL_FLAG(int32_t, stat_param, 100, "statistical parameter for Paillier");
 
 ABSL_FLAG(uint32_t, days, 10, "number of days the protocol is running for");
-
 ABSL_FLAG(uint32_t, daily_size, 64, "total elements in each set on each day");
 ABSL_FLAG(uint32_t, start_size, 0, "size of the initial trees");
-ABSL_FLAG(int32_t, shared_size, -1, "total elements in intersection across all days");
+
+ABSL_FLAG(upsi::Functionality, func, upsi::Functionality::CA, "desired protocol functionality");
 
 ABSL_FLAG(int32_t, max_value, 100, "maximum number for UPSI-SUM values");
 
-ABSL_FLAG(bool, expected, true, "compute expected cardinality and sum");
+Status GenerateData(Context* ctx) {
+    std::cout << "[Setup] generating mock data" << std::endl;
 
+    uint32_t days = absl::GetFlag(FLAGS_days);
+    uint32_t daily_size = absl::GetFlag(FLAGS_daily_size);
+    uint32_t start_size = absl::GetFlag(FLAGS_start_size);
+
+    // where to find the setup files
+    std::string p0_key_dir = absl::GetFlag(FLAGS_out_dir) + "p0/";
+    std::string p1_key_dir = absl::GetFlag(FLAGS_out_dir) + "p1/";
+    std::string p0_dir = absl::GetFlag(FLAGS_data_dir) + "p0/";
+    std::string p1_dir = absl::GetFlag(FLAGS_data_dir) + "p1/";
+
+    auto [ p0_tree, p0_days, p1_tree, p1_days, sum ] = GenerateDeletionSets(
+        ctx, days, daily_size, start_size, absl::GetFlag(FLAGS_max_value),
+        absl::GetFlag(FLAGS_func)
+    );
+
+    for (size_t day = 0; day < days; day++) {
+        RETURN_IF_ERROR(
+            p0_days[day].Write(p0_dir + std::to_string(day + 1) + ".csv")
+        );
+        RETURN_IF_ERROR(
+            p1_days[day].Write(p1_dir + std::to_string(day + 1) + ".csv")
+        );
+    }
+
+    if (start_size > 0) {
+        std::cout << "[Setup] writing initial trees" << std::flush;
+        ECGroup group(ECGroup::Create(CURVE_ID, ctx).value());
+        RETURN_IF_ERROR( GenerateTrees(ctx, &group, p0_tree, p0_key_dir, p0_dir, p1_dir));
+        std::cout << "." << std::flush;
+
+        RETURN_IF_ERROR(GenerateTrees(ctx, &group, p1_tree, p1_key_dir, p1_dir, p0_dir));
+        std::cout << ". done" << std::endl;
+    }
+
+    std::cout << "[Setup] expected output = " << sum << std::endl;
+
+    return OkStatus();
+}
 
 int main(int argc, char** argv) {
     absl::ParseCommandLine(argc, argv);
@@ -58,19 +97,7 @@ int main(int argc, char** argv) {
     }
 
     if (absl::GetFlag(FLAGS_data)) {
-        auto status = GenerateDeletionData(
-            &ctx,
-            absl::GetFlag(FLAGS_out_dir) + "p0/",
-            absl::GetFlag(FLAGS_out_dir) + "p1/",
-            absl::GetFlag(FLAGS_data_dir) + "p0/",
-            absl::GetFlag(FLAGS_data_dir) + "p1/",
-            absl::GetFlag(FLAGS_days),
-            absl::GetFlag(FLAGS_start_size),
-            absl::GetFlag(FLAGS_daily_size),
-            absl::GetFlag(FLAGS_shared_size),
-            absl::GetFlag(FLAGS_max_value),
-            absl::GetFlag(FLAGS_expected)
-        );
+        auto status = GenerateData(&ctx);
         if (!status.ok()) {
             std::cerr << "[Setup] failure generating datasets" << std::endl;
             std::cerr << status << std::endl;

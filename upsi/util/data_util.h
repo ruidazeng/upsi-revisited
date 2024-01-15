@@ -24,6 +24,8 @@ class Dataset {
         std::vector<std::string> elements;
         std::vector<int64_t> values;
 
+        Dataset(Context* ctx) : ctx(ctx) { }
+
         Dataset(
             Context* ctx, const std::vector<std::string>& elements
         ) : ctx(ctx), elements(elements) { }
@@ -43,18 +45,28 @@ class Dataset {
 
 std::vector<Dataset> ReadDailyDatasets(Context* ctx, std::string dir, int days);
 
-std::tuple<std::vector<Dataset>, std::vector<Dataset>, int64_t> GenerateAddOnlySets(
+std::tuple<
+    Dataset, std::vector<Dataset>, Dataset, std::vector<Dataset>, int64_t
+> GenerateAddOnlySets(
     Context* ctx,
-    std::vector<uint32_t> sizes,
+    uint32_t days,
+    uint32_t daily_size,
+    uint32_t start_size,
     uint32_t shared_size,
     uint32_t max_value
 );
 
-std::tuple<std::vector<Dataset>, std::vector<Dataset>, int64_t> GenerateDeletionSets(
+std::tuple<
+    std::vector<Dataset>, std::vector<Dataset>,
+    std::vector<Dataset>, std::vector<Dataset>,
+    uint64_t
+> GenerateDeletionSets(
     Context* ctx,
-    std::vector<uint32_t> sizes,
-    uint32_t shared_size,
-    uint32_t max_value
+    uint32_t days,
+    uint32_t daily_size,
+    uint32_t start_size,
+    uint32_t max_value,
+    Functionality func
 );
 
 
