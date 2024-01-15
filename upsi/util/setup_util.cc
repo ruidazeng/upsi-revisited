@@ -127,197 +127,6 @@ Status GeneratePaillierKeys(
     return OkStatus();
 }
 
-Status GenerateAdditionData(
-    Context* ctx,
-    std::string p0_key_dir,
-    std::string p1_key_dir,
-    std::string p0_dir,
-    std::string p1_dir,
-    uint32_t days,
-    uint32_t start_size,
-    uint32_t daily_size,
-    int32_t shared_size,
-    int32_t max_value,
-    Functionality func,
-    bool expected
-) {
-    std::cout << "[Setup] generating mock data" << std::endl;
-    uint32_t total = start_size + (days * daily_size);
-
-    // if shared_size isn't specified, just choose a large enough intersection
-    //  such that the daily output will be non-zero with high probability
-    if (shared_size < 0) { shared_size = total / 8; }
-
-    std::vector<uint32_t> sizes;
-    if (start_size > 0) { sizes.push_back(start_size); }
-    for (size_t day = 1; day <= days; day++) { sizes.push_back(daily_size); }
-
-    auto datasets = GenerateAddOnlySets(ctx, sizes, shared_size, max_value);
-
-    std::vector<Dataset> party_zero = std::get<0>(datasets);
-    std::vector<Dataset> party_one  = std::get<1>(datasets);
-
-    if (start_size > 0) {
-        std::cout << "[Setup] writing initial trees" << std::flush;
-        ECGroup group(ECGroup::Create(CURVE_ID, ctx).value());
-        RETURN_IF_ERROR(
-            GenerateTrees(
-                ctx, &group, party_zero[0].ElementsAndValues(), p0_key_dir, p0_dir, p1_dir, func
-            )
-        );
-        std::cout << ".." << std::flush;
-        RETURN_IF_ERROR(
-            GenerateTrees(
-                ctx, &group, party_one[0].Elements(), p1_key_dir, p1_dir, p0_dir
-            )
-        );
-        std::cout << " done" << std::endl;
-
-        for (size_t day = 1; day <= days; day++) {
-            RETURN_IF_ERROR(
-                party_zero[day].Write(p0_dir + std::to_string(day) + ".csv")
-            );
-            RETURN_IF_ERROR(
-                party_one[day].Write(p1_dir + std::to_string(day) + ".csv")
-            );
-        }
-    } else {
-        for (size_t day = 0; day < days; day++) {
-            RETURN_IF_ERROR(
-                party_zero[day].Write(p0_dir + std::to_string(day + 1) + ".csv")
-            );
-            RETURN_IF_ERROR(
-                party_one[day].Write(p1_dir + std::to_string(day + 1) + ".csv")
-            );
-        }
-    }
-
-
-    if (!expected) { return OkStatus(); }
-
-    // calculate what the running cardinality / sum is as of day 1
-    auto initial_ca = 0;
-    auto initial_sum = 0;
-    if (start_size > 0) {
-        for (size_t i = 0; i < party_zero[0].elements.size(); i++) {
-            for (size_t j = 0; j < party_one[0].elements.size(); j++) {
-                if (party_zero[0].elements[i] == party_one[0].elements[j]) {
-                    initial_ca++;
-                    initial_sum += party_zero[0].values[i];
-                }
-            }
-        }
-    }
-
-    std::cout << "[Setup] expected output:" << std::endl;
-    std::cout << "        intersection size = ";
-    std::cout << shared_size << " - " << initial_ca << " = ";
-    std::cout << shared_size - initial_ca << std::endl;
-    std::cout << "        intersection sum  = ";
-    std::cout << std::get<2>(datasets) - initial_sum << std::endl;
-
-    if (std::get<2>(datasets) - initial_sum > MAX_SUM && func != Functionality::SS) {
-        std::cout << std::endl;
-        std::cout << "[WARNING] expected sum larger than maximum sum (=";
-        std::cout << MAX_SUM << ")" << std::endl;
-    }
-
-    return OkStatus();
-}
-
-Status GenerateDeletionData(
-    Context* ctx,
-    std::string p0_key_dir,
-    std::string p1_key_dir,
-    std::string p0_dir,
-    std::string p1_dir,
-    uint32_t days,
-    uint32_t start_size,
-    uint32_t daily_size,
-    int32_t shared_size,
-    int32_t max_value,
-    bool expected
-) {
-    std::cout << "[Setup] generating mock data" << std::endl;
-    uint32_t total = start_size + (days * daily_size);
-
-    // if shared_size isn't specified, just choose a large enough intersection
-    //  such that the daily output will be non-zero with high probability
-    if (shared_size < 0) { shared_size = total / 8; }
-
-    std::vector<uint32_t> sizes;
-    if (start_size > 0) { sizes.push_back(start_size); }
-    for (size_t day = 1; day <= days; day++) { sizes.push_back(daily_size); }
-
-    auto datasets = GenerateDeletionSets(ctx, sizes, shared_size, max_value);
-
-    std::vector<Dataset> party_zero = std::get<0>(datasets);
-    std::vector<Dataset> party_one  = std::get<1>(datasets);
-
-    if (start_size > 0) {
-        std::cout << "[Setup] writing initial trees" << std::flush;
-        ECGroup group(ECGroup::Create(CURVE_ID, ctx).value());
-        RETURN_IF_ERROR(
-            GenerateTrees(
-                ctx, &group, party_zero[0].ElementsAndValues(),
-                p0_key_dir, p0_dir, p1_dir, Functionality::DEL
-            )
-        );
-        std::cout << ".." << std::flush;
-        RETURN_IF_ERROR(
-            GenerateTrees(
-                ctx, &group, party_one[0].ElementsAndValues(),
-                p1_key_dir, p1_dir, p0_dir, Functionality::DEL
-            )
-        );
-        std::cout << " done" << std::endl;
-
-        for (size_t day = 1; day <= days; day++) {
-            RETURN_IF_ERROR(
-                party_zero[day].Write(p0_dir + std::to_string(day) + ".csv")
-            );
-            RETURN_IF_ERROR(
-                party_one[day].Write(p1_dir + std::to_string(day) + ".csv")
-            );
-        }
-    } else {
-        for (size_t day = 0; day < days; day++) {
-            RETURN_IF_ERROR(
-                party_zero[day].Write(p0_dir + std::to_string(day + 1) + ".csv")
-            );
-            RETURN_IF_ERROR(
-                party_one[day].Write(p1_dir + std::to_string(day + 1) + ".csv")
-            );
-        }
-    }
-
-
-    if (!expected) { return OkStatus(); }
-
-    // calculate what the running cardinality / sum is as of day 1
-    auto initial_ca = 0;
-    auto initial_sum = 0;
-    if (start_size > 0) {
-        for (size_t i = 0; i < party_zero[0].elements.size(); i++) {
-            for (size_t j = 0; j < party_one[0].elements.size(); j++) {
-                if (party_zero[0].elements[i] == party_one[0].elements[j]) {
-                    initial_ca++;
-                    initial_sum += party_zero[0].values[i];
-                }
-            }
-        }
-    }
-
-    std::cout << "[Setup] expected output:" << std::endl;
-    std::cout << "        intersection size = ";
-    std::cout << shared_size << " - " << initial_ca << " = ";
-    std::cout << shared_size - initial_ca << std::endl;
-    std::cout << "        intersection sum  = ";
-    std::cout << std::get<2>(datasets) - initial_sum << std::endl;
-
-    return OkStatus();
-}
-
 StatusOr<std::unique_ptr<ElGamalEncrypter>> GetElGamal(
     const std::string& dir, ECGroup* group
 ) {
@@ -434,6 +243,36 @@ Status GenerateTrees(
 
         RETURN_IF_ERROR(WriteTrees(plaintext, plaintext_dir, encrypted, encrypted_dir));
     }
+    return OkStatus();
+}
+
+Status GenerateTrees(
+    Context* ctx,
+    ECGroup* group,
+    const std::vector<Dataset>& data,
+    const std::string& key_dir,
+    const std::string& plaintext_dir,
+    const std::string& encrypted_dir
+) {
+    ASSIGN_OR_RETURN(
+        PaillierPrivateKey paillier_key,
+        ProtoUtils::ReadProtoFromFile<PaillierPrivateKey>(key_dir + "paillier.key")
+    );
+
+    PrivatePaillier paillier(ctx, paillier_key);
+
+    CryptoTree<ElementAndPayload> plaintext;
+    CryptoTree<PaillierPair> encrypted;
+
+    for (size_t day = 0; day < data.size(); day++) {
+        TreeUpdates updates;
+        std::vector<ElementAndPayload> daily = data[day].ElementsAndValues();
+        RETURN_IF_ERROR(plaintext.Update(ctx, &paillier, daily, &updates));
+        RETURN_IF_ERROR(encrypted.Update(ctx, group, &updates));
+    }
+
+    RETURN_IF_ERROR(WriteTrees(plaintext, plaintext_dir, encrypted, encrypted_dir));
+
     return OkStatus();
 }
 

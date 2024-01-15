@@ -39,6 +39,92 @@ ABSL_FLAG(Functionality, func, Functionality::CA, "which functionality to prepar
 
 ABSL_FLAG(bool, expected, true, "compute expected cardinality and sum");
 
+Status GenerateData(Context* ctx) {
+    std::cout << "[Setup] generating mock data" << std::endl;
+
+    uint32_t days = absl::GetFlag(FLAGS_days);
+    uint32_t daily_size = absl::GetFlag(FLAGS_daily_size);
+    uint32_t start_size = absl::GetFlag(FLAGS_start_size);
+    uint32_t total = start_size + (days * daily_size);
+
+    // if shared_size isn't specified, just choose a large enough intersection
+    //  such that the daily output will be non-zero with high probability
+    int32_t shared_size = absl::GetFlag(FLAGS_shared_size);
+    if (shared_size < 0) { shared_size = total / 8; }
+
+    // where to find the setup files
+    std::string p0_key_dir = absl::GetFlag(FLAGS_out_dir) + "p0/";
+    std::string p1_key_dir = absl::GetFlag(FLAGS_out_dir) + "p1/";
+    std::string p0_dir = absl::GetFlag(FLAGS_data_dir) + "p0/";
+    std::string p1_dir = absl::GetFlag(FLAGS_data_dir) + "p1/";
+
+    auto [ p0_tree, p0_days, p1_tree, p1_days, sum ] = GenerateAddOnlySets(
+        ctx, days, daily_size, start_size, shared_size, absl::GetFlag(FLAGS_max_value)
+    );
+
+    for (size_t day = 0; day < days; day++) {
+        RETURN_IF_ERROR(
+            p0_days[day].Write(p0_dir + std::to_string(day + 1) + ".csv")
+        );
+        RETURN_IF_ERROR(
+            p1_days[day].Write(p1_dir + std::to_string(day + 1) + ".csv")
+        );
+    }
+
+    auto initial_ca = 0;
+    auto initial_sum = 0;
+
+    if (start_size > 0) {
+        std::cout << "[Setup] writing initial trees" << std::flush;
+        ECGroup group(ECGroup::Create(CURVE_ID, ctx).value());
+        RETURN_IF_ERROR(
+            GenerateTrees(
+                ctx, &group, p0_tree.ElementsAndValues(),
+                p0_key_dir, p0_dir, p1_dir, absl::GetFlag(FLAGS_func)
+            )
+        );
+        std::cout << "." << std::flush;
+        RETURN_IF_ERROR(
+            GenerateTrees(
+                ctx, &group, p1_tree.Elements(), p1_key_dir, p1_dir, p0_dir
+            )
+        );
+        std::cout << ". done" << std::endl;
+
+        if (!absl::GetFlag(FLAGS_expected)) { return OkStatus(); }
+
+        // calculate what the running cardinality / sum is as of day 1
+        if (start_size > 0) {
+            for (size_t i = 0; i < p0_tree.elements.size(); i++) {
+                for (size_t j = 0; j < p1_tree.elements.size(); j++) {
+                    if (p0_tree.elements[i] == p1_tree.elements[j]) {
+                        initial_ca++;
+                        initial_sum += p0_tree.values[i];
+                    }
+                }
+            }
+        }
+
+        std::cout << "[Setup] expected output:" << std::endl;
+        std::cout << "        intersection size = ";
+        std::cout << shared_size << " - " << initial_ca << " = ";
+        std::cout << shared_size - initial_ca << std::endl;
+        std::cout << "        intersection sum  = ";
+        std::cout << sum - initial_sum << std::endl;
+    } else {
+        std::cout << "[Setup] expected output:" << std::endl;
+        std::cout << "        intersection size = " << shared_size << std::endl;
+        std::cout << "        intersection sum  = " << sum << std::endl;
+    }
+
+    if (sum - initial_sum > MAX_SUM && absl::GetFlag(FLAGS_func) != Functionality::SS) {
+        std::cout << std::endl;
+        std::cout << "[WARNING] expected sum larger than maximum sum (=";
+        std::cout << MAX_SUM << ")" << std::endl;
+    }
+
+    return OkStatus();
+}
 
 int main(int argc, char** argv) {
     absl::ParseCommandLine(argc, argv);
@@ -61,20 +147,7 @@ int main(int argc, char** argv) {
     }
 
     if (absl::GetFlag(FLAGS_data)) {
-        auto status = GenerateAdditionData(
-            &ctx,
-            absl::GetFlag(FLAGS_out_dir) + "p0/",
-            absl::GetFlag(FLAGS_out_dir) + "p1/",
-            absl::GetFlag(FLAGS_data_dir) + "p0/",
-            absl::GetFlag(FLAGS_data_dir) + "p1/",
-            absl::GetFlag(FLAGS_days),
-            absl::GetFlag(FLAGS_start_size),
-            absl::GetFlag(FLAGS_daily_size),
-            absl::GetFlag(FLAGS_shared_size),
-            absl::GetFlag(FLAGS_max_value),
-            absl::GetFlag(FLAGS_func),
-            absl::GetFlag(FLAGS_expected)
-        );
+        auto status = GenerateData(&ctx);
         if (!status.ok()) {
             std::cerr << "[Setup] failure generating datasets" << std::endl;
             std::cerr << status << std::endl;
