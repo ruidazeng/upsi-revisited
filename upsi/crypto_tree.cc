@@ -509,7 +509,7 @@ std::vector<CryptoNode<ElementAndPayload>> CryptoTree<ElementAndPayload>::Insert
 					val += tmp_elem[i][j].second;
 				}
 				//val = val.Mod(my_paillier->n());
-				unique_elem[i].push_back(std::make_pair(cur_elem, val));
+				if (!val.IsZero()) { unique_elem[i].push_back(std::make_pair(cur_elem, val)); }
 			}
 		}
 
