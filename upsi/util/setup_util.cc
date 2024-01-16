@@ -150,17 +150,26 @@ Status WriteTrees(
     CryptoTree<E>& encrypted,
     const std::string& encrypted_dir
 ) {
-    PlaintextTree ptree;
-    RETURN_IF_ERROR(plaintext.Serialize(&ptree));
-    RETURN_IF_ERROR(
-        ProtoUtils::WriteProtoToFile(ptree, plaintext_dir + "plaintext.tree")
-    );
+    ASSIGN_OR_RETURN(std::vector<PlaintextTree*> ptrees, plaintext.Serialize());
+    for (size_t i = 0; i < ptrees.size(); i++) {
+        RETURN_IF_ERROR(
+            ProtoUtils::WriteProtoToFile(
+                *ptrees[i], plaintext_dir + "plaintext_" + std::to_string(i) + ".tree"
+            )
+        );
+        delete ptrees[i];
+    }
 
-    EncryptedTree etree;
-    RETURN_IF_ERROR(encrypted.Serialize(&etree));
-    RETURN_IF_ERROR(
-        ProtoUtils::WriteProtoToFile(etree, encrypted_dir + "encrypted.tree")
-    );
+    ASSIGN_OR_RETURN(std::vector<EncryptedTree*> etrees, encrypted.Serialize());
+    for (size_t i = 0; i < etrees.size(); i++) {
+        RETURN_IF_ERROR(
+            ProtoUtils::WriteProtoToFile(
+                *etrees[i], encrypted_dir + "encrypted_" + std::to_string(i) + ".tree"
+            )
+        );
+        delete etrees[i];
+    }
+
     return OkStatus();
 }
 

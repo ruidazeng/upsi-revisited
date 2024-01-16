@@ -54,9 +54,9 @@ class BaseTree
         );
 		std::vector<T> getPath(Element element);
 
-        Status Serialize(S* tree);
+        StatusOr<std::vector<S*>> Serialize();
 
-        Status Deserialize(const S& tree, Context* ctx, ECGroup* group);
+        Status Deserialize(const std::vector<S>& trees, Context* ctx, ECGroup* group);
 
         virtual Status Print() = 0;
 };

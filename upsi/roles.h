@@ -81,23 +81,36 @@ class HasTree {
             if (params->ImportTrees()) {
                 std::cout << "[HasTree] reading in " << params->my_tree_fn;
                 std::cout << " and " << params->other_tree_fn << std::endl;
-                auto plaintext = ProtoUtils::ReadProtoFromFile<PlaintextTree>(
-                    params->my_tree_fn
-                );
-                if (!plaintext.ok()) {
-                    throw std::runtime_error("[HasTree] error reading PlaintextTree");
+
+                std::vector<PlaintextTree> ptrees;
+                for (size_t i = 0; true; i++) {
+                    auto plaintext = ProtoUtils::ReadProtoFromFile<PlaintextTree>(
+                        params->my_tree_fn + "_" + std::to_string(i) + ".tree"
+                    );
+                    if (plaintext.ok()) {
+                        ptrees.push_back(plaintext.value());
+                    } else {
+                        break;
+                    }
                 }
-                Status load = this->my_tree.Deserialize(plaintext.value(), this->ctx_, this->group);
+                Status load = this->my_tree.Deserialize(ptrees, this->ctx_, this->group);
                 if (!load.ok()) {
                     std::cerr << load << std::endl;
                     throw std::runtime_error("[HasTree] error loading my tree");
                 }
 
-                auto encrypted = ProtoUtils::ReadProtoFromFile<EncryptedTree>(params->other_tree_fn);
-                if (!encrypted.ok()) {
-                    throw std::runtime_error("[HasTree] error reading EncryptedTree");
+                std::vector<EncryptedTree> etrees;
+                for (size_t i = 0; true; i++) {
+                    auto encrypted = ProtoUtils::ReadProtoFromFile<EncryptedTree>(
+                        params->other_tree_fn + "_" + std::to_string(i) + ".tree"
+                    );
+                    if (encrypted.ok()) {
+                        etrees.push_back(encrypted.value());
+                    } else {
+                        break;
+                    }
                 }
-                load = this->other_tree.Deserialize(encrypted.value(), this->ctx_, this->group);
+                load = this->other_tree.Deserialize(etrees, this->ctx_, this->group);
                 if (!load.ok()) {
                     std::cerr << load << std::endl;
                     throw std::runtime_error("[HasTree] error loading other tree");
