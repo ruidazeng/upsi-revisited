@@ -223,31 +223,57 @@ std::vector<T> BaseTree<T, S>::getPath(Element element) {
 }
 
 template<typename T, typename S>
-Status BaseTree<T, S>::Serialize(S* tree) {
-    tree->set_stash_size(this->stash_size);
-    tree->set_node_size(this->node_size);
-    tree->set_actual_size(this->actual_size);
-    tree->set_depth(this->depth);
+StatusOr<std::vector<S*>> BaseTree<T, S>::Serialize() {
+    S* one = new S();
+    one->set_stash_size(this->stash_size);
+    one->set_node_size(this->node_size);
+    one->set_actual_size(this->actual_size);
+    one->set_depth(this->depth);
 
-    for (size_t i = 0; i < this->crypto_tree.size(); i++) {
-        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], tree->add_nodes()));
+
+    size_t i = 0;
+    for (; i < this->crypto_tree.size() / 4; i++) {
+        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], one->add_nodes()));
     }
-    return OkStatus();
+
+    S* two = new S();
+    for (; i < this->crypto_tree.size() / 2; i++) {
+        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], two->add_nodes()));
+    }
+
+    S* three = new S();
+    for (; i < 3 * this->crypto_tree.size() / 4; i++) {
+        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], three->add_nodes()));
+    }
+
+    S* four = new S();
+    for (; i < this->crypto_tree.size(); i++) {
+        RETURN_IF_ERROR(SerializeNode(&crypto_tree[i], four->add_nodes()));
+    }
+
+    std::vector<S*> trees;
+    trees.push_back(std::move(one));
+    trees.push_back(std::move(two));
+    trees.push_back(std::move(three));
+    trees.push_back(std::move(four));
+    return trees;
 }
 
 template<typename T, typename S>
-Status BaseTree<T, S>::Deserialize(const S& tree, Context* ctx, ECGroup* group) {
-    this->stash_size = tree.stash_size();
-    this->node_size = tree.node_size();
-    this->actual_size = tree.actual_size();
-    this->depth = tree.depth();
+Status BaseTree<T, S>::Deserialize(const std::vector<S>& trees, Context* ctx, ECGroup* group) {
+    this->stash_size = trees[0].stash_size();
+    this->node_size = trees[0].node_size();
+    this->actual_size = trees[0].actual_size();
+    this->depth = trees[0].depth();
 
     // reset the tree completely
     this->crypto_tree.clear();
 
-    for (const auto& tnode : tree.nodes()) {
-        ASSIGN_OR_RETURN(auto node, DeserializeNode<T>(tnode, ctx, group));
-        this->crypto_tree.push_back(std::move(node));
+    for (const S& tree : trees) {
+        for (const auto& tnode : tree.nodes()) {
+            ASSIGN_OR_RETURN(auto node, DeserializeNode<T>(tnode, ctx, group));
+            this->crypto_tree.push_back(std::move(node));
+        }
     }
 
     return OkStatus();

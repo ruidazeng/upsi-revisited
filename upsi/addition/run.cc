@@ -54,8 +54,8 @@ Status RunPartyZero() {
     );
 
     if (absl::GetFlag(FLAGS_trees)) {
-        params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/plaintext.tree";
-        params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/encrypted.tree";
+        params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/plaintext";
+        params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/encrypted";
     }
 
     // read in dataset
@@ -114,8 +114,8 @@ Status RunPartyOne() {
     );
 
     if (absl::GetFlag(FLAGS_trees)) {
-        params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/plaintext.tree";
-        params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/encrypted.tree";
+        params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/plaintext";
+        params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/encrypted";
     }
 
     // read in dataset
