@@ -49,6 +49,7 @@ class PartyOne : public Server, public Party {
 
         void FinishDay() {
             day_finished = true;
+            current_day++;
         }
 
         bool ProtocolFinished() override {
