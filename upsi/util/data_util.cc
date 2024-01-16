@@ -208,7 +208,7 @@ std::vector<std::pair<BigNum, BigNum>> Dataset::ElementsAndValues() const {
     for (size_t i = 0; i < elements.size(); i++) {
         auto pair = std::make_pair(
             ctx->CreateBigNum(std::stoull(elements[i])),
-            ctx->CreateBigNum(values[i])
+            values[i] < 0? ctx->Zero() - ctx->CreateBigNum(-values[i]) : ctx->CreateBigNum(values[i])
         );
         out.push_back(pair);
     }
