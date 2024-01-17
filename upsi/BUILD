@@ -20,6 +20,7 @@ cc_library(
     name = "params",
     hdrs = ["params.h"],
     deps = [
+        ":utils",
         "//upsi/crypto:bn_util",
     ],
 )

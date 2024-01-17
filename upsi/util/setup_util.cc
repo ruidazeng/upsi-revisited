@@ -261,8 +261,9 @@ Status GenerateTrees(
 
     PrivatePaillier paillier(ctx, paillier_key);
 
-    CryptoTree<ElementAndPayload> plaintext;
-    CryptoTree<PaillierPair> encrypted;
+    // because we are allowing single additions and deletions, node size must be doubled
+    CryptoTree<ElementAndPayload> plaintext(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE * 2);
+    CryptoTree<PaillierPair> encrypted(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE * 2);
 
     for (size_t day = 0; day < data.size(); day++) {
         TreeUpdates updates;
