@@ -64,7 +64,7 @@ Status GenerateData(Context* ctx) {
     if (start_size > 0) {
         std::cout << "[Setup] writing initial trees" << std::flush;
         ECGroup group(ECGroup::Create(CURVE_ID, ctx).value());
-        RETURN_IF_ERROR( GenerateTrees(ctx, &group, p0_tree, p0_key_dir, p0_dir, p1_dir));
+        RETURN_IF_ERROR(GenerateTrees(ctx, &group, p0_tree, p0_key_dir, p0_dir, p1_dir));
         std::cout << "." << std::flush;
 
         RETURN_IF_ERROR(GenerateTrees(ctx, &group, p1_tree, p1_key_dir, p1_dir, p0_dir));

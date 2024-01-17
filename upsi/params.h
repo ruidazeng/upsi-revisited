@@ -1,6 +1,7 @@
 #pragma once
 
 #include "upsi/crypto/context.h"
+#include "upsi/utils.h"
 
 namespace upsi {
 
@@ -23,6 +24,10 @@ struct PSIParams {
 
     // number of days to run protocol for
     int total_days;
+
+    // parameters for the CryptoTrees
+    int stash_size = DEFAULT_STASH_SIZE;
+    int node_size = DEFAULT_NODE_SIZE;
 
     // filename for this party's initial plaintext tree
     std::string my_tree_fn;

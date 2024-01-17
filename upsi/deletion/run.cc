@@ -55,6 +55,9 @@ Status RunPartyZero() {
         absl::GetFlag(FLAGS_days)
     );
 
+    // because we are allowing single additions and deletions
+    params.node_size = 2 * DEFAULT_NODE_SIZE;
+
     if (absl::GetFlag(FLAGS_trees)) {
         params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/plaintext.tree";
         params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/encrypted.tree";
@@ -142,6 +145,9 @@ Status RunPartyOne() {
         absl::GetFlag(FLAGS_out_dir) + "p1/paillier.key",
         absl::GetFlag(FLAGS_days)
     );
+
+    // because we are allowing single additions and deletions
+    params.node_size = 2 * DEFAULT_NODE_SIZE;
 
     if (absl::GetFlag(FLAGS_trees)) {
         params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/plaintext.tree";
