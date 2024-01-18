@@ -385,9 +385,9 @@ std::vector<Dataset> GenerateDeletionDays(
 }  // namespace
 
 std::tuple<
-    std::vector<Dataset>, std::vector<Dataset>,
-    std::vector<Dataset>, std::vector<Dataset>,
-    uint64_t
+    Dataset, std::vector<Dataset>,
+    Dataset, std::vector<Dataset>,
+    int64_t
 > GenerateDeletionSets(
     Context* ctx,
     uint32_t days,
@@ -438,13 +438,25 @@ std::tuple<
 
     std::map<std::string, int64_t> p0_endset, p1_endset;
 
-    // generate daily data sets that will be put into the tree
-    std::vector<Dataset> p0_tree = GenerateDeletionDays(
-        ctx, daily_size, daily_del, start_size, p0_universe, p0_endset
-    );
-    std::vector<Dataset> p1_tree = GenerateDeletionDays(
-        ctx, daily_size, daily_del, start_size, p1_universe, p1_endset
-    );
+    Dataset p0_tree(ctx), p1_tree(ctx);
+    for (size_t j = 0; j < start_size; j++) {
+        auto p0_element = sample(p0_universe);
+        p0_tree.elements.push_back(p0_element.first);
+        p0_tree.values.push_back(p0_element.second);
+        p0_endset[p0_element.first] = p0_element.second;
+
+        auto p1_element = sample(p1_universe);
+        p1_tree.elements.push_back(p1_element.first);
+        p1_tree.values.push_back(p1_element.second);
+        p1_endset[p1_element.first] = p1_element.second;
+    }
+
+    uint64_t initial_sum = 0;
+    for (const auto& element : p0_endset) {
+        if (p1_endset.find(element.first) != p1_endset.end()) {
+            initial_sum += element.second;
+        }
+    }
 
     // generate daily data sets that will be put into the tree
     std::vector<Dataset> p0_days = GenerateDeletionDays(
@@ -461,7 +473,7 @@ std::tuple<
         }
     }
 
-    return std::make_tuple(p0_tree, p0_days, p1_tree, p1_days, sum);
+    return std::make_tuple(p0_tree, p0_days, p1_tree, p1_days, sum - initial_sum);
 }
 
 }  // namespace upsi

@@ -57,9 +57,7 @@ std::tuple<
 );
 
 std::tuple<
-    std::vector<Dataset>, std::vector<Dataset>,
-    std::vector<Dataset>, std::vector<Dataset>,
-    uint64_t
+    Dataset, std::vector<Dataset>, Dataset, std::vector<Dataset>, int64_t
 > GenerateDeletionSets(
     Context* ctx,
     uint32_t days,
