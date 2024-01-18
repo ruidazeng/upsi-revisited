@@ -56,6 +56,7 @@ Status RunPartyZero() {
     );
 
     // because we are allowing single additions and deletions
+    params.stash_size = 2 * DEFAULT_STASH_SIZE;
     params.node_size = 2 * DEFAULT_NODE_SIZE;
 
     if (absl::GetFlag(FLAGS_trees)) {
@@ -147,6 +148,7 @@ Status RunPartyOne() {
     );
 
     // because we are allowing single additions and deletions
+    params.stash_size = 2 * DEFAULT_STASH_SIZE;
     params.node_size = 2 * DEFAULT_NODE_SIZE;
 
     if (absl::GetFlag(FLAGS_trees)) {

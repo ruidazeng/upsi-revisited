@@ -19,7 +19,8 @@ class CryptoNode
         std::vector<T> node;
         size_t node_size;
 
-        CryptoNode(size_t node_size = DEFAULT_NODE_SIZE);
+        CryptoNode() = delete;
+        CryptoNode(size_t node_size);
 
         // Get node size
         //int getNodeSize();

@@ -29,8 +29,11 @@ BaseTree<T, S>::BaseTree(int stash_size, size_t node_size) {
 template<typename T, typename S>
 void BaseTree<T, S>::addNewLayer() {
     this->depth += 1;
-    int new_size = (1 << (this->depth + 1));
-    this->crypto_tree.resize(new_size);
+    size_t new_size = (1 << (this->depth + 1));
+
+    while (this->crypto_tree.size() < new_size) {
+        this->crypto_tree.emplace_back(this->node_size);
+    }
 }
 
 // compute leaf index of a binary hash
