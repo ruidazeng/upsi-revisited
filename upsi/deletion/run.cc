@@ -92,9 +92,9 @@ Status RunPartyZero() {
     gc_io->flush();
 
     std::cout << "[PartyZero] starting protocol" << std::endl;
-    Timer timer("[PartyZero] Total");
-    Timer daily("[PartyZero] gRPC");
-    Timer garbled("[PartyZero] Garbled Circuit");
+    Timer daily("[PartyZero] Daily Comp");
+    Timer grpc("[PartyZero] Updates & Prep");
+    Timer garbled("[PartyZero] GCs & OTs");
     int total_days = absl::GetFlag(FLAGS_days);
     for (int i = 0; i < total_days; ++i) {
 		std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -107,13 +107,12 @@ Status RunPartyZero() {
 		        args
 		));
 		Connection sink(std::move(stub));
-		Timer first_phase("[PartyZero] first phase");
+        Timer day("[PartyZero] Day " + std::to_string(i) + " Comp");
         daily.lap();
+        grpc.lap();
     	RETURN_IF_ERROR(party_zero->Run(&sink));
-    	daily.stop();
-    	first_phase.stop();
+    	grpc.stop();
 
-		Timer second_phase("[PartyZero] second phase");
         garbled.lap();
     	ASSIGN_OR_RETURN(uint64_t rs, party_zero->GarbledCircuit());
     	uint64_t other_rs;
@@ -121,12 +120,13 @@ Status RunPartyZero() {
         gc_io->flush();
     	party_zero->UpdateResult(rs + other_rs);
         garbled.stop();
-        second_phase.stop();
-    	party_zero->PrintResult();
+        daily.stop();
+        day.stop();
     }
-    daily.print();
+    grpc.print();
     garbled.print();
-    timer.stop();
+    daily.print();
+
     party_zero->PrintResult();
 
 	finalize_semi_honest();

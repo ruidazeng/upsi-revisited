@@ -32,7 +32,6 @@ Status PartyZero::Handle(const ServerMessage& msg, MessageSink<ClientMessage>* s
 
     if (msg.party_one_msg().has_message_ii()) {
         RETURN_IF_ERROR(ProcessMessageII(msg.party_one_msg().message_ii(), sink));
-        std::cerr<<"done...\n";
     } else {
         return InvalidArgumentError(
             "[PartyZero] received a party one message of unknown type"
