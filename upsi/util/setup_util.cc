@@ -233,7 +233,7 @@ Status GenerateTrees(
 Status GenerateTrees(
     Context* ctx,
     ECGroup* group,
-    const std::vector<Dataset>& data,
+    const Dataset& data,
     const std::string& key_dir,
     const std::string& plaintext_dir,
     const std::string& encrypted_dir
@@ -249,12 +249,10 @@ Status GenerateTrees(
     CryptoTree<ElementAndPayload> plaintext(DEFAULT_STASH_SIZE * 2, DEFAULT_NODE_SIZE * 2);
     CryptoTree<PaillierPair> encrypted(DEFAULT_STASH_SIZE * 2, DEFAULT_NODE_SIZE * 2);
 
-    for (size_t day = 0; day < data.size(); day++) {
-        TreeUpdates updates;
-        std::vector<ElementAndPayload> daily = data[day].ElementsAndValues();
-        RETURN_IF_ERROR(plaintext.Update(ctx, &paillier, daily, &updates));
-        RETURN_IF_ERROR(encrypted.Update(ctx, group, &updates));
-    }
+    TreeUpdates updates;
+    std::vector<ElementAndPayload> daily = data.ElementsAndValues();
+    RETURN_IF_ERROR(plaintext.Update(ctx, &paillier, daily, &updates));
+    RETURN_IF_ERROR(encrypted.Update(ctx, group, &updates));
 
     RETURN_IF_ERROR(WriteTrees(plaintext, plaintext_dir, encrypted, encrypted_dir));
 

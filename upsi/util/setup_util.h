@@ -48,7 +48,7 @@ Status GenerateTrees(
 Status GenerateTrees(
     Context* ctx,
     ECGroup* group,
-    const std::vector<Dataset>& data,
+    const Dataset& data,
     const std::string& key_dir,
     const std::string& plaintext_dir,
     const std::string& encrypted_dir
