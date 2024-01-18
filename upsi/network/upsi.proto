@@ -65,6 +65,10 @@ message EncryptedSet {
     repeated EncryptedElement elements = 1;
 }
 
+message EncryptedSetVector {
+	repeated EncryptedSet elements = 1;
+}
+
 message TreeNode {
     repeated EncryptedElement elements = 2;
 }
@@ -130,6 +134,7 @@ message PartyZeroMessage {
     message MessageI {
         optional TreeUpdates updates = 1;
         optional EncryptedSet candidates = 2;
+        optional EncryptedSetVector candidates_vct = 3;
     }
 
     message MessageIII_SUM {
@@ -164,6 +169,7 @@ message PartyOneMessage {
     message MessageII {
         optional TreeUpdates updates = 1;
         optional EncryptedSet candidates = 2;
+        optional EncryptedSetVector candidates_vct = 3;
     }
 
     message MessageIV {
