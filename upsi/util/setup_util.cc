@@ -176,8 +176,8 @@ Status GenerateTrees(
     ASSIGN_OR_RETURN(auto encrypter, GetElGamal(key_dir, group));
 
     // set up the trees
-    CryptoTree<Element> plaintext;
-    CryptoTree<Ciphertext> encrypted;
+    CryptoTree<Element> plaintext(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE);
+    CryptoTree<Ciphertext> encrypted(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE);
 
     TreeUpdates updates;
     RETURN_IF_ERROR(plaintext.Update(ctx, encrypter.get(), data, &updates));
@@ -207,35 +207,19 @@ Status GenerateTrees(
 
         ThresholdPaillier paillier(ctx, paillier_key);
 
-        CryptoTree<ElementAndPayload> plaintext;
-        CryptoTree<CiphertextAndPaillier> encrypted;
+        CryptoTree<ElementAndPayload> plaintext(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE);
+        CryptoTree<CiphertextAndPaillier> encrypted(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE);
 
         TreeUpdates updates;
         RETURN_IF_ERROR(plaintext.Update(ctx, elgamal.get(), &paillier, data, &updates));
         RETURN_IF_ERROR(encrypted.Update(ctx, group, &updates));
 
         RETURN_IF_ERROR(WriteTrees(plaintext, plaintext_dir, encrypted, encrypted_dir));
-    } else if (func == Functionality::DEL) {
-        ASSIGN_OR_RETURN(
-            PaillierPrivateKey paillier_key,
-            ProtoUtils::ReadProtoFromFile<PaillierPrivateKey>(key_dir + "paillier.key")
-        );
-
-        PrivatePaillier paillier(ctx, paillier_key);
-
-        CryptoTree<ElementAndPayload> plaintext;
-        CryptoTree<PaillierPair> encrypted;
-
-        TreeUpdates updates;
-        RETURN_IF_ERROR(plaintext.Update(ctx, &paillier, data, &updates));
-        RETURN_IF_ERROR(encrypted.Update(ctx, group, &updates));
-
-        RETURN_IF_ERROR(WriteTrees(plaintext, plaintext_dir, encrypted, encrypted_dir));
     } else {
         ASSIGN_OR_RETURN(auto elgamal, GetElGamal(key_dir, group));
 
-        CryptoTree<ElementAndPayload> plaintext;
-        CryptoTree<CiphertextAndElGamal> encrypted;
+        CryptoTree<ElementAndPayload> plaintext(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE);
+        CryptoTree<CiphertextAndElGamal> encrypted(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE);
 
         TreeUpdates updates;
         RETURN_IF_ERROR(plaintext.Update(ctx, elgamal.get(), data, &updates));
@@ -261,9 +245,9 @@ Status GenerateTrees(
 
     PrivatePaillier paillier(ctx, paillier_key);
 
-    // because we are allowing single additions and deletions, node size must be doubled
-    CryptoTree<ElementAndPayload> plaintext(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE * 2);
-    CryptoTree<PaillierPair> encrypted(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE * 2);
+    // because we are allowing single additions and deletions, these must be doubled
+    CryptoTree<ElementAndPayload> plaintext(DEFAULT_STASH_SIZE * 2, DEFAULT_NODE_SIZE * 2);
+    CryptoTree<PaillierPair> encrypted(DEFAULT_STASH_SIZE * 2, DEFAULT_NODE_SIZE * 2);
 
     for (size_t day = 0; day < data.size(); day++) {
         TreeUpdates updates;

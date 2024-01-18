@@ -45,7 +45,8 @@ class BaseTree
         // the number of set elements in the tree (= size of set)
         int actual_size = 0;
 
-        BaseTree(int stash_size = DEFAULT_STASH_SIZE, size_t node_size = DEFAULT_NODE_SIZE);
+        BaseTree() = delete;
+        BaseTree(int stash_size, size_t node_size);
         std::vector<CryptoNode<T>> insert(std::vector<T> &elem, std::vector<BinaryHash> &hsh);
         void replaceNodes(
             int new_elem_cnt,
