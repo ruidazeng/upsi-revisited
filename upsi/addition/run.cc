@@ -163,6 +163,8 @@ Status RunPartyOne() {
 
     while (!service.ProtocolFinished()) { }
 
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    
     party_one->PrintComm();
     party_one->PrintResult();
 
