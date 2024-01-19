@@ -87,9 +87,9 @@ Status RunPartyZero() {
     gc_io->flush();
 
     std::cout << "[PartyZero] starting protocol" << std::endl;
-    Timer timer("[PartyZero] Total");
-    Timer daily("[PartyZero] gRPC");
-    Timer garbled("[PartyZero] Garbled Circuit");
+    Timer daily("[PartyZero] Daily Comp");
+    Timer grpc("[PartyZero] Updates & Prep");
+    Timer garbled("[PartyZero] GCs & OTs");
     int total_days = absl::GetFlag(FLAGS_days);
     for (int i = 0; i < total_days; ++i) {
 		std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -102,24 +102,25 @@ Status RunPartyZero() {
 		        args
 		));
 		Connection sink(std::move(stub));
-		Timer first_phase("[PartyZero] first phase");
+		Timer day("[PartyZero] Day " + std::to_string(i) + " Comp");
         daily.lap();
+        grpc.lap();
     	RETURN_IF_ERROR(party_zero->Run(&sink));
-    	daily.stop();
-    	first_phase.stop();
+    	grpc.stop();
 
-		Timer second_phase("[PartyZero] second phase");
         garbled.lap();
     	RETURN_IF_ERROR(party_zero->SecondPhase());
-    	
+       	party_zero->StoreCommGC(i);
         garbled.stop();
-        second_phase.stop();
-    	party_zero->PrintResult();
+        daily.stop();
+        day.stop();
     }
-    daily.print();
+    grpc.print();
     garbled.print();
-    timer.stop();
+    daily.print();
+    
     party_zero->PrintResult();
+    party_zero->PrintComm();
 
 	finalize_semi_honest();
     delete gc_io;
@@ -193,18 +194,21 @@ Status RunPartyOne() {
             }, grpc_server.get());
         // service.new_day();
 
-        while (!service.ProtocolFinished())
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+        while (!service.ProtocolFinished());
+        
+        std::this_thread::sleep_for(std::chrono::seconds(2));
 
         // shut down server
         grpc_server->Shutdown();
         grpc_server_thread.join();
 
-
     	RETURN_IF_ERROR(party_one->SecondPhase());
+    	party_one->StoreCommGC(i);
        
     }
     std::cout << "[PartyOne] completed protocol and shut down" << std::endl;
+    
+    party_one->PrintComm();
 
 	finalize_semi_honest();
     delete gc_io;

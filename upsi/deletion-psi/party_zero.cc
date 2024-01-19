@@ -38,7 +38,6 @@ Status PartyZero::Handle(const ServerMessage& msg, MessageSink<ClientMessage>* s
 
     if (msg.party_one_msg().has_message_ii()) {
         RETURN_IF_ERROR(ProcessMessageII(msg.party_one_msg().message_ii(), sink));
-        std::cerr<<"done...\n";
     } else {
         return InvalidArgumentError(
             "[PartyZero] received a party one message of unknown type"
@@ -110,7 +109,7 @@ Status PartyZero::SecondPhase() {
 }
 
 void PartyZero::PrintResult(){
-	std::cout << "[PartyZero] cardinality = " << result << std::endl;
+	std::cout << "[PartyZero] cardinality = " << (long long)result << std::endl;
 	if(intersection.size() < 10) {
 		std::cout << "[PartyZero] intersection = \n";
 		for (auto elem:intersection) {
@@ -125,6 +124,9 @@ Status PartyZero::SendMessageI(MessageSink<ClientMessage>* sink, std::vector<Ele
     ASSIGN_OR_RETURN(auto message_i, GenerateMessageI(elements));
 
     *(msg.mutable_party_zero_msg()->mutable_message_i()) = message_i;
+    
+    this->AddComm(msg, this->current_day);
+    
     return sink->Send(msg);
 }
 

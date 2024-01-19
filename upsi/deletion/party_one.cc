@@ -73,6 +73,8 @@ StatusOr<PartyOneMessage::MessageII> PartyOne::GenerateMessageII(
             *candidate->mutable_only_paillier()->mutable_element() = cur_msg[j].ToBytes();
         }
     }
+    
+    this->AddComm(response, this->current_day);
 
     return response;
 }

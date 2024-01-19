@@ -119,6 +119,7 @@ Status RunPartyZero() {
     	gc_io->recv_data(&other_rs, sizeof(uint64_t));
         gc_io->flush();
     	party_zero->UpdateResult(rs + other_rs);
+    	party_zero->StoreCommGC(i);
         garbled.stop();
         daily.stop();
         day.stop();
@@ -128,6 +129,7 @@ Status RunPartyZero() {
     daily.print();
 
     party_zero->PrintResult();
+    party_zero->PrintComm();
 
 	finalize_semi_honest();
     delete gc_io;
@@ -205,8 +207,9 @@ Status RunPartyOne() {
             }, grpc_server.get());
         // service.new_day();
 
-        while (!service.ProtocolFinished())
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+        while (!service.ProtocolFinished()) ;
+            
+        std::this_thread::sleep_for(std::chrono::seconds(2));
 
         // shut down server
         grpc_server->Shutdown();
@@ -216,8 +219,11 @@ Status RunPartyOne() {
         gc_io->flush();
         gc_io->send_data(&rs, sizeof(uint64_t));
         gc_io->flush();
+    	party_one->StoreCommGC(i);
     }
     std::cout << "[PartyOne] completed protocol and shut down" << std::endl;
+    
+    party_one->PrintComm();
 
 	finalize_semi_honest();
     delete gc_io;
