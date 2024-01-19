@@ -31,6 +31,7 @@ class PartyOne : public Server, public Party {
             }
         }
 
+
         ~PartyOne() = default;
 
         /**

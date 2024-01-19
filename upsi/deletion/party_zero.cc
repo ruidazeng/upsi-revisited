@@ -63,6 +63,9 @@ Status PartyZero::SendMessageI(MessageSink<ClientMessage>* sink) {
     ASSIGN_OR_RETURN(auto message_i, GenerateMessageI(datasets[current_day]));
 
     *(msg.mutable_party_zero_msg()->mutable_message_i()) = message_i;
+    
+    this->AddComm(msg, this->current_day);
+    
     return sink->Send(msg);
 }
 

@@ -27,12 +27,14 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
         // garbled circuit inputs inputs and outputs
         std::vector<std::vector<uint64_t> > gc_x, gc_y;
         std::vector<std::vector<BigNum> > gc_z;
+        
+        std::vector<uint64_t> comm_, comm_gc;
 
         int gc_party;
     public:
         Party(
             PSIParams* params, int gc_party
-        ) : HasTree<ElementAndPayload, PaillierPair>(params), gc_party(gc_party) {
+        ) : HasTree<ElementAndPayload, PaillierPair>(params), gc_party(gc_party), comm_(params->total_days), comm_gc(params->total_days) {
             auto sk = ProtoUtils::ReadProtoFromFile<PaillierPrivateKey>(params->psk_fn);
             if (!sk.ok()) {
                 std::runtime_error("[Party] failure in reading paillier secret key");
@@ -46,6 +48,27 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
             }
 
             this->pk = std::make_unique<PublicPaillier>(this->ctx_, pk.value());
+        }
+        
+        void AddComm(const google::protobuf::Message& msg, int day) {
+            comm_[day] += msg.ByteSizeLong();
+        }
+        
+        void StoreCommGC(int day) {
+        	comm_gc[day] = gc_io_->counter;
+        }
+        
+        void PrintComm() {
+            unsigned long long total = 0, cnt = comm_.size();
+            for (size_t day = 0; day < cnt; day++) {
+                std::cout << "Day " << std::to_string(day + 1) << " Comm Sent(B):\t";
+                std::cout << comm_[day] << "\t + \t";
+                if(day == 0) std::cout << comm_gc[day];
+                else std::cout << comm_gc[day] - comm_gc[day - 1];
+                std::cout << "\n";
+                total += comm_[day];
+            }
+            std::cout << "Total Comm Sent(B):\t" << total + comm_gc[cnt - 1] << std::endl;
         }
 
         //void GarbledCircuitIOSetup(emp::NetIO* io) {this->gc_io_ = io;}
