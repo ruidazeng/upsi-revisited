@@ -25,6 +25,13 @@ Status GeneratePaillierKeys(
     int32_t stat_param
 );
 
+// create El Gamal public and private keys
+Status GenerateElGamalKeys(
+    Context* ctx,
+    std::string p0_dir,
+    std::string p1_dir
+);
+
 // create plaintext and encrypted trees with the given data
 Status GenerateTrees(
     Context* ctx,
@@ -32,7 +39,8 @@ Status GenerateTrees(
     std::vector<Element> data,
     const std::string& key_dir,
     const std::string& plaintext_dir,
-    const std::string& encrypted_dir
+    const std::string& encrypted_dir,
+    std::string pk_fn = "shared.pub"
 );
 
 Status GenerateTrees(

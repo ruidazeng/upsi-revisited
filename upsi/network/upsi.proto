@@ -82,9 +82,7 @@ message PaillierCiphertext {
     optional bytes ciphertext = 1;
 }
 
-/**
- * FOR WRITING TREES INTO FILES
- */
+// FOR WRITING TREES INTO FILES
 message PlaintextElement {
     optional bytes element = 1;
     optional bytes payload = 2;
@@ -113,10 +111,50 @@ message EncryptedTree {
     optional int32 depth = 5;
 }
 
+message OPRF_KV {
+    optional bytes element = 1;
+    optional bytes output = 2;
+}
 
-/*
- * PARTY ZERO
- */
+message OPRF {
+    repeated OPRF_KV kv = 1;
+}
+
+// FOR THE ORIGINAL PSI PROTOCOL
+message OriginalMessage {
+    oneof message_content {
+        MessageI message_i = 1;
+        MessageII message_ii = 2;
+        MessageIII message_iii = 3;
+        MessageIV message_iv = 4;
+        MessageV message_v = 5;
+    }
+
+    message MessageI {
+        optional TreeUpdates updates = 1;
+        repeated bytes ciphertexts = 2;
+    }
+
+    message MessageII {
+        optional ElGamalCiphertext alpha = 1;
+        repeated EncryptedSet candidates = 2;
+    }
+
+    message MessageIII {
+        repeated EncryptedSet candidates  = 1;
+    }
+
+    message MessageIV {
+        repeated bytes ciphertexts = 1;
+    }
+
+    message MessageV {
+        repeated bytes ciphertexts = 1;
+    }
+}
+
+
+// PARTY ZERO
 message PartyZeroMessage {
     oneof message_content {
         //StartProtocolRequest start = 1;
@@ -148,14 +186,12 @@ message PartyZeroMessage {
 
 message ClientMessage {
     oneof client_message_oneof {
-        PartyZeroMessage
-            party_zero_msg = 1;
+        PartyZeroMessage party_zero_msg = 1;
+        OriginalMessage og_msg = 2;
     }
 }
 
-/*
- * PARTY ONE
- */
+// PARTY ONE
 message PartyOneMessage {
     oneof message_content {
         //ServerExchange server_key_exchange = 1;
@@ -179,7 +215,7 @@ message PartyOneMessage {
 
 message ServerMessage {
     oneof server_message_oneof {
-        PartyOneMessage
-            party_one_msg = 1;
+        PartyOneMessage party_one_msg = 1;
+        OriginalMessage og_msg = 2;
     }
 }

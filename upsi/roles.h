@@ -77,7 +77,6 @@ class HasTree {
         {
             this->ctx_ = params->ctx;
 
-            // set up el gamal keys
             auto group = new ECGroup(ECGroup::Create(CURVE_ID, ctx_).value());
             this->group = group;
 

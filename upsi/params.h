@@ -38,6 +38,9 @@ struct PSIParams {
     // filename for other party's initial encrypted tree
     std::string other_tree_fn;
 
+    // filename for initial oprf outputs
+    std::string oprf_fn;
+
     // addition only param set
     PSIParams(
         Context* ctx,
@@ -60,6 +63,20 @@ struct PSIParams {
         std::string other_tree_fn = ""
     ) : ctx(ctx), ppk_fn(ppk_fn), psk_fn(psk_fn), total_days(total_days),
         my_tree_fn(my_tree_fn), other_tree_fn(other_tree_fn) { }
+
+    // original construction param set
+    PSIParams(
+        bool nonce,
+        Context* ctx,
+        std::string my_pk_fn,
+        std::string their_pk_fn,
+        std::string sk_fn,
+        int total_days,
+        std::string my_tree_fn = "",
+        std::string other_tree_fn = "",
+        std::string oprf_fn = ""
+    ) : ctx(ctx), epk_fn(my_pk_fn), esk_fn(sk_fn), ppk_fn(their_pk_fn), total_days(total_days),
+        my_tree_fn(my_tree_fn), other_tree_fn(other_tree_fn), oprf_fn(oprf_fn) { }
 
 
     // true when we are importing initial trees from file
