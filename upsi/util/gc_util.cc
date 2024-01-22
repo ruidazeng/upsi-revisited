@@ -25,6 +25,24 @@ uint64_t BigNum2uint64(const BigNum &x) {
     return bytes2uint64(bytes);
 }
 
+void bytes2bool(const std::string& str, bool* bool_val, int cnt) {
+    int len = str.length(), cnt_byte = (cnt >> 3), p = 0, rem = cnt & 7;
+    assert((len << 3) >= cnt);
+    if(rem) {
+    	uint8_t tmp = str[len - cnt_byte - 1];
+    	for (int i = rem - 1; i >= 0; --i) bool_val[p++] = ((tmp >> i) & 1);
+    }
+    for (int i = len - cnt_byte; i < len; ++i) {
+    	uint8_t tmp = str[i];
+        for (int j = 7; j >= 0; --j) bool_val[p++] = ((tmp >> j) & 1);
+    }
+}
+
+void BigNum2bool(const BigNum &x, bool* bool_val, int cnt) {
+    std::string bytes = x.ToBytes(); // 32 bytes for SHA256 => obtain random_path as a byte string
+    return bytes2bool(bytes, bool_val, cnt);
+}
+
 void BigNum2block(BigNum x, emp::block* bl, int cnt_block) {
 	std::string str = x.ToBytes();
 	PadBytes(str, cnt_block << 4);
