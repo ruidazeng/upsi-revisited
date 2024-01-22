@@ -416,6 +416,8 @@ std::tuple<
             p0_universe[element] = ctx->GenerateRandBetween(
                 ctx->One(), max_value_bn
             ).ToIntValue().value();
+        } else if (func == Functionality::PSI) {
+            p0_universe[element] = stoll(element);
         } else {
             throw std::runtime_error("[DataUtil] incorrect functionality provided");
         }
@@ -430,6 +432,9 @@ std::tuple<
             p0_universe[GetRandomSetElement()] = ctx->GenerateRandBetween(
                 ctx->One(), max_value_bn
             ).ToIntValue().value();
+        } else if (func == Functionality::PSI) {
+        	std::string element = GetRandomSetElement();
+            p0_universe[element] = stoll(element);
         } else {
             throw std::runtime_error("[DataUtil] incorrect functionality provided");
         }
@@ -454,7 +459,8 @@ std::tuple<
     uint64_t initial_sum = 0;
     for (const auto& element : p0_endset) {
         if (p1_endset.find(element.first) != p1_endset.end()) {
-            initial_sum += element.second;
+            if(func == Functionality::PSI) ++initial_sum;
+            else initial_sum += element.second;
         }
     }
 
@@ -469,7 +475,8 @@ std::tuple<
     uint64_t sum = 0;
     for (const auto& element : p0_endset) {
         if (p1_endset.find(element.first) != p1_endset.end()) {
-            sum += element.second;
+            if(func == Functionality::PSI) ++sum;
+            else sum += element.second;
         }
     }
 

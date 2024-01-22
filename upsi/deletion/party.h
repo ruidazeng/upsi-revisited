@@ -25,7 +25,7 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
         std::unique_ptr<PublicPaillier> pk;
 
         // garbled circuit inputs inputs and output
-        std::vector<uint64_t> gc_x, gc_y;
+        std::vector<BigNum> gc_x, gc_y;
         std::vector<BigNum> gc_z;
 
         int gc_party;
@@ -97,7 +97,7 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
 
             for (const PaillierPair& path_i: path) {
                 BigNum alpha = this->ctx_->GenerateRandLessThan(this->pk->n());
-                gc_x.push_back(BigNum2uint64(alpha));
+                gc_x.push_back(alpha);
 
                 ASSIGN_OR_RETURN(BigNum alpha_minus_x, this->pk->Encrypt(alpha - element.first)); //alpha >> element
                 BigNum tmp = this->pk->Add(alpha_minus_x, path_i.first);//y - x + alpha
@@ -119,7 +119,7 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
         Status CombinePathResponder(std::vector<Element> elements) {
             for (const Element& elements_i: elements) {
                 ASSIGN_OR_RETURN(BigNum tmp, this->sk->Decrypt(elements_i));
-                gc_y.push_back(BigNum2uint64(tmp));
+                gc_y.push_back(tmp);
             }
 
             return OkStatus();
@@ -132,10 +132,14 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
 
             std::vector<bool> my_bit;
 
+            bool bool_val[GC_SIZE];
             for (int i = 0; i < cnt; ++i) {
                 Bit eq(true);
-                emp::Integer a(64, is_sender? gc_x[i] : gc_y[i], emp::ALICE);
-                emp::Integer b(64, is_sender? gc_x[i] : gc_y[i], emp::BOB);
+                if(is_sender) BigNum2bool(gc_x[i], bool_val);
+                else BigNum2bool(gc_y[i], bool_val);
+                emp::Integer a, b;
+                a.init(bool_val, GC_SIZE, emp::ALICE);
+                b.init(bool_val, GC_SIZE, emp::BOB);
 
                 bool cur_bit = 0;
                 if(gc_party == emp::ALICE) cur_bit = rand() & 1;
