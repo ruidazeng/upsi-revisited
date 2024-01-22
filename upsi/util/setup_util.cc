@@ -127,12 +127,47 @@ Status GeneratePaillierKeys(
     return OkStatus();
 }
 
+Status GenerateElGamalKeys(
+    Context* ctx,
+    std::string p0_dir,
+    std::string p1_dir
+) {
+    std::cout << "[Setup] generating keys" << std::flush;
+
+    RETURN_IF_ERROR(
+        elgamal_key_util::GenerateElGamalKeyPair(
+            CURVE_ID, p0_dir + "/elgamal.pub", p0_dir + "/elgamal.key"
+        )
+    );
+    std::cout << "." << std::flush;
+
+    RETURN_IF_ERROR(
+        elgamal_key_util::GenerateElGamalKeyPair(
+            CURVE_ID, p1_dir + "/elgamal.pub", p1_dir + "/elgamal.key"
+        )
+    );
+    std::cout << "." << std::flush;
+
+    // a bit of visual flare
+    std::string p0_spacing(p0_dir.length() - 1, ' ');
+    std::string p1_spacing(p0_dir.length() - 1, ' ');
+
+    // report which files were created
+    std::cout << " done" << std::endl;
+    std::cout << "        " << p0_dir << "elgamal.key" << std::endl;
+    std::cout << "        " << p0_spacing << "/elgamal.pub" << std::endl;
+    std::cout << "        " << p1_dir << "elgamal.key" << std::endl;
+    std::cout << "        " << p1_spacing << "/elgamal.pub" << std::endl;
+    std::cout << std::endl;
+    return OkStatus();
+}
+
 StatusOr<std::unique_ptr<ElGamalEncrypter>> GetElGamal(
-    const std::string& dir, ECGroup* group
+    const std::string& dir, ECGroup* group, std::string pk_fn = "shared.pub"
 ) {
     ASSIGN_OR_RETURN(
         ElGamalPublicKey serial_key,
-        ProtoUtils::ReadProtoFromFile<ElGamalPublicKey>(dir + "shared.pub")
+        ProtoUtils::ReadProtoFromFile<ElGamalPublicKey>(dir + pk_fn)
     );
 
     ASSIGN_OR_RETURN(
@@ -170,10 +205,11 @@ Status GenerateTrees(
     std::vector<Element> data,
     const std::string& key_dir,
     const std::string& plaintext_dir,
-    const std::string& encrypted_dir
+    const std::string& encrypted_dir,
+    std::string pk_fn
 ) {
     // read in the keys to encrypt the trees
-    ASSIGN_OR_RETURN(auto encrypter, GetElGamal(key_dir, group));
+    ASSIGN_OR_RETURN(auto encrypter, GetElGamal(key_dir, group, pk_fn));
 
     // set up the trees
     CryptoTree<Element> plaintext(DEFAULT_STASH_SIZE, DEFAULT_NODE_SIZE);
