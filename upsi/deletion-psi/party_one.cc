@@ -9,7 +9,7 @@
 #include "upsi/utils.h"
 
 namespace upsi {
-namespace deletion {
+namespace deletion_psi {
 
 Status PartyOne::Handle(const ClientMessage& req, MessageSink<ServerMessage>* sink) {
     if (ProtocolFinished()) {
@@ -117,5 +117,5 @@ StatusOr<PartyOneMessage::MessageII> PartyOne::GenerateMessageII(
     return response;
 }
 
-}  // namespace deletion
+}  // namespace deletion_psi
 }  // namespace upsi

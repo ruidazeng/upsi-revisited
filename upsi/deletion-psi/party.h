@@ -9,7 +9,7 @@
 #include "upsi/utils.h"
 
 namespace upsi {
-namespace deletion {
+namespace deletion_psi {
 
 class Party : public HasTree<ElementAndPayload, PaillierPair> {
     protected:
@@ -259,5 +259,5 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
         }
 };
 
-} // namespace deletion
+} // namespace deletion_psi
 } // namespace upsi

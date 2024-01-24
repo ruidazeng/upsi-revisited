@@ -7,7 +7,7 @@
 namespace upsi {
 
 
-#define GC_SIZE 148
+#define GC_SIZE 72
 
 uint64_t bytes2uint64(const std::string& str);
 uint64_t generateRandom64bits();

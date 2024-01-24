@@ -32,7 +32,7 @@
 #include "emp-sh2pc/emp-sh2pc.h"
 
 using namespace upsi;
-using namespace upsi::deletion;
+using namespace upsi::deletion_psi;
 
 ABSL_FLAG(int, party, 1, "which party to run");
 ABSL_FLAG(std::string, port, "0.0.0.0:1026", "listening port");

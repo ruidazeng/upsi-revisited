@@ -21,7 +21,7 @@
 #include "upsi/util/status.inc"
 
 namespace upsi {
-namespace deletion {
+namespace deletion_psi {
 
 class PartyZero : public Client, public Party {
     public:
@@ -71,5 +71,5 @@ class PartyZero : public Client, public Party {
         uint64_t result = 0;
 };
 
-}  // namespace deletion
+}  // namespace deletion_psi
 }  // namespace upsi
