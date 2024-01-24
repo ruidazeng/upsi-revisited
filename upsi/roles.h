@@ -66,10 +66,11 @@ class HasTree {
         Context* ctx_;
         ECGroup* group;
 
+    public:
         // our plaintext tree & their encrypted tree
         CryptoTree<P> my_tree;
         CryptoTree<E> other_tree;
-    public:
+
         HasTree(PSIParams* params) :
             my_tree(params->stash_size, params->node_size),
             other_tree(params->stash_size, params->node_size)

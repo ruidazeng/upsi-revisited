@@ -43,7 +43,8 @@ ABSL_FLAG(std::string, out_dir, "out/", "name of directory for setup files");
 ABSL_FLAG(upsi::Functionality, func, upsi::Functionality::SUM, "desired protocol functionality");
 ABSL_FLAG(int, days, 10, "total days the protocol will run for");
 
-ABSL_FLAG(bool, trees, true, "use initial trees stored on disk");
+ABSL_FLAG(bool, import, false, "use initial trees stored on disk");
+ABSL_FLAG(int, start_size, -1, "size of the initial trees (if creating random)");
 
 Status RunPartyZero() {
     Context context;
@@ -59,9 +60,11 @@ Status RunPartyZero() {
     params.stash_size = 2 * DEFAULT_STASH_SIZE;
     params.node_size = 2 * DEFAULT_NODE_SIZE;
 
-    if (absl::GetFlag(FLAGS_trees)) {
+    if (absl::GetFlag(FLAGS_import)) {
         params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/plaintext.tree";
         params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/encrypted.tree";
+    } else if (absl::GetFlag(FLAGS_start_size)) {
+        params.start_size = absl::GetFlag(FLAGS_start_size);
     }
 
     // read in dataset
@@ -153,9 +156,11 @@ Status RunPartyOne() {
     params.stash_size = 2 * DEFAULT_STASH_SIZE;
     params.node_size = 2 * DEFAULT_NODE_SIZE;
 
-    if (absl::GetFlag(FLAGS_trees)) {
+    if (absl::GetFlag(FLAGS_import)) {
         params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/plaintext.tree";
         params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/encrypted.tree";
+    } else if (absl::GetFlag(FLAGS_start_size)) {
+        params.start_size = absl::GetFlag(FLAGS_start_size);
     }
 
     // read in dataset
@@ -208,7 +213,7 @@ Status RunPartyOne() {
         // service.new_day();
 
         while (!service.ProtocolFinished()) ;
-            
+
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
         // shut down server
@@ -222,7 +227,7 @@ Status RunPartyOne() {
     	party_one->StoreCommGC(i);
     }
     std::cout << "[PartyOne] completed protocol and shut down" << std::endl;
-    
+
     party_one->PrintComm();
 
 	finalize_semi_honest();
@@ -239,6 +244,11 @@ int main(int argc, char** argv) {
     srand((unsigned)time(NULL));
 
     if (!DEBUG) { std::clog.setstate(std::ios_base::failbit); }
+
+    if (absl::GetFlag(FLAGS_import) && absl::GetFlag(FLAGS_start_size) > 0) {
+        std::cerr << "[Run] cannot both import trees and create mock trees" << std::endl;
+        return 1;
+    }
 
     Status status = OkStatus();
 
