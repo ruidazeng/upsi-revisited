@@ -40,7 +40,7 @@ void bytes2bool(const std::string& str, bool* bool_val, int cnt) {
 
 void BigNum2bool(const BigNum &x, bool* bool_val, int cnt) {
     Context ctx;
-    BigNum max_value = ctx.One() << 73;
+    BigNum max_value = ctx.One() << (cnt + 1);
     BigNum tmp = ctx.RandomOracleSha256(x.ToBytes(), max_value);
     return bytes2bool(tmp.ToBytes(), bool_val, cnt);
 }
