@@ -15,7 +15,7 @@
 #include "upsi/util/status.inc"
 
 namespace upsi {
-namespace deletion {
+namespace deletion_psi {
 
 class PartyOne : public Server, public Party {
     protected:
@@ -68,5 +68,5 @@ class PartyOne : public Server, public Party {
 };
 
 
-}  // namespace deletion
+}  // namespace deletion_psi
 }  // namespace upsi

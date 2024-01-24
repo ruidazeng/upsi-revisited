@@ -21,7 +21,7 @@ uint64_t generateRandom64bits() {
 }
 
 uint64_t BigNum2uint64(const BigNum &x) {
-    std::string bytes = x.ToBytes(); // 32 bytes for SHA256 => obtain random_path as a byte string
+    std::string bytes = x.ToBytes();
     return bytes2uint64(bytes);
 }
 
@@ -39,8 +39,10 @@ void bytes2bool(const std::string& str, bool* bool_val, int cnt) {
 }
 
 void BigNum2bool(const BigNum &x, bool* bool_val, int cnt) {
-    std::string bytes = x.ToBytes(); // 32 bytes for SHA256 => obtain random_path as a byte string
-    return bytes2bool(bytes, bool_val, cnt);
+    Context ctx;
+    BigNum max_value = ctx.One() << 73;
+    BigNum tmp = ctx.RandomOracleSha256(x.ToBytes(), max_value);
+    return bytes2bool(tmp.ToBytes(), bool_val, cnt);
 }
 
 void BigNum2block(BigNum x, emp::block* bl, int cnt_block) {

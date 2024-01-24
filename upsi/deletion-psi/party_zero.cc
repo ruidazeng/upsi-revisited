@@ -10,7 +10,7 @@
 #include "upsi/utils.h"
 
 namespace upsi {
-namespace deletion {
+namespace deletion_psi {
 
 ////////////////////////////////////////////////////////////////////////////////
 // DELETION METHODS
@@ -176,5 +176,5 @@ StatusOr<PartyZeroMessage::MessageI> PartyZero::GenerateMessageI(
     return msg;
 }
 
-}  // namespace deletion
+}  // namespace deletion_psi
 }  // namespace upsi
