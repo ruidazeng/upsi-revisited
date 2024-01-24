@@ -55,6 +55,10 @@ Status RunPartyZero() {
         absl::GetFlag(FLAGS_days)
     );
 
+    // because we are allowing single additions and deletions
+    params.stash_size = 2 * DEFAULT_STASH_SIZE;
+    params.node_size = 2 * DEFAULT_NODE_SIZE;
+
     if (absl::GetFlag(FLAGS_trees)) {
         params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/plaintext.tree";
         params.other_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/encrypted.tree";
@@ -118,7 +122,7 @@ Status RunPartyZero() {
     grpc.print();
     garbled.print();
     daily.print();
-    
+
     party_zero->PrintResult();
     party_zero->PrintComm();
 
@@ -139,6 +143,10 @@ Status RunPartyOne() {
         absl::GetFlag(FLAGS_out_dir) + "p1/paillier.key",
         absl::GetFlag(FLAGS_days)
     );
+
+    // because we are allowing single additions and deletions
+    params.stash_size = 2 * DEFAULT_STASH_SIZE;
+    params.node_size = 2 * DEFAULT_NODE_SIZE;
 
     if (absl::GetFlag(FLAGS_trees)) {
         params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/plaintext.tree";
@@ -195,7 +203,7 @@ Status RunPartyOne() {
         // service.new_day();
 
         while (!service.ProtocolFinished());
-        
+
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
         // shut down server
@@ -204,10 +212,10 @@ Status RunPartyOne() {
 
     	RETURN_IF_ERROR(party_one->SecondPhase());
     	party_one->StoreCommGC(i);
-       
+
     }
     std::cout << "[PartyOne] completed protocol and shut down" << std::endl;
-    
+
     party_one->PrintComm();
 
 	finalize_semi_honest();
