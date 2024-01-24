@@ -24,10 +24,13 @@ Status PartyZero::Handle(const ClientMessage& msg, MessageSink<ServerMessage>* s
     AddComm(msg);
 
     if (msg.og_msg().has_message_i()) {
+        std::clog << "[Debug] message i size = " << msg.og_msg().message_i().ByteSizeLong() << std::endl;
         RETURN_IF_ERROR(SendMessageII(msg.og_msg().message_i(), sink));
     } else if (msg.og_msg().has_message_iii()) {
+        std::clog << "[Debug] message iii size = " << msg.og_msg().message_iii().ByteSizeLong() << std::endl;
         RETURN_IF_ERROR(SendMessageIV(msg.og_msg().message_iii(), sink));
     } else if (msg.og_msg().has_message_v()) {
+        std::clog << "[Debug] message v size = " << msg.og_msg().message_v().ByteSizeLong() << std::endl;
         RETURN_IF_ERROR(ProcessMessageV(msg.og_msg().message_v()));
         FinishDay();
     } else {
@@ -54,7 +57,22 @@ Status PartyZero::SendMessageII(
         }
     }
 
-    std::vector<std::vector<CiphertextAndElGamal>> candidates(elements.size());
+    // sample a random group element
+    BigNum r = this->ctx_->GenerateRandLessThan(this->group->GetOrder());
+    ASSIGN_OR_RETURN(
+        ECPoint hr, this->group->GetPointByHashingToCurveSha256(r.ToBytes())
+    );
+
+    // send under my pk
+    ASSIGN_OR_RETURN(Ciphertext alpha, this->my_pk->Encrypt(hr));
+    ASSIGN_OR_RETURN(
+        *res.mutable_alpha(), elgamal_proto_util::SerializeCiphertext(alpha)
+    );
+
+    // homomorphically evaluate under their pk
+    ASSIGN_OR_RETURN(alpha, their_pk->Encrypt(hr));
+
+    std::vector<std::vector<Ciphertext>> candidates(elements.size());
     for (size_t i = 0; i < elements.size(); ++i) {
         std::vector<Ciphertext> path = this->tree.getPath(elements[i]);
         ASSIGN_OR_RETURN(Ciphertext x, their_pk->Encrypt(elements[i]));
@@ -64,19 +82,12 @@ Status PartyZero::SendMessageII(
             Ciphertext y = std::move(path[j]);
             ASSIGN_OR_RETURN(Ciphertext minus_y, elgamal::Invert(y));
 
-            // sample a random group element
-            BigNum r = this->ctx_->GenerateRandLessThan(this->group->GetOrder());
-            ASSIGN_OR_RETURN(
-                ECPoint hr, this->group->GetPointByHashingToCurveSha256(r.ToBytes())
-            );
-            ASSIGN_OR_RETURN(Ciphertext alpha, their_pk->Encrypt(hr));
-            ASSIGN_OR_RETURN(Ciphertext x_plus_alpha, elgamal::Mul(x, alpha));
-            ASSIGN_OR_RETURN(Ciphertext x_plus_alpha_minus_y, elgamal::Mul(x_plus_alpha, minus_y));
-
-            ASSIGN_OR_RETURN(alpha, my_pk->Encrypt(hr));
-            candidates[i].push_back(std::make_pair(
-                std::move(x_plus_alpha_minus_y), std::move(alpha)
-            ));
+            // compute Enc(alpha + beta * (x - y)) under their pk
+            BigNum beta = this->my_pk->CreateRandomMask();
+            ASSIGN_OR_RETURN(Ciphertext x_minus_y, elgamal::Mul(x, minus_y));
+            ASSIGN_OR_RETURN(Ciphertext beta_times_x_minus_y, elgamal::Exp(x_minus_y, beta));
+            ASSIGN_OR_RETURN(Ciphertext ct_beta, elgamal::Mul(alpha, beta_times_x_minus_y));
+            candidates[i].push_back(std::move(ct_beta));
         }
     }
 
@@ -85,17 +96,14 @@ Status PartyZero::SendMessageII(
         for (size_t j = 0; j < candidates[i].size(); j++) {
             auto candidate = encrypted_set->add_elements();
             ASSIGN_OR_RETURN(
-                *candidate->mutable_elgamal()->mutable_element(),
-                elgamal_proto_util::SerializeCiphertext(candidates[i][j].first)
-            );
-            ASSIGN_OR_RETURN(
-                *candidate->mutable_elgamal()->mutable_payload(),
-                elgamal_proto_util::SerializeCiphertext(candidates[i][j].second)
+                *candidate->mutable_no_payload()->mutable_element(),
+                elgamal_proto_util::SerializeCiphertext(candidates[i][j])
             );
         }
     }
     ServerMessage msg;
     *(msg.mutable_og_msg()->mutable_message_ii()) = res;
+    std::clog << "[Debug] message ii size = " << msg.og_msg().message_ii().ByteSizeLong() << std::endl;
     AddComm(msg);
     return sink->Send(msg);
 }
@@ -105,6 +113,7 @@ Status PartyZero::SendMessageIV(
 ) {
     OriginalMessage::MessageIV msg;
     this->masks.clear();
+    uint32_t n = 0;
     for (int i = 0; i < res.candidates().size(); i++) {
         ASSIGN_OR_RETURN(
             std::vector<Ciphertext> candidates,
@@ -113,6 +122,7 @@ Status PartyZero::SendMessageIV(
             )
         );
 
+        n += candidates.size();
         bool in_intersection = false;
         for (const Ciphertext& candidate : candidates) {
             ASSIGN_OR_RETURN(ECPoint decrypted, this->decrypter->Decrypt(candidate));
@@ -147,10 +157,12 @@ Status PartyZero::SendMessageIV(
             this->masks.push_back(mask);
         }
     }
+    std::cout << "[DEBUG] candidates.size() = " << n << std::endl;
 
     ServerMessage sm;
     *(sm.mutable_og_msg()->mutable_message_iv()) = msg;
     AddComm(sm);
+    std::clog << "[Debug] message iv size = " << sm.og_msg().message_iv().ByteSizeLong() << std::endl;
     return sink->Send(sm);
 }
 
@@ -179,7 +191,7 @@ void PartyZero::PrintComm() {
 
 void PartyZero::PrintResult() {
     std::cout << "[PartyZero] CARDINALITY = " << this->intersection.size() << std::endl;
-    if (this->intersection.size() < 250) {
+    if (this->intersection.size() < 30) {
         for (const std::string& element : this->intersection) {
             std::cout << "            " << element << std::endl;
         }

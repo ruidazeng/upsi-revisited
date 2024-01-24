@@ -76,24 +76,30 @@ Status PartyOne::SendMessageIII(
     const OriginalMessage::MessageII& res, MessageSink<ClientMessage>* sink
 ) {
     OriginalMessage::MessageIII msg;
+
+    ASSIGN_OR_RETURN(
+        Ciphertext minus_alpha,
+        elgamal_proto_util::DeserializeCiphertext(this->group, res.alpha())
+    );
+    ASSIGN_OR_RETURN(minus_alpha, elgamal::Invert(minus_alpha));
+
     for (const auto& repeated : res.candidates()) {
         ASSIGN_OR_RETURN(
-            std::vector<CiphertextAndElGamal> incoming,
-            DeserializeCiphertexts<CiphertextAndElGamal>(
+            std::vector<Ciphertext> incoming,
+            DeserializeCiphertexts<Ciphertext>(
                 repeated.elements(), this->ctx_, this->group
             )
         );
 
         std::vector<Ciphertext> outgoing;
-        for (const CiphertextAndElGamal& ciphertexts : incoming) {
+        for (const Ciphertext& ciphertexts : incoming) {
             BigNum gamma = this->my_pk->CreateRandomMask();
-            ASSIGN_OR_RETURN(ECPoint beta_point, this->decrypter->Decrypt(ciphertexts.first));
+            ASSIGN_OR_RETURN(ECPoint beta_point, this->decrypter->Decrypt(ciphertexts));
             ASSIGN_OR_RETURN(Ciphertext beta, this->their_pk->Encrypt(beta_point));
-            ASSIGN_OR_RETURN(Ciphertext minus_alpha, elgamal::Invert(ciphertexts.second));
             ASSIGN_OR_RETURN(Ciphertext beta_minus_alpha, elgamal::Mul(beta, minus_alpha));
             ASSIGN_OR_RETURN(
-                Ciphertext gamma_x_beta_minus_alpha, elgamal::Exp(beta_minus_alpha, gamma
-                ));
+                Ciphertext gamma_x_beta_minus_alpha, elgamal::Exp(beta_minus_alpha, gamma)
+            );
             outgoing.push_back(std::move(gamma_x_beta_minus_alpha));
         }
 
