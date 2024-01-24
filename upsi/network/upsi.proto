@@ -136,7 +136,8 @@ message OriginalMessage {
     }
 
     message MessageII {
-        repeated EncryptedSet candidates  = 1;
+        optional ElGamalCiphertext alpha = 1;
+        repeated EncryptedSet candidates = 2;
     }
 
     message MessageIII {
