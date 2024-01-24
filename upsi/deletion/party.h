@@ -29,9 +29,9 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
         std::vector<BigNum> gc_z;
 
         int gc_party;
-        
+
         std::vector<uint64_t> comm_, comm_gc;
-        
+
     public:
         Party(
             PSIParams* params, int gc_party
@@ -49,16 +49,59 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
             }
 
             this->pk = std::make_unique<PublicPaillier>(this->ctx_, pk.value());
+
+            if (params->start_size > 0) {
+                auto status = CreateMockTrees(params->start_size);
+                if (!status.ok()) {
+                    std::cerr << status << std::endl;
+                    std::runtime_error("[Party] failure in creating mock trees");
+                }
+            }
         }
-        
+
+        Status CreateMockTrees(size_t size) {
+            std::cout << "[Party] creating mock plaintext tree..." << std::flush;
+            // fill plaintext tree with random elements
+            std::vector<ElementAndPayload> elements;
+            for (size_t i = 0; i < size; i++) {
+                elements.push_back(
+                    std::make_pair(
+                        this->ctx_->CreateBigNum(std::stoull(GetRandomSetElement())),
+                        this->ctx_->One()
+                    )
+                );
+            }
+
+            std::vector<std::string> hashes;
+            this->my_tree.insert(elements, hashes);
+            std::cout << " done" << std::endl;
+
+            std::cout << "[Party] creating mock encrypted tree..." << std::flush;
+            // fill encrypted tree with encryptions of zero
+            ASSIGN_OR_RETURN(BigNum zero, this->pk->Encrypt(ctx_->Zero()));
+            this->other_tree.crypto_tree.clear();
+            this->other_tree.depth = this->my_tree.depth;
+            this->other_tree.actual_size = this->my_tree.actual_size;
+            for (const CryptoNode<ElementAndPayload>& pnode : this->my_tree.crypto_tree) {
+                CryptoNode<PaillierPair> enode(pnode.node_size);
+                for (size_t i = 0; i < pnode.node_size; i++) {
+                    PaillierPair pair(zero, zero);
+                    enode.node.push_back(pair);
+                }
+                this->other_tree.crypto_tree.push_back(std::move(enode));
+            }
+            std::cout << " done" << std::endl;
+            return OkStatus();
+        }
+
         void AddComm(const google::protobuf::Message& msg, int day) {
             comm_[day] += msg.ByteSizeLong();
         }
-        
+
         void StoreCommGC(int day) {
         	comm_gc[day] = gc_io_->counter;
         }
-        
+
         void PrintComm() {
             unsigned long long total = 0, cnt = comm_.size();
             for (size_t day = 0; day < cnt; day++) {
@@ -72,7 +115,7 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
             std::cout << "Total Comm Sent(B):\t" << total + comm_gc[cnt - 1] << std::endl;
         }
 
-        
+
         void GarbledCircuitIOSetup(emp::NetIO* io) {this->gc_io_ = io;}
         void GarbledCircuitIOSetup(emp::NetIO* io, emp::IKNP<NetIO>* ot_s, emp::IKNP<NetIO>* ot_r) {
             this->gc_io_ = io;

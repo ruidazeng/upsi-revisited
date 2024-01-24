@@ -25,6 +25,9 @@ struct PSIParams {
     // number of days to run protocol for
     int total_days;
 
+    // if creating mock trees, size of those trees
+    int start_size = -1;
+
     // parameters for the CryptoTrees
     int stash_size = DEFAULT_STASH_SIZE;
     int node_size = DEFAULT_NODE_SIZE;
