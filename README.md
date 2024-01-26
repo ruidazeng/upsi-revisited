@@ -3,9 +3,14 @@
 ## Building the Project
 
 The project build is managed by `bazel` and is set up to run on `v6.4`. To build the project, simply run the following
-from the `upsi-new` directory:
+from the `upsi-new` directory. For addition only, run
 ```bash
-bazel build //upsi:all
+bazel build //upsi/addition:all
+```
+
+For addition & deletion, run
+```bash
+bazel build //upsi/deletion:all
 ```
 
 ## Running the Protocol
