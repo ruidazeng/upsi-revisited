@@ -48,7 +48,51 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
             }
 
             this->pk = std::make_unique<PublicPaillier>(this->ctx_, pk.value());
+            
+             if (params->start_size > 0) {
+                auto status = CreateMockTrees(params->start_size);
+                if (!status.ok()) {
+                    std::cerr << status << std::endl;
+                    std::runtime_error("[Party] failure in creating mock trees");
+                }
+            }
         }
+
+        Status CreateMockTrees(size_t size) {
+            std::cout << "[Party] creating mock plaintext tree..." << std::flush;
+            // fill plaintext tree with random elements
+            std::vector<ElementAndPayload> elements;
+            for (size_t i = 0; i < size; i++) {
+                elements.push_back(
+                    std::make_pair(
+                        this->ctx_->CreateBigNum(std::stoull(GetRandomSetElement())),
+                        this->ctx_->One()
+                    )
+                );
+            }
+
+            std::vector<std::string> hashes;
+            this->my_tree.insert(elements, hashes);
+            std::cout << " done" << std::endl;
+
+            std::cout << "[Party] creating mock encrypted tree..." << std::flush;
+            // fill encrypted tree with encryptions of zero
+            ASSIGN_OR_RETURN(BigNum zero, this->pk->Encrypt(ctx_->Zero()));
+            this->other_tree.crypto_tree.clear();
+            this->other_tree.depth = this->my_tree.depth;
+            this->other_tree.actual_size = this->my_tree.actual_size;
+            for (const CryptoNode<ElementAndPayload>& pnode : this->my_tree.crypto_tree) {
+                CryptoNode<PaillierPair> enode(pnode.node_size);
+                for (size_t i = 0; i < pnode.node_size; i++) {
+                    PaillierPair pair(zero, zero);
+                    enode.node.push_back(pair);
+                }
+                this->other_tree.crypto_tree.push_back(std::move(enode));
+            }
+            std::cout << " done" << std::endl;
+            return OkStatus();
+        }
+            
         
         void AddComm(const google::protobuf::Message& msg, int day) {
             comm_[day] += msg.ByteSizeLong();
@@ -132,13 +176,30 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
         }
 
         Status GarbledCircuit(bool is_sender, std::vector<uint64_t>& ans) {
-            int cnt;
+            int cnt, tot_cnt = 0;
             if(is_sender) cnt = gc_x.size();
             else cnt = gc_y.size();
 
             std::vector<std::vector<bool> > my_bit;
 
             bool bool_val[GC_SIZE];
+            std::vector<emp::Integer> a[cnt], b[cnt];
+            for (int i = 0; i < cnt; ++i) {
+            	int cnt_vct;
+            	if(is_sender) cnt_vct = gc_x[i].size();
+            	else cnt_vct = gc_y[i].size();
+            	tot_cnt += cnt_vct;
+            	for (int j = 0; j < cnt_vct; ++j) {
+		            if(is_sender) BigNum2bool(gc_x[i][j], bool_val);
+		            else BigNum2bool(gc_y[i][j], bool_val);
+		            emp::Integer a_tmp, b_tmp;
+		            a_tmp.init(bool_val, GC_SIZE, emp::ALICE);
+		            b_tmp.init(bool_val, GC_SIZE, emp::BOB);
+		            a[i].push_back(a_tmp);
+		            b[i].push_back(b_tmp);
+				}
+            }
+			std::vector<emp::Bit> eq_vct[cnt];
             for (int i = 0; i < cnt; ++i) {
             	int cnt_vct;
             	if(is_sender) cnt_vct = gc_x[i].size();
@@ -146,26 +207,35 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
             	std::vector<bool> my_bit_tmp;
             	for (int j = 0; j < cnt_vct; ++j) {
 		            Bit eq(true);
-		            if(is_sender) BigNum2bool(gc_x[i][j], bool_val);
-		            else BigNum2bool(gc_y[i][j], bool_val);
-		            emp::Integer a, b;
-		            a.init(bool_val, GC_SIZE, emp::ALICE);
-		            b.init(bool_val, GC_SIZE, emp::BOB);
-
 		            bool cur_bit = 0;
-		            if(gc_party == emp::ALICE) cur_bit = rand() & 1;
+		            if(gc_party == emp::ALICE) {
+		            	cur_bit = rand() & 1;
+		            	my_bit_tmp.push_back(cur_bit);
+		            }
 		            emp::Bit tmp(cur_bit ^ 1, emp::ALICE);
 
-		            eq = (a == b);
+		            eq = (a[i][j] == b[i][j]);
 		            //if(eq.reveal()) std::cerr<<"# " << i << "\n";
 		            eq = eq ^ tmp;
-
-		            if(gc_party == emp::ALICE) eq.reveal(emp::BOB);
-		            else cur_bit = eq.reveal(emp::BOB);
-
-		            my_bit_tmp.push_back(cur_bit);
+		            
+		            eq_vct[i].push_back(eq);
 		       }
-		       my_bit.push_back(my_bit_tmp);
+		       if(gc_party == emp::ALICE) my_bit.push_back(my_bit_tmp);
+            }
+            
+            for (int i = 0; i < cnt; ++i) {
+            	int cnt_vct;
+            	if(is_sender) cnt_vct = gc_x[i].size();
+            	else cnt_vct = gc_y[i].size();
+            	std::vector<bool> my_bit_tmp;
+            	for (int j = 0; j < cnt_vct; ++j) {
+		            bool cur_bit = 0;
+		            if(gc_party == emp::ALICE) eq_vct[i][j].reveal(emp::BOB);
+		            else cur_bit = eq_vct[i][j].reveal(emp::BOB);
+
+		            if(gc_party == emp::BOB) my_bit_tmp.push_back(cur_bit);
+		       }
+		       if(gc_party == emp::BOB) my_bit.push_back(my_bit_tmp);
             }
             
             int len = 0, cnt_block = 0;
@@ -177,69 +247,71 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
 
             cnt_block = (len * 2 + 15) >> 4; // ceil(len*2/16)
 
-            bool chosen_bit[cnt_block];
+            bool chosen_bit[cnt_block * tot_cnt];
 
-            emp::block block_eq[cnt_block];
-            emp::block block_neq[cnt_block];
-
-            //std::cerr << cnt_block << " " << cnt << std::endl;
+            emp::block block_zero[cnt_block * tot_cnt];
+            emp::block block_one[cnt_block * tot_cnt];
+			
+			int p = 0;
             for (int i = 0; i < cnt; ++i) {
             	BigNum rs = ctx_->Zero();
             	int cnt_vct = my_bit[i].size();
-            	for (int j = 0; j < cnt_vct; ++j) {
+            	for (int j = 0; j < cnt_vct; ++j, ++p) {
 		            if(is_sender) {
 		                BigNum beta = this->ctx_->GenerateRandLessThan(cur_n);
-		                //BigNum beta = this->ctx_->Zero();
 		                ASSIGN_OR_RETURN(BigNum encrypted_beta, this->pk->Encrypt(cur_n - beta));
-		                //ASSIGN_OR_RETURN(BigNum encrypted_beta, this->pk->Encrypt(beta));
 		                BigNum if_eq = this->pk->Add(gc_z[i][j], encrypted_beta);
-		                //BigNum if_neq = if_eq;
 		                BigNum if_neq = encrypted_beta;
-
-		                BigNum2block(if_eq, block_eq, cnt_block);
-		                BigNum2block(if_neq, block_neq, cnt_block);
-		                /*
-		                   std::cerr << cnt_block << std::endl;
-		                   for (int j = 0; j < cnt_block; ++j) {emp::operator<<(std::cerr, block_eq[j]); std::cerr << " ";}
-		                   std::cerr << "\n";
-		                   for (int j = 0; j < cnt_block; ++j) {emp::operator<<(std::cerr, block_neq[j]); std::cerr << " ";}
-		                   std::cerr << "\n";*/
-
-		                //std::cerr << my_bit[i];
-
-		                if (my_bit[i][j] == 0) ot_sender->send(block_eq, block_neq, cnt_block);
-		                else ot_sender->send(block_neq, block_eq, cnt_block);
+						
+						if(my_bit[i][j] == 0) {
+				            BigNum2block(if_eq, &block_zero[cnt_block * p], cnt_block);
+				            BigNum2block(if_neq, &block_one[cnt_block * p], cnt_block);
+				        }
+				        else {
+						    BigNum2block(if_eq, &block_one[cnt_block * p], cnt_block);
+				            BigNum2block(if_neq, &block_zero[cnt_block * p], cnt_block);
+				        }
+		                
 		                rs = rs + beta;
 		            }
 		            else {
-		                memset(chosen_bit, my_bit[i][j], sizeof(chosen_bit));
-		                ot_receiver->recv(block_eq, chosen_bit, cnt_block);
-		                /*
-		                   std::cerr << cnt_block << std::endl;
-		                   for (int j = 0; j < cnt_block; ++j) {emp::operator<<(std::cerr, block_eq[j]); std::cerr << " ";}
-		                   std::cerr << "\n";*/
-
-		                //std::cerr << (my_bit[i] ^ 1);
-
-		                ASSIGN_OR_RETURN(BigNum tmp, this->sk->Decrypt(block2BigNum(block_eq, cnt_block, ctx_)));
-
-		                rs = rs + tmp;
+		                for (int k = 0; k < cnt_block; ++k) chosen_bit[p * cnt_block + k] = my_bit[i][j];
 		            }
                 }
-                rs = rs.Mod(cur_n); //with ?? probability one < cur_n/2, the other > cur_n/2
-		        uint64_t rs_ = 0;
-		        if((rs * ctx_->Two()) > cur_n) {//negative
-		            //std::cerr<<"negative\n";
-		            rs_ = BigNum2uint64(cur_n - rs); //positive mod 2^64
-		            rs_ = -rs_; //negative mod 2^64
-		        }
-		        else {
-		            rs_ = BigNum2uint64(rs);
-		            //std::cerr<<"positive\n";
-		        }
-		        //std::cerr<<(long long) rs_ << std::endl;
-		        ans.push_back(rs_);
+                if(is_sender) {
+                	rs = rs.Mod(cur_n);
+                	uint64_t rs_ = 0;
+				    if((rs * ctx_->Two()) > cur_n) {//negative
+				        rs_ = BigNum2uint64(cur_n - rs); //positive mod 2^64
+				        rs_ = -rs_; //negative mod 2^64
+				    }
+				    else rs_ = BigNum2uint64(rs);
+				    ans.push_back(rs_);
+                }
             }
+            
+            if(is_sender) ot_sender->send(block_zero, block_one, cnt_block * tot_cnt);
+            else {
+            	ot_receiver->recv(block_zero, chosen_bit, cnt_block * tot_cnt);
+            	p = 0;
+		        for (int i = 0; i < cnt; ++i) {
+		        	BigNum rs = ctx_->Zero();
+		        	int cnt_vct = my_bit[i].size();
+		        	for (int j = 0; j < cnt_vct; ++j, ++p) {
+				    	ASSIGN_OR_RETURN(BigNum tmp, this->sk->Decrypt(block2BigNum(&block_zero[cnt_block * p], cnt_block, ctx_)));
+		                rs = rs + tmp;
+		        	}
+		        	
+		            rs = rs.Mod(cur_n); //with ?? probability one < cur_n/2, the other > cur_n/2
+				    uint64_t rs_ = 0;
+				    if((rs * ctx_->Two()) > cur_n) {//negative
+				        rs_ = BigNum2uint64(cur_n - rs); //positive mod 2^64
+				        rs_ = -rs_; //negative mod 2^64
+				    }
+				    else rs_ = BigNum2uint64(rs);
+				    ans.push_back(rs_);
+		        }
+		    }
             
             return OkStatus();
         }
