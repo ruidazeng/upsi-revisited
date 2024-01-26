@@ -210,9 +210,53 @@ class PartyZeroSecretShare : public PartyZeroWithPayload {
 
     public:
         // use the default constructor
-        using PartyZeroWithPayload::PartyZeroWithPayload;
+        PartyZeroSecretShare(PSIParams* params) : PartyZeroWithPayload(params) {
+            if (params->start_size > 0) {
+                auto status = CreateMockTrees(params->start_size);
+                if (!status.ok()) {
+                    std::cerr << status << std::endl;
+                    std::runtime_error("[PartyZeroSum] failure in creating mock trees");
+                }
+            }
+        }
 
         ~PartyZeroSecretShare() override = default;
+
+        Status CreateMockTrees(size_t size) {
+            std::cout << "[PartyZeroSecretShare] creating mock plaintext tree..." << std::flush;
+            // fill plaintext tree with random elements
+            std::vector<ElementAndPayload> elements;
+            for (size_t i = 0; i < size; i++) {
+                elements.push_back(
+                    std::make_pair(
+                        this->ctx_->CreateBigNum(std::stoull(GetRandomSetElement())),
+                        this->ctx_->One()
+                    )
+                );
+            }
+
+            std::vector<std::string> hashes;
+            this->my_tree.insert(elements, hashes);
+            std::cout << " done" << std::endl;
+
+            std::cout << "[PartyZeroSecretShare] creating mock encrypted tree..." << std::flush;
+            // fill encrypted tree with encryptions of zero
+            ASSIGN_OR_RETURN(Ciphertext zero, this->encrypter->Encrypt(ctx_->Zero()));
+            this->other_tree.crypto_tree.clear();
+            this->other_tree.depth = this->my_tree.depth;
+            this->other_tree.actual_size = this->my_tree.actual_size;
+            for (const CryptoNode<ElementAndPayload>& pnode : this->my_tree.crypto_tree) {
+                CryptoNode<Ciphertext> enode(pnode.node_size);
+                for (size_t i = 0; i < pnode.node_size; i++) {
+                    ASSIGN_OR_RETURN(Ciphertext clone, elgamal::CloneCiphertext(zero));
+                    enode.node.push_back(std::move(clone));
+                }
+                this->other_tree.crypto_tree.push_back(std::move(enode));
+            }
+            std::cout << " done" << std::endl;
+            return OkStatus();
+        }
+
 
         // set the payload to be the element itself
         ElementAndPayload GetPayload(BigNum element, BigNum value) override;

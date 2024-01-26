@@ -130,10 +130,52 @@ class PartyOneSum : public Party<Element, CiphertextAndElGamal>, public PartyOne
 class PartyOneSecretShare : public Party<Element, CiphertextAndPaillier>, public PartyOne {
     public:
         PartyOneSecretShare(PSIParams* params, const std::vector<Dataset>& datasets) :
-            Party<Element, CiphertextAndPaillier>(params),
-            PartyOne(params, datasets) {}
+            Party<Element, CiphertextAndPaillier>(params), PartyOne(params, datasets)
+        {
+            if (params->start_size > 0) {
+                auto status = CreateMockTrees(params->start_size);
+                if (!status.ok()) {
+                    std::cerr << status << std::endl;
+                    std::runtime_error("[PartyZeroSum] failure in creating mock trees");
+                }
+            }
+        }
 
         ~PartyOneSecretShare() = default;
+
+        Status CreateMockTrees(size_t size) {
+            std::cout << "[PartyOneSecretShare] creating mock plaintext tree..." << std::flush;
+
+            // fill plaintext tree with random elements
+            std::vector<Element> elements;
+            for (size_t i = 0; i < size; i++) {
+                elements.push_back(this->ctx_->CreateBigNum(std::stoull(GetRandomSetElement())));
+            }
+
+            std::vector<std::string> hashes;
+            this->my_tree.insert(elements, hashes);
+            std::cout << " done" << std::endl;
+
+            std::cout << "[PartyOneSecretShare] creating mock encrypted tree..." << std::flush;
+
+            // fill encrypted tree with encryptions of zero
+            ASSIGN_OR_RETURN(Ciphertext zero_ct, this->encrypter->Encrypt(ctx_->Zero()));
+            ASSIGN_OR_RETURN(BigNum zero_bn, this->paillier->Encrypt(ctx_->Zero()));
+            this->other_tree.crypto_tree.clear();
+            this->other_tree.depth = this->my_tree.depth;
+            this->other_tree.actual_size = this->my_tree.actual_size;
+            for (const CryptoNode<Element>& pnode : this->my_tree.crypto_tree) {
+                CryptoNode<CiphertextAndPaillier> enode(pnode.node_size);
+                for (size_t i = 0; i < pnode.node_size; i++) {
+                    ASSIGN_OR_RETURN(Ciphertext clone, elgamal::CloneCiphertext(zero_ct));
+                    CiphertextAndPaillier pair = std::make_pair(std::move(clone), zero_bn);
+                    enode.node.push_back(std::move(pair));
+                }
+                this->other_tree.crypto_tree.push_back(std::move(enode));
+            }
+            std::cout << " done" << std::endl;
+            return OkStatus();
+        }
 
         /**
          * update their tree, compute candidates, & send tree updates
