@@ -176,26 +176,36 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
             std::vector<bool> my_bit;
 
             bool bool_val[GC_SIZE];
+            emp::Integer a[cnt], b[cnt];
             for (int i = 0; i < cnt; ++i) {
-                Bit eq(true);
                 if(is_sender) BigNum2bool(gc_x[i], bool_val);
                 else BigNum2bool(gc_y[i], bool_val);
-                emp::Integer a, b;
-                a.init(bool_val, GC_SIZE, emp::ALICE);
-                b.init(bool_val, GC_SIZE, emp::BOB);
-
+                a[i].init(bool_val, GC_SIZE, emp::ALICE);
+                b[i].init(bool_val, GC_SIZE, emp::BOB);
+			}
+			emp::Bit eq_vct[cnt];
+			for (int i = 0; i < cnt; ++i) {
+                Bit eq(true);
                 bool cur_bit = 0;
-                if(gc_party == emp::ALICE) cur_bit = rand() & 1;
+                if(gc_party == emp::ALICE) {
+                	cur_bit = rand() & 1;
+                	my_bit.push_back(cur_bit);
+                }
                 emp::Bit tmp(cur_bit ^ 1, emp::ALICE);
 
-                eq = (a == b);
+                eq = (a[i] == b[i]);
                 //if(eq.reveal()) std::cerr<<"# " << i << "\n";
                 eq = eq ^ tmp;
+                
+                eq_vct[i] = eq;
+            }
+            
+            for (int i = 0; i < cnt; ++i) {
+            	bool cur_bit = 0;
+                if(gc_party == emp::ALICE) eq_vct[i].reveal(emp::BOB);
+                else cur_bit = eq_vct[i].reveal(emp::BOB);
 
-                if(gc_party == emp::ALICE) eq.reveal(emp::BOB);
-                else cur_bit = eq.reveal(emp::BOB);
-
-                my_bit.push_back(cur_bit);
+                if(gc_party == emp::BOB) my_bit.push_back(cur_bit);
             }
 
             BigNum rs = ctx_->Zero();
@@ -209,49 +219,41 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
 
             cnt_block = (len * 2 + 15) >> 4; // ceil(len*2/16)
 
-            bool chosen_bit[cnt_block];
+            bool chosen_bit[cnt_block * cnt];
 
-            emp::block block_eq[cnt_block];
-            emp::block block_neq[cnt_block];
+            emp::block block_zero[cnt_block * cnt];
+            emp::block block_one[cnt_block * cnt];
 
             //std::cerr << cnt_block << " " << cnt << std::endl;
             for (int i = 0; i < cnt; ++i) {
                 if(is_sender) {
                     BigNum beta = this->ctx_->GenerateRandLessThan(cur_n);
-                    //BigNum beta = this->ctx_->Zero();
                     ASSIGN_OR_RETURN(BigNum encrypted_beta, this->pk->Encrypt(cur_n - beta));
-                    //ASSIGN_OR_RETURN(BigNum encrypted_beta, this->pk->Encrypt(beta));
                     BigNum if_eq = this->pk->Add(gc_z[i], encrypted_beta);
-                    //BigNum if_neq = if_eq;
                     BigNum if_neq = encrypted_beta;
+					
+					if(my_bit[i] == 0) {
+		                BigNum2block(if_eq, &block_zero[cnt_block * i], cnt_block);
+		                BigNum2block(if_neq, &block_one[cnt_block * i], cnt_block);
+		            }
+		            else {
+		                BigNum2block(if_eq, &block_one[cnt_block * i], cnt_block);
+		                BigNum2block(if_neq, &block_zero[cnt_block * i], cnt_block);
+		            }
 
-                    BigNum2block(if_eq, block_eq, cnt_block);
-                    BigNum2block(if_neq, block_neq, cnt_block);
-                    /*
-                       std::cerr << cnt_block << std::endl;
-                       for (int j = 0; j < cnt_block; ++j) {emp::operator<<(std::cerr, block_eq[j]); std::cerr << " ";}
-                       std::cerr << "\n";
-                       for (int j = 0; j < cnt_block; ++j) {emp::operator<<(std::cerr, block_neq[j]); std::cerr << " ";}
-                       std::cerr << "\n";*/
-
-                    //std::cerr << my_bit[i];
-
-                    if (my_bit[i] == 0) ot_sender->send(block_eq, block_neq, cnt_block);
-                    else ot_sender->send(block_neq, block_eq, cnt_block);
                     rs = rs + beta;
                 }
                 else {
-                    memset(chosen_bit, my_bit[i], sizeof(chosen_bit));
-                    ot_receiver->recv(block_eq, chosen_bit, cnt_block);
-                    /*
-                       std::cerr << cnt_block << std::endl;
-                       for (int j = 0; j < cnt_block; ++j) {emp::operator<<(std::cerr, block_eq[j]); std::cerr << " ";}
-                       std::cerr << "\n";*/
-
-                    //std::cerr << (my_bit[i] ^ 1);
-
-                    ASSIGN_OR_RETURN(BigNum tmp, this->sk->Decrypt(block2BigNum(block_eq, cnt_block, ctx_)));
-
+                	for (int j = 0; j < cnt_block; ++j) chosen_bit[i * cnt_block + j] = my_bit[i];
+                }
+            }
+            
+            if(is_sender) ot_sender->send(block_zero, block_one, cnt_block * cnt);
+            else {
+            	ot_receiver->recv(block_zero, chosen_bit, cnt_block * cnt);
+            	
+				for (int i = 0; i < cnt; ++i) {
+                    ASSIGN_OR_RETURN(BigNum tmp, this->sk->Decrypt(block2BigNum(&block_zero[cnt_block * i], cnt_block, ctx_)));
                     rs = rs + tmp;
                 }
             }
