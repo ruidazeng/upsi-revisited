@@ -249,8 +249,8 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
 
             bool chosen_bit[cnt_block * tot_cnt];
 
-            emp::block block_zero[cnt_block * tot_cnt];
-            emp::block block_one[cnt_block * tot_cnt];
+            emp::block* block_zero = new emp::block[cnt_block * tot_cnt];
+            emp::block* block_one = new emp::block[cnt_block * tot_cnt];
 			
 			int p = 0;
             for (int i = 0; i < cnt; ++i) {
@@ -312,6 +312,9 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
 				    ans.push_back(rs_);
 		        }
 		    }
+		    
+		    delete []block_zero;
+		    delete []block_one;
             
             return OkStatus();
         }

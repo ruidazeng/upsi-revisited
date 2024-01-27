@@ -221,8 +221,8 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
 
             bool chosen_bit[cnt_block * cnt];
 
-            emp::block block_zero[cnt_block * cnt];
-            emp::block block_one[cnt_block * cnt];
+            emp::block* block_zero = new emp::block[cnt_block * cnt];
+            emp::block* block_one = new emp::block[cnt_block * cnt];
 
             //std::cerr << cnt_block << " " << cnt << std::endl;
             for (int i = 0; i < cnt; ++i) {
@@ -257,6 +257,9 @@ class Party : public HasTree<ElementAndPayload, PaillierPair> {
                     rs = rs + tmp;
                 }
             }
+            
+            delete []block_zero;
+            delete []block_one;
 
             rs = rs.Mod(cur_n); //with ?? probability one < cur_n/2, the other > cur_n/2
             uint64_t rs_ = 0;
