@@ -37,6 +37,8 @@ struct PSIParams {
 
     // filename for initial oprf outputs
     std::string oprf_fn;
+    
+    int start_size = -1;
 
     // addition only param set
     PSIParams(

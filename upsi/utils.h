@@ -42,7 +42,7 @@ namespace upsi {
 
     #define ELEMENT_STR_LENGTH 16
 
-	#define DEBUG 1
+	#define DEBUG 0
 
     // type of elements in each party's sets
 	typedef BigNum Element;

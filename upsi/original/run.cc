@@ -37,10 +37,11 @@ ABSL_FLAG(int, party, 1, "which party to run");
 ABSL_FLAG(std::string, port, "0.0.0.0:10501", "listening port");
 ABSL_FLAG(std::string, data_dir, "data/", "name of directory for dataset files");
 ABSL_FLAG(std::string, out_dir, "out/", "name of directory for setup files");
-ABSL_FLAG(upsi::Functionality, func, upsi::Functionality::SUM, "desired protocol functionality");
+ABSL_FLAG(upsi::Functionality, func, upsi::Functionality::PSI, "desired protocol functionality");
 ABSL_FLAG(int, days, 10, "total days the protocol will run for");
 
-ABSL_FLAG(bool, trees, true, "use initial trees stored on disk");
+ABSL_FLAG(bool, trees, false, "use initial trees stored on disk");
+ABSL_FLAG(int, start_size, -1, "size of the initial trees (if creating random)");
 
 Status RunPartyZero() {
     Context context;
@@ -52,6 +53,8 @@ Status RunPartyZero() {
         absl::GetFlag(FLAGS_out_dir) + "p0/elgamal.key",
         absl::GetFlag(FLAGS_days)
     );
+    
+    params.start_size = absl::GetFlag(FLAGS_start_size);
 
     if (absl::GetFlag(FLAGS_trees)) {
         params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p0/encrypted.tree";
@@ -113,6 +116,8 @@ Status RunPartyOne() {
         absl::GetFlag(FLAGS_days)
     );
 
+    params.start_size = absl::GetFlag(FLAGS_start_size);
+    
     if (absl::GetFlag(FLAGS_trees)) {
         params.my_tree_fn = absl::GetFlag(FLAGS_data_dir) + "p1/plaintext.tree";
     }
@@ -144,6 +149,7 @@ Status RunPartyOne() {
 }
 
 int main(int argc, char** argv) {
+	srand((unsigned)time(NULL));
     absl::ParseCommandLine(argc, argv);
 
     if (!DEBUG) { std::clog.setstate(std::ios_base::failbit); }
