@@ -223,7 +223,6 @@ PaillierPair elementCopy(const PaillierPair& elem) {
 
 // generate random binary hash
 BinaryHash generateRandomHash() {
-	//TODO: should be replaced by PRF
 	Context ctx;
 	std::string random_bytes = ctx.GenerateRandomBytes(32); // 32 bytes for SHA256 => obtain random_path as a byte string
 	return random_bytes;
