@@ -41,6 +41,48 @@ class PartyZero : public Server, public Party {
                     group_mapping[key.value()] = element;
                 }
             }
+            
+            if (params->start_size > 0) {
+                auto status = CreateMockTrees(params, params->start_size);
+                if (!status.ok()) {
+                    std::cerr << status << std::endl;
+                    std::runtime_error("[PartyZeroSum] failure in creating mock trees");
+                }
+            }
+        }
+        
+        Status CreateMockTrees(PSIParams* params, size_t size) {
+            std::cout << "[PartyZeroSecretShare] creating mock plaintext tree..." << std::flush;
+            // fill plaintext tree with random elements
+            
+            CryptoTree<Element> tmp_tree(params->stash_size, params->node_size);
+            std::vector<Element> elements;
+            for (size_t i = 0; i < size; i++) {
+                elements.push_back(
+                    this->ctx_->CreateBigNum(std::stoull(GetRandomSetElement()))
+                );
+            }
+
+            std::vector<std::string> hashes;
+            tmp_tree.insert(elements, hashes);
+            std::cout << " done" << std::endl;
+
+            std::cout << "[PartyZeroSecretShare] creating mock encrypted tree..." << std::flush;
+            // fill encrypted tree with encryptions of zero
+            ASSIGN_OR_RETURN(Ciphertext zero, this->their_pk->Encrypt(ctx_->Zero()));
+            this->tree.crypto_tree.clear();
+            this->tree.depth = tmp_tree.depth;
+            this->tree.actual_size = tmp_tree.actual_size;
+            for (const CryptoNode<Element>& pnode : tmp_tree.crypto_tree) {
+                CryptoNode<Ciphertext> enode(pnode.node_size);
+                for (size_t i = 0; i < pnode.node_size; i++) {
+                    ASSIGN_OR_RETURN(Ciphertext clone, elgamal::CloneCiphertext(zero));
+                    enode.node.push_back(std::move(clone));
+                }
+                this->tree.crypto_tree.push_back(std::move(enode));
+            }
+            std::cout << " done" << std::endl;
+            return OkStatus();
         }
 
         Status Handle(const ClientMessage& msg, MessageSink<ServerMessage>* sink) override;

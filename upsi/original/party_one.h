@@ -33,6 +33,31 @@ class PartyOne : public Client, public Party {
                     throw std::runtime_error("[PartyOne] error loading my tree");
                 }
             }
+            
+            if (params->start_size > 0) {
+                auto status = CreateMockTrees(params->start_size);
+                if (!status.ok()) {
+                    std::cerr << status << std::endl;
+                    std::runtime_error("[PartyZeroSum] failure in creating mock trees");
+                }
+            }
+        }
+        
+        Status CreateMockTrees(size_t size) {
+            std::cout << "[PartyOneSecretShare] creating mock plaintext tree..." << std::flush;
+
+            // fill plaintext tree with random elements
+            std::vector<Element> elements;
+            for (size_t i = 0; i < size; i++) {
+                elements.push_back(this->ctx_->CreateBigNum(std::stoull(GetRandomSetElement())));
+            }
+
+            std::vector<std::string> hashes;
+            this->tree.insert(elements, hashes);
+            std::cout << " done" << std::endl;
+
+            
+            return OkStatus();
         }
 
         Status Run(Connection* sink) override;

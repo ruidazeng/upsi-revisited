@@ -157,7 +157,7 @@ Status PartyZero::SendMessageIV(
             this->masks.push_back(mask);
         }
     }
-    std::cout << "[DEBUG] candidates.size() = " << n << std::endl;
+    //std::cout << "[DEBUG] candidates.size() = " << n << std::endl;
 
     ServerMessage sm;
     *(sm.mutable_og_msg()->mutable_message_iv()) = msg;
@@ -191,7 +191,7 @@ void PartyZero::PrintComm() {
 
 void PartyZero::PrintResult() {
     std::cout << "[PartyZero] CARDINALITY = " << this->intersection.size() << std::endl;
-    if (this->intersection.size() < 30) {
+    if (this->intersection.size() < 10) {
         for (const std::string& element : this->intersection) {
             std::cout << "            " << element << std::endl;
         }
