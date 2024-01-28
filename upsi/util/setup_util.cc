@@ -91,7 +91,6 @@ Status GeneratePaillierKeys(
 ) {
     std::cout << "[Setup] generating keys" << std::flush;
 
-    // TODO (max): should we try different `s` parameters?
     ASSIGN_OR_RETURN(auto p0, GeneratePaillierKeyPair(ctx, mod_length, 1));
     std::cout << "." << std::flush;
     ASSIGN_OR_RETURN(auto p1, GeneratePaillierKeyPair(ctx, mod_length, 1));

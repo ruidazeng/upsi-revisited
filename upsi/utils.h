@@ -78,7 +78,6 @@ namespace upsi {
 
 	typedef std::string BinaryHash;
 
-    // TODO: should these be somewhere else?
     template<typename T>
     StatusOr<std::vector<T>> DeserializeCiphertexts(
         const google::protobuf::RepeatedPtrField<EncryptedElement> serialized,
