@@ -30,7 +30,7 @@ ABSL_FLAG(uint32_t, days, 10, "number of days the protocol is running for");
 ABSL_FLAG(uint32_t, daily_size, 10, "total elements in each set on each day");
 ABSL_FLAG(uint32_t, start_size, 0, "size of the initial trees");
 
-ABSL_FLAG(upsi::Functionality, func, upsi::Functionality::CA, "desired protocol functionality");
+ABSL_FLAG(upsi::Functionality, func, upsi::Functionality::PSI, "desired protocol functionality");
 
 ABSL_FLAG(int32_t, max_value, 100, "maximum number for UPSI-SUM values");
 
