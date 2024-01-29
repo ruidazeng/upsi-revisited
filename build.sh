@@ -16,5 +16,9 @@ sudo apt update && sudo apt install bazel-6.4.0 -y
 sudo update-alternatives --install /usr/bin/bazel bazel /usr/bin/bazel-6.4.0 10
 sudo update-alternatives --install /usr/bin/tc tc /usr/sbin/tc 10
 
+# emp-toolkit
+wget https://raw.githubusercontent.com/emp-toolkit/emp-readme/master/scripts/install.py
+python install.py --deps --tool --ot --sh2pc
+
 # and build the project
 bazel build //upsi:all
