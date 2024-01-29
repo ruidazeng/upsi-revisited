@@ -2,8 +2,8 @@
 
 ## Building the Project
 
-The project build is managed by `bazel` and is set up to run on `v6.4`. To build the project, simply run the following
-from the `upsi-new` directory. For addition only, run
+The project build is managed by `bazel` and is set up to run on `v6.4`. The addtion & deletion parts require `emp-toolkit` as well. To build the project, simply run the following
+from the `upsi-new` directory. For addition-only extended functions, run
 ```bash
 bazel build //upsi/addition:all
 ```
@@ -13,13 +13,23 @@ For addition & deletion, run
 bazel build //upsi/deletion:all
 ```
 
+For addition-only plain PSI, run
+```bash
+bazel build //upsi/original:all
+```
+
+For addition & deletion plain PSI, run
+```bash
+bazel build //upsi/deletion-psi:all
+```
+
 ## Running the Protocol
 
 Before running the protocol, use the `setup` binary to generate encryption keys and mock input sets. By default, the keys
-will be put in `out/` and the input sets will be put in `data/`. For example, to generate input datasets with 256
+will be put in `out/` and the input sets will be put in `data/`. For example, to generate input datasets of addition-only extended functions with 256
 elements for eight days, you would run
 ```bash
-./bazel-bin/upsi/setup --days=8 --daily_size=256
+./bazel-bin/upsi/addition/setup --days=8 --daily_size=256
 ```
 If you don't want to start the protocol from the beginning, but want the parties to already have built up their
 datasets, you can add `--start_size=` to specify how many elements should be in their trees (e.g., to simulate running
@@ -33,19 +43,19 @@ the protocol after 100 days where each day the parties input 64 elements, you wo
 
 Additional options can be found by running
 ```bash
-./bazel-bin/upsi/setup --help
+./bazel-bin/upsi/addition/setup --help
 ```
 
 Once you've generated the keys and data sets, you can run the protocol like so
 ```bash
-./bazel-bin/upsi/run --party=1 --days=8 --func=CA
+./bazel-bin/upsi/addition/run --party=1 --days=8 --func=CA
 ```
 and
 ```bash
-./bazel-bin/upsi/run --party=0 --days=8 --func=CA
+./bazel-bin/upsi/addition/run --party=0 --days=8 --func=CA
 ```
 where `--func` specifies which output functionality you want to run. The functionality options are `CA` for cardinality,
-`PSI` for regular PSI, `SUM` for the cardinality and sum of associated values, and `SS` is for intersection secret share.
+`PSI` for regular PSI, `SUM` for the cardinality and sum of associated values, and `SS` is for intersection secret share (circuit).
 Again, you can use `--help` to see all options for `run`.
 
 > [!NOTE]
