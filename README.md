@@ -3,12 +3,14 @@
 ## Building the Project
 
 The project build is managed by `bazel` and is set up to run on `v6.4`. The addtion & deletion parts require `emp-toolkit` as well. To build the project, simply run the following
-from the `upsi-new` directory. For addition-only extended functions, run
+from the `upsi-new` directory. 
+
+For addition-only cardinality, sum and secret share (circuit), run
 ```bash
 bazel build //upsi/addition:all
 ```
 
-For addition & deletion, run
+For addition & deletion cardinality and sum, run
 ```bash
 bazel build //upsi/deletion:all
 ```
@@ -26,7 +28,7 @@ bazel build //upsi/deletion-psi:all
 ## Running the Protocol
 
 Before running the protocol, use the `setup` binary to generate encryption keys and mock input sets. By default, the keys
-will be put in `out/` and the input sets will be put in `data/`. For example, to generate input datasets of addition-only extended functions with 256
+will be put in `out/` and the input sets will be put in `data/`. For example, to generate input datasets of addition-only with 256
 elements for eight days, you would run
 ```bash
 ./bazel-bin/upsi/addition/setup --days=8 --daily_size=256
