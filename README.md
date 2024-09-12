@@ -65,7 +65,7 @@ and
 
 More information for both the `setup` and `run` binaries can be found using the `--help` flag.
 
-## Contact Information
+## Author Contact Information
 
 Saikrishna Badrinarayanan (LinkedIn, USA) bsaikrishna7393@gmail.com
 
