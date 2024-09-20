@@ -67,12 +67,12 @@ More information for both the `setup` and `run` binaries can be found using the 
 
 ## Author Contact Information
 
-Saikrishna Badrinarayanan (LinkedIn, USA) bsaikrishna7393@gmail.com
+Saikrishna Badrinarayanan (LinkedIn): [bsaikrishna7393 at gmail dot com](mailto:bsaikrishna7393@gmail.com)
 
-Peihan Miao (Brown University, Providence, USA) peihan_miao@brown.edu
+Peihan Miao (Brown University): [peihan_miao at brown dot edu](mailto:peihan_miao@brown.edu)
 
-Xinyi Shi (Brown University, Providence, USA) xinyi_shi@brown.edu
+Xinyi Shi (Brown University): [xinyi_shi at brown dot edu](mailto:xinyi_shi@brown.edu)
 
-Max Tromanhauser (Brown University, Providence, USA) max_tromanhauser@brown.edu
+Max Tromanhauser (Brown University): [max_tromanhauser at brown dot edu](mailto:max_tromanhauser@brown.edu)
 
-Ruida Zeng (Brown University, Providence, USA) ruida_zeng@brown.edu
+Ruida Zeng (Brown University): [ruida_zeng at brown dot edu](mailto:ruida_zeng@brown.edu)
