@@ -1,7 +1,7 @@
 # UPSI Revisited
 
 This is the implementation for the updatable private set intersection protocol presented in
-[Updatable Private Set Intersection Revisited: Extended Functionalities, Deletion, and Worst-Case Complexity](https://eprint.iacr.org/)
+[Updatable Private Set Intersection Revisited: Extended Functionalities, Deletion, and Worst-Case Complexity](https://eprint.iacr.org/2024/1446)
 (Asiacrypt 2024).
 
 > [!WARNING]
