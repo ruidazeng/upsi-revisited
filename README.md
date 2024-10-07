@@ -10,6 +10,22 @@ This is the implementation for the updatable private set intersection protocol p
 
 ## Building the Project
 
+The repository has been containerized using Docker. To pull the appropriate container:
+```bash
+docker pull ghcr.io/ruidazeng/upsi-revisited:latest
+```
+
+From there, you can connect to a container with:
+```bash
+docker run -it ghcr.io/ruidazeng/upsi-revisited:latest
+```
+
+At this point you can run any of the commands in the following sections.
+
+### Building Locally
+
+If you don't want to use Docker, you can build the project yourself.
+
 > [!IMPORTANT]
 > The project should be built on Debian 10 (buster) to ensure dependencies will build without issue.
 
