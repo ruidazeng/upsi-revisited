@@ -79,6 +79,11 @@ and
 > You must run `run --party=1` before `run --party=0` as the first party will wait for connections on the specified
 > port.
 
+Or to run both parties, you can do:
+```bash
+./bazel-bin/upsi/addition/run --party=1 --days=1 --func=CA & ./bazel-bin/upsi/addition/run --party=0 --days=1 --func=CA
+```
+
 More information for both the `setup` and `run` binaries can be found using the `--help` flag.
 
 ## Author Contact Information
