@@ -1,4 +1,20 @@
-# UPSI Revisited
+<div align="center">
+
+# UPSI Revisited  
+**Updatable Private Set Intersection: Extended Functionalities, Deletion, and Worst-Case Complexity**
+
+<a href='https://eprint.iacr.org/2024/1446'><img src='https://img.shields.io/badge/Paper-IACR-blue'></a>
+<a href='https://asiacrypt.iacr.org/2024/acceptedpapers.php'><img src='https://img.shields.io/badge/Conference-Asiacrypt%202024-orange'></a>
+<a href='https://eprint.iacr.org/2024/1446.pdf'><img src='https://img.shields.io/badge/ePrint-PDF-red'></a>
+<a href='https://ghcr.io/ruidazeng/upsi-revisited'><img src='https://img.shields.io/badge/Docker-Package-blueviolet'></a>
+
+[**Overview**](#overview) | [**Building**](#building-the-project) | [**Experiments**](#running-the-experiments) | [**Contact**](#author-contact-information)
+
+</div>
+
+---
+
+## Overview
 
 This is the implementation for the updatable private set intersection protocol presented in
 [Updatable Private Set Intersection Revisited: Extended Functionalities, Deletion, and Worst-Case Complexity](https://eprint.iacr.org/2024/1446)
@@ -86,14 +102,14 @@ Or to run both parties, you can do:
 
 More information for both the `setup` and `run` binaries can be found using the `--help` flag.
 
-## Author Contact Information
+## Author Contact Information  
 
-Saikrishna Badrinarayanan (LinkedIn): [bsaikrishna7393 at gmail dot com](mailto:bsaikrishna7393@gmail.com)
+Feel free to reach out to the authors for further inquiries or collaborations:
 
-Peihan Miao (Brown University): [peihan_miao at brown dot edu](mailto:peihan_miao@brown.edu)
-
-Xinyi Shi (Brown University): [xinyi_shi at brown dot edu](mailto:xinyi_shi@brown.edu)
-
-Max Tromanhauser (Brown University): [max_tromanhauser at brown dot edu](mailto:max_tromanhauser@brown.edu)
-
-Ruida Zeng (Brown University): [ruida_zeng at brown dot edu](mailto:ruida_zeng@brown.edu)
+| Name                  | Affiliation       | Contact                              |
+|-----------------------|-------------------|--------------------------------------|
+| **Saikrishna Badrinarayanan** | Independent Researcher | `bsaikrishna7393 [at] gmail [dot] com` |
+| **Peihan Miao**       | Brown University  | `peihan_miao [at] brown [dot] edu`  |
+| **Xinyi Shi**         | Brown University  | `xinyi_shi [at] brown [dot] edu`    |
+| **Max Tromanhauser**  | Brown University  | `max_tromanhauser [at] brown [dot] edu` |
+| **Ruida Zeng**        | Brown University  | `ruida_zeng [at] brown [dot] edu`   |
