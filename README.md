@@ -16,9 +16,7 @@
 
 ## Overview
 
-This is the implementation for the updatable private set intersection protocol presented in
-[Updatable Private Set Intersection Revisited: Extended Functionalities, Deletion, and Worst-Case Complexity](https://eprint.iacr.org/2024/1446)
-(Asiacrypt 2024).
+This is the implementation for the updatable private set intersection protocol presented in [Asiacrypt 2024](https://eprint.iacr.org/2024/1446).
 
 > [!WARNING]
 > This repository is a research prototype written to demonstrate protocol performance and should not be treated as
@@ -108,7 +106,7 @@ Feel free to reach out to the authors for further inquiries or collaborations:
 
 | Name                  | Affiliation       | Contact                              |
 |-----------------------|-------------------|--------------------------------------|
-| **Saikrishna Badrinarayanan** | Independent Researcher | `bsaikrishna7393 [at] gmail [dot] com` |
+| **Saikrishna Badrinarayanan** | LinkedIn  | `bsaikrishna7393 [at] gmail [dot] com` |
 | **Peihan Miao**       | Brown University  | `peihan_miao [at] brown [dot] edu`  |
 | **Xinyi Shi**         | Brown University  | `xinyi_shi [at] brown [dot] edu`    |
 | **Max Tromanhauser**  | Brown University  | `max_tromanhauser [at] brown [dot] edu` |
