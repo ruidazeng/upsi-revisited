@@ -22,7 +22,7 @@
 
 ## Overview
 
-**UPSI Revisited** implements the *Updatable Private Set Intersection (UPSI)* protocol as detailed in our [Asiacrypt 2024 paper](https://eprint.iacr.org/2024/1446). Private Set Intersection (PSI) enables two mutually distrusting parties, each holding a private set of elements, to compute the intersection of their sets without disclosing any additional information. Building upon the foundational work presented in [PoPETS'22](https://eprint.iacr.org/2021/1349), our UPSI Revisited project addresses several key limitations of existing UPSI protocols:
+**UPSI Revisited** implements the *Updatable Private Set Intersection (UPSI)* protocol as detailed in our [Asiacrypt 2024 paper](https://eprint.iacr.org/2024/1446). Private Set Intersection (PSI) enables two mutually distrusting parties, each holding a private set of elements, to compute the intersection of their sets without disclosing any additional information. Building upon the foundational work presented in [PoPETS 2022](https://eprint.iacr.org/2021/1349), our UPSI Revisited project addresses several key limitations of existing UPSI protocols:
 
 1. **Extended Functionalities:** Unlike previous protocols that support only plain PSI, our implementation includes advanced functionalities such as PSI-Cardinality and PSI-Sum. Additionally, in the addition-only setting, we present **Circuit-PSI** functionality that outputs secret shares of the intersection.
 2. **Support for Deletion Operations:** Previous UPSI protocols were limited to the addition of elements to their existing sets and "weak deletions" (where parties can additionally delete their old elements every *t* days). Our work introduces the capability to arbitrarily delete elements, achieving semi-honest security in both the addition-only and addition-deletion settings.
@@ -40,12 +40,24 @@ The repository has been containerized using Docker. To pull the appropriate cont
 docker pull ghcr.io/ruidazeng/upsi-revisited:latest
 ```
 
-From there, you can connect to a container with:
+### Running the Container
+
+#### Standard Environments
+If you're using a standard environment (e.g. `amd64` Intel-based systems), run:
+
 ```bash
 docker run -it ghcr.io/ruidazeng/upsi-revisited:latest
 ```
 
-At this point you can run any of the commands in the following sections.
+#### Running the Container on Apple Silicon Macs or ARM Architectures
+
+For users operating on Apple Silicon Macs (`arm64`) or other ARM-based architectures, it might be necessary to specify the platform explicitly to direct Docker to emulate the standard environments and architectures, ensure compatibility and allowing the container to run:
+
+```bash
+docker run --platform linux/amd64 -it ghcr.io/ruidazeng/upsi-revisited:latest
+```
+
+Once inside the container, you can run any of the commands outlined in the following sections.
 
 ### Building Locally
 
