@@ -14,6 +14,8 @@
 
 [**Overview**](#overview) | [**Building**](#building-the-project) | [**Experiments**](#running-the-experiments) | [**Contact**](#author-contact-information) | [**License**](#license)
 
+<img width="1727" alt="Asiacrypt 2024" src="asiacrypt2024.jpg">
+
 </div>
 
 ---
