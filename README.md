@@ -1,7 +1,10 @@
 <div align="center">
 
-# UPSI Revisited  
+# UPSI Revisited
+
 **Updatable Private Set Intersection: Extended Functionalities, Deletion, and Worst-Case Complexity**
+
+*Saikrishna Badrinarayanan, Peihan Miao, Xinyi Shi, Max Tromanhauser, and Ruida Zeng*
 
 <a href='https://eprint.iacr.org/2024/1446'><img src='https://img.shields.io/badge/Paper-IACR-blue'></a>
 <a href='https://asiacrypt.iacr.org/2024/'><img src='https://img.shields.io/badge/Conference-Asiacrypt%202024-orange'></a>
@@ -17,11 +20,16 @@
 
 ## Overview
 
-This is the implementation for the updatable private set intersection protocol presented in [Asiacrypt 2024](https://eprint.iacr.org/2024/1446).
+**UPSI Revisited** implements the *Updatable Private Set Intersection (UPSI)* protocol as detailed in our [Asiacrypt 2024 paper](https://eprint.iacr.org/2024/1446). Private Set Intersection (PSI) enables two mutually distrusting parties, each holding a private set of elements, to compute the intersection of their sets without disclosing any additional information. Building upon the foundational work presented in [PoPETS'22](https://eprint.iacr.org/2021/1349), our UPSI Revisited project addresses several key limitations of existing UPSI protocols:
+
+1. **Extended Functionalities:** Unlike previous protocols that support only plain PSI, our implementation includes advanced functionalities such as PSI-Cardinality and PSI-Sum. Additionally, in the addition-only setting, we present **Circuit-PSI** functionality that outputs secret shares of the intersection.
+2. **Support for Deletion Operations:** Previous UPSI protocols were limited to the addition of elements to their existing sets and "weak deletions" (where parties can additionally delete their old elements every *t* days). Our work introduces the capability to arbitrarily delete elements, achieving semi-honest security in both the addition-only and addition-deletion settings.
+3. **Optimized Worst-Case Complexity:** Existing addition-only protocols either require both parties to learn the output or only achieve low amortized complexity and incur linear worst-case complexity. Our protocols ensure that both computation and communication complexities scale solely with the size of set updates rather than the entire sets (except for a polylogarithmic factor).
+
+**Practical Performance:** We have implemented our UPSI protocols and benchmarked them against state-of-the-art PSI and extended functionality protocols. Our results demonstrate favorable performance, particularly when dealing with sufficiently large total set sizes, sufficiently small new updates, or operating within low-bandwidth network environments.
 
 > [!WARNING]
-> This repository is a research prototype written to demonstrate protocol performance and should not be treated as
-> "production ready".
+This repository is a research prototype written to showcase protocol performance and capabilities and is **NOT** "production ready".
 
 ## Building the Project
 
