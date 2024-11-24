@@ -35,12 +35,12 @@ This repository is a research prototype written to showcase protocol performance
 
 ## Building the Project
 
+### Container Setup with Docker
+
 The repository has been containerized using Docker. To pull the appropriate container:
 ```bash
 docker pull ghcr.io/ruidazeng/upsi-revisited:latest
 ```
-
-### Running the Container
 
 #### Standard Environments
 If you're using a standard environment (e.g. `amd64` Intel-based systems), run:
@@ -86,11 +86,23 @@ bazel build //upsi/deletion-psi:all
 
 ## Running the Experiments
 
-Before running experiments, use the `setup` binary to generate encryption keys and mock input sets. By default, keys
-and input sets will be put in `out/` and `data/`, respectively. Use the `--help` flag for each of the four protocols
-(`addition`, `deletion`, `original`, and `deletion-psi`) `setup` scripts to see their parameters:
+Before running experiments, use the `setup` binary to generate encryption keys and mock input sets. By default, keys and input sets will be placed in `out/` and `data/`, respectively. 
+
+### Protocol Descriptions
+The protocols correspond to specific functionalities as outlined in the paper:
+- **`addition`:** Addition-Only UPSI-Cardinalty/Sum/Circuit-PSI
+- **`deletion`:** UPSI-Cardinalty/Sum with Addition and Deletion
+- **`original`:** Addition-Only Plain UPSI
+- **`deletion-psi`:** Plain UPSI with Addition and Deletion
+
+For more details, refer to the corresponding sections in the paper:
+- **`addition` & `original`:** [Section 3.2](https://eprint.iacr.org/2024/1446.pdf#page=10)
+- **`deletion` & `deletion-psi`:** [Section 4.2](https://eprint.iacr.org/2024/1446.pdf#page=16)
+
+To explore the parameters for each protocol, use the `--help` flag for the `setup` binary as follows:
+
 ```bash
-./bazel-bin/upsi/<protocol>/setup
+./bazel-bin/upsi/<protocol>/setup --help
 ```
 
 To replicate the fourth row in Table 2 ($`N = 2^{18}`$, $`N_d = 2^6`$ running the updatable PSI addition only for
