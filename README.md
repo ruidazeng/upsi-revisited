@@ -15,7 +15,7 @@
 [**Overview**](#overview) | [**Building**](#building-the-project) | [**Experiments**](#running-the-experiments) 
 | [**Contact**](#author-contact-information) | [**License**](#license)
 
-<img width="1727" alt="Asiacrypt 2024" src="asiacrypt2024.jpg">
+<img width="1727" alt="Asiacrypt 2024" src="Asiacrypt2024.jpg">
 
 </div>
 
@@ -176,7 +176,9 @@ These settings follow the same settings as previous works and are critical for r
    ```
 
 > [!NOTE]
-> The `network_setup.sh` script must be run with appropriate permissions (use `chmod +x network_setup.sh` to make it executable if needed).
+> The `network_setup.sh` script must be run with appropriate permissions.
+>
+> Use `chmod +x network_setup.sh` to make it executable if needed.
 
 #### Example Workflow for Experiments
 
