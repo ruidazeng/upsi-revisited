@@ -15,7 +15,9 @@
 [**Overview**](#overview) | [**Building**](#building-the-project) | [**Experiments**](#running-the-experiments) 
 | [**Contact**](#author-contact-information) | [**License**](#license)
 
-<img width="1727" alt="Asiacrypt 2024" src="Asiacrypt2024.jpg">
+<a href="https://asiacrypt.iacr.org/2024/" target="_blank">
+    <img src="Asiacrypt2024.jpg" alt="Asiacrypt 2024";>
+</a>
 
 </div>
 
