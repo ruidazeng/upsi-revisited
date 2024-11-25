@@ -126,7 +126,7 @@ _Note that $`262080 = 2^{18} - 2^6 = N - N_d`$; i.e., the size of the input sets
 
 ### Configuring Network Bandwidth and Latency for Experiments
 
-To simplify the setup of network conditions for experiments, a `network_setup.sh` script is provided in the base directory. This script automates the configuration of network bandwidth and latency, simulating both LAN and WAN environments as described in [Section 6.1](https://eprint.iacr.org/2024/1446.pdf/#page=21) of the paper.
+To simplify the setup of network conditions for experiments, the [network_setup.sh](network_setup.sh) script is provided in the base directory. This script automates the configuration of network bandwidth and latency, simulating both LAN and WAN environments as described in [Section 6.1](https://eprint.iacr.org/2024/1446.pdf/#page=21) of the paper.
 
 #### Overview of Network Simulations
 
@@ -176,11 +176,6 @@ These settings follow the same settings as previous works and are critical for r
    ```bash
    ./network_setup.sh off
    ```
-
-> [!NOTE]
-> The `network_setup.sh` script must be run with appropriate permissions.
->
-> Use `chmod +x network_setup.sh` to make it executable if needed.
 
 #### Example Workflow for Experiments
 
