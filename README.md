@@ -34,7 +34,7 @@
 **Practical Performance:** We have implemented our UPSI protocols and benchmarked them against state-of-the-art PSI and extended functionality protocols. Our results demonstrate favorable performance, particularly when dealing with sufficiently large total set sizes, sufficiently small new updates, or operating within low-bandwidth network environments.
 
 > [!WARNING]
-> This repository is a research prototype written to showcase protocol performance and capabilities and is **NOT** "production ready".
+> This repository is a research prototype written to demonstrate our UPSI protocol's performance and to showcase its capabilities. It is **NOT** intended to be considered as "production ready" and should only be used for experimental or research & development purposes.
 
 ## Building the Project
 
