@@ -12,7 +12,7 @@
 <a href='https://eprint.iacr.org/2024/1446.pdf'><img src='https://img.shields.io/badge/ePrint-PDF-red'></a>
 <a href='https://ghcr.io/ruidazeng/upsi-revisited'><img src='https://img.shields.io/badge/Docker-Package-blueviolet'></a>
 
-[**Overview**](#overview) | [**Building**](#building-the-project) | [**Experiments**](#running-the-experiments) 
+[**Overview**](#overview) | [**Building**](#building-the-project) | [**Experiments**](#running-the-experiments)
 | [**Contact**](#author-contact-information) | [**License**](#license)
 
 <a href="https://asiacrypt.iacr.org/2024/" target="_blank">
@@ -52,6 +52,10 @@ If you're using a standard environment (e.g. `amd64` Intel-based systems), run:
 docker run -it ghcr.io/ruidazeng/upsi-revisited:latest
 ```
 
+> [!WARNING]
+> If you run into an error `RTNETLINK answers: Operation not permitted`, use add `--cap-add=NET_ADMIN` to the `docker run` command.
+
+
 #### Running the Container on Apple Silicon Macs or ARM Architectures
 
 For users operating on Apple Silicon Macs (`arm64`) or other ARM-based architectures, it might be necessary to specify the platform explicitly to direct Docker to emulate the standard environments and architectures, ensure compatibility and allowing the container to run:
@@ -87,7 +91,7 @@ bazel build //upsi/deletion-psi:all
 
 ## Running the Experiments
 
-Before running experiments, use the `setup` binary to generate encryption keys and mock input sets. By default, keys and input sets will be placed in `out/` and `data/`, respectively. 
+Before running experiments, use the `setup` binary to generate encryption keys and mock input sets. By default, keys and input sets will be placed in `out/` and `data/`, respectively.
 
 ### Protocol Descriptions
 The protocols correspond to specific functionalities as outlined in the paper:
@@ -115,8 +119,6 @@ The `--func` flag specifies the functionality to be used in the experiment. The 
 - **`SUM`:** PSI-Sum, calculating the sum of values associated with the elements in the intersection.
 
 - **`SS`:** Circuit-PSI, outputting the ***secret shares (SS)*** of the intersection.
-
-- **`DEL`:** Deletion functionality, supporting the arbitrary removal of elements and dynamic updates to the sets. 
 
 To replicate the fourth row in Table 2 ($`N = 2^{18}`$, $`N_d = 2^6`$ running the updatable PSI addition only for cardinality protocol $`\Pi_{\mathsf{UPSI-Add}_\mathsf{ca}}`$), we want to run the protocol on the day where the input sets reach total cardinality of $2^{18}$ (i.e., the $\frac{2^{18}}{2^{6}} = 4096^\text{th}$ day). Rather than simulate all 4096 days, specify the `--start_size` parameter in the `setup` binary to generate encrypted datasets that are used as the "carry over" from the $4095^\text{th}$ to $4096^\text{th}$ day. Therefore, to set up this experiment use:
 ```bash
@@ -196,6 +198,10 @@ Or to run both parties, you can do:
 ./bazel-bin/upsi/addition/run --party=1 --days=1 --func=CA & ./bazel-bin/upsi/addition/run --party=0 --days=1 --func=CA
 ```
 
+> [!IMPORTANT]
+> If you've used `--start_size` in the `setup` command, you must include the
+> `--trees` flag in `run` to read and use the prepared state.
+
 Below is a step-by-step example workflow to configure and run experiments under LAN and WAN conditions:
 
 1. **Run the Experiment on LAN (1 Gbps):**
@@ -232,7 +238,7 @@ Below is a step-by-step example workflow to configure and run experiments under 
 
 More information for both the `setup` and `run` binaries can be found using the `--help` flag.
 
-## Author Contact Information  
+## Author Contact Information
 
 Feel free to reach out to the authors for further inquiries or collaborations:
 
