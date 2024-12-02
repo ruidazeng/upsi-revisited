@@ -53,7 +53,7 @@ docker run -it ghcr.io/ruidazeng/upsi-revisited:latest
 ```
 
 > [!WARNING]
-> If you run into an error `RTNETLINK answers: Operation not permitted`, use add `--cap-add=NET_ADMIN` to the `docker run` command.
+> If you run into an error `RTNETLINK answers: Operation not permitted`, add `--cap-add=NET_ADMIN` to the `docker run` command.
 
 
 #### Running the Container on Apple Silicon Macs or ARM Architectures
