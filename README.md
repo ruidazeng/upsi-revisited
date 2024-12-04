@@ -13,7 +13,7 @@
 <a href='https://ghcr.io/ruidazeng/upsi-revisited'><img src='https://img.shields.io/badge/Docker-Package-blueviolet'></a>
 
 [**Overview**](#overview) | [**Building**](#building-the-project) | [**Experiments**](#running-the-experiments)
-| [**Contact**](#author-contact-information) | [**License**](#license)
+| [**Contact**](#author-contact-information) | [**License**](#license) | [**Citation**](#citation)
 
 <a href="https://asiacrypt.iacr.org/2024/" target="_blank">
     <img src="Asiacrypt2024.jpg" alt="Asiacrypt 2024";>
@@ -253,3 +253,22 @@ Feel free to reach out to the authors for further inquiries or collaborations:
 ## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
+
+To enable easy citation of your work, you can add a citation section like this:
+
+---
+
+## Citation
+
+If you find our work useful in your research or reference it in your publications, please consider citing it as follows:
+
+```bibtex
+@inproceedings{bmxtz2024upsi,
+  title={{UPSI Revisited: Updatable Private Set Intersection: Extended Functionalities, Deletion, and Worst-Case Complexity}},
+  author={Saikrishna Badrinarayanan and Peihan Miao and Xinyi Shi and Max Tromanhauser and Ruida Zeng},
+  booktitle={Advances in Cryptology -- ASIACRYPT 2024},
+  year={2024},
+  publisher={Springer},
+  url={https://eprint.iacr.org/2024/1446},
+}
+```
