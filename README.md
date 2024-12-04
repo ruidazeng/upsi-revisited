@@ -256,8 +256,6 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 
 To enable easy citation of your work, you can add a citation section like this:
 
----
-
 ## Citation
 
 If you find our work useful in your research or reference it in your publications, please consider citing it as follows:
