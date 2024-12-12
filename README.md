@@ -7,6 +7,7 @@
 *Saikrishna Badrinarayanan, Peihan Miao, Xinyi Shi, Max Tromanhauser, and Ruida Zeng*
 
 <a href='https://eprint.iacr.org/2024/1446'><img src='https://img.shields.io/badge/Paper-IACR-blue'></a>
+<a href='https://link.springer.com/chapter/10.1007/978-981-96-0938-3_7'><img src='https://img.shields.io/badge/Paper-Springer-lightblue'></a>
 <a href='https://asiacrypt.iacr.org/2024/'><img src='https://img.shields.io/badge/Conference-Asiacrypt%202024-orange'></a>
 <a href='https://asiacrypt.iacr.org/2024//program.php'><img src='https://img.shields.io/badge/Program-Asiacrypt%202024-green'></a>
 <a href='https://artifacts.iacr.org/asiacrypt/2024/'><img src='https://img.shields.io/badge/Artifact-Asiacrypt%202024-gold'></a>
