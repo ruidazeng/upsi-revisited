@@ -262,9 +262,11 @@ If you find our work useful in your research or reference it in your publication
 
 ```bibtex
 @inproceedings{bmxtz2024upsi,
-  title="UPSI Revisited: Updatable Private Set Intersection: Extended Functionalities, Deletion, and Worst-Case Complexity",
+  title="Updatable Private Set Intersection Revisited: Extended Functionalities, Deletion, and Worst-Case Complexity",
   author="Saikrishna Badrinarayanan and Peihan Miao and Xinyi Shi and Max Tromanhauser and Ruida Zeng",
-  booktitle="Advances in Cryptology -- ASIACRYPT 2024",
+  booktitle="Advances in Cryptology -- ASIACRYPT 2024, Part VI",
+  series="Lecture Notes in Computer Science",
+  volume="15489",
   year="2024",
   publisher="Springer Nature Singapore",
   pages="200--233",
