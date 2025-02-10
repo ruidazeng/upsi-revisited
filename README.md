@@ -98,8 +98,8 @@ Before running experiments, use the `setup` binary to generate encryption keys a
 
 ### Protocol Descriptions
 The protocols correspond to specific functionalities as outlined in the paper:
-- **`addition`:** Addition-Only UPSI-Cardinalty/Sum/Circuit-PSI
-- **`deletion`:** UPSI-Cardinalty/Sum with Addition and Deletion
+- **`addition`:** Addition-Only UPSI-Cardinality/Sum/Circuit-PSI
+- **`deletion`:** UPSI-Cardinality/Sum with Addition and Deletion
 - **`original`:** Addition-Only Plain UPSI
 - **`deletion-psi`:** Plain UPSI with Addition and Deletion
 
