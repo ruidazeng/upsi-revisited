@@ -157,22 +157,22 @@ These settings follow the same settings as previous works and are critical for r
    Example configurations:
    - **LAN (1 Gbps, 0.2 ms RTT):**
      ```bash
-     ./network_setup.sh on 0.2 1000
+     ./network_setup.sh on 0.1 1000
      ```
 
    - **WAN (200 Mbps, 80 ms RTT):**
      ```bash
-     ./network_setup.sh on 80 200
+     ./network_setup.sh on 40 200
      ```
 
    - **WAN (50 Mbps, 80 ms RTT):**
      ```bash
-     ./network_setup.sh on 80 50
+     ./network_setup.sh on 40 50
      ```
 
    - **WAN (5 Mbps, 80 ms RTT):**
      ```bash
-     ./network_setup.sh on 80 5
+     ./network_setup.sh on 40 5
      ```
 
 2. **Disable Network Emulation:**
@@ -209,7 +209,7 @@ Below is a step-by-step example workflow to configure and run experiments under 
 
 1. **Run the Experiment on LAN (1 Gbps):**
    ```bash
-   ./network_setup.sh on 0.2 1000
+   ./network_setup.sh on 0.1 1000
    ./bazel-bin/upsi/addition/run --party=1 --days=1 --func=CA
    ./bazel-bin/upsi/addition/run --party=0 --days=1 --func=CA
    ./network_setup.sh off
@@ -217,7 +217,7 @@ Below is a step-by-step example workflow to configure and run experiments under 
 
 2. **Run the Experiment on WAN (200 Mbps):**
    ```bash
-   ./network_setup.sh on 80 200
+   ./network_setup.sh on 40 200
    ./bazel-bin/upsi/addition/run --party=1 --days=1 --func=CA
    ./bazel-bin/upsi/addition/run --party=0 --days=1 --func=CA
    ./network_setup.sh off
@@ -225,7 +225,7 @@ Below is a step-by-step example workflow to configure and run experiments under 
 
 3. **Run the Experiment on WAN (50 Mbps):**
    ```bash
-   ./network_setup.sh on 80 50
+   ./network_setup.sh on 40 50
    ./bazel-bin/upsi/addition/run --party=1 --days=1 --func=CA
    ./bazel-bin/upsi/addition/run --party=0 --days=1 --func=CA
    ./network_setup.sh off
@@ -233,7 +233,7 @@ Below is a step-by-step example workflow to configure and run experiments under 
 
 4. **Run the Experiment on WAN (5 Mbps):**
    ```bash
-   ./network_setup.sh on 80 5
+   ./network_setup.sh on 40 5
    ./bazel-bin/upsi/addition/run --party=1 --days=1 --func=CA
    ./bazel-bin/upsi/addition/run --party=0 --days=1 --func=CA
    ./network_setup.sh off
